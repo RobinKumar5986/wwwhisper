@@ -1,14 +1,14 @@
 WWWhisper aims to simplify sharing of Web resources with limited
 audience. It specifies a generic HTTP access control layer, that
-grants access to HTTP resources based on users' emails.
-BrowserID (aka Persona) from Mozilla is used to prove that a visitor
-owns an allowed email. WWWhisper is not an application nor a
-platform. It is not concerned what the resources are, it can be used
-to restrict access to any resource served by HTTP server. The project
-will provide a sample implementation of the access control layer and a
-guidance how to use it with popular HTTP servers. The project will
-also provide sample UI for granting and revoking access to web
-resources.
+grants access to HTTP resources based on users' emails.  BrowserID
+(aka Persona) from Mozilla is used to prove that a visitor owns an
+allowed email. WWWhisper is not an application nor a platform. It is
+not concerned what the resources are, it can be used to restrict
+access to any resource served by HTTP server. The project will provide
+a sample implementation of the access control layer and a guidance how
+to use it with popular HTTP servers. The project will also provide
+[sampleUI](http://mixedbit.org/wwwhisper) for granting and revoking
+access to web resources.
 
 
 Introduction
@@ -42,7 +42,7 @@ Use cases
 Lets consider an example of Alice. Alice has following resources to share:
 
 *  A private blog that she would like to share with her family and friends.
-*  A work related wiki that she would like to be share with her colleagues.
+*  A work related wiki that she would like to share with her colleagues.
 *  A site created for a conference that Alice co-organized.  Alice would
    like the site to be widely accessible, but conference papers should
    be accessible only to conference attendance. In addition all
@@ -72,7 +72,7 @@ applications. To enable flexible sharing, access control layer should
 match the level of generality of HTTP. The layer should allow to
 specify which users can perform which methods on which resources. This
 is the lowest level, that usually won't be exposed to the user that
-shares resources. The user will configure access in more granular way
+shares resources, the user will configure access in more granular way
 (say specify a set of users that can execute all methods on resources
 under a given path).
 
