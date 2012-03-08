@@ -40,23 +40,23 @@ Use cases
 ---------
 
 Lets consider an example of Alice. Alice has following resources to share:
-* A private blog that she would like to share with her family and friends.
-* A work related wiki that she would like to be share with her colleagues.
-* A site created for a conference that Alice co-organized.  Alice would
-  like the site to be widely accessible, but conference papers should
-  be accessible only to conference attendance. In addition all
-  organizers should be able to submit photos from the conference.
+*  A private blog that she would like to share with her family and friends.
+*  A work related wiki that she would like to be share with her colleagues.
+*  A site created for a conference that Alice co-organized.  Alice would
+   like the site to be widely accessible, but conference papers should
+   be accessible only to conference attendance. In addition all
+   organizers should be able to submit photos from the conference.
 
 Alice would like to share resources in a convenient way:
-* She would like to easily grant and revoke access to her sites and check
-  who can access what.
-* She wouldn't like anyone to create yet another account and manage yet
-  another password to access her sites.
-* She would like to use existing web applications she likes (say WordPress for
-  blog and DokuWiki for wiki), but she wouldn't like to do any
-  modifications in these applications code.
-* She would like to own the content, be free to move it from server
-  server or host it by herself.
+*  She would like to easily grant and revoke access to her sites and check
+   who can access what.
+*  She wouldn't like anyone to create yet another account and manage yet
+   another password to access her sites.
+*  She would like to use existing web applications she likes (say WordPress for
+   blog and DokuWiki for wiki), but she wouldn't like to do any
+   modifications in these applications code.
+*  She would like to own the content, be free to move it from server
+   server or host it by herself.
 
 
 HTTP + BrowserId based access control = open sharing
@@ -92,22 +92,22 @@ allowed. The application that serves the sub-requests responds in
 three possible ways.
 
 1. If a user is not authenticated (no authentication cookie set), HTTP
- status code 401 is returned. HTTP server intercepts this code and
- redirects the user to a login page, where the user is requested to
- sign-in with BrowserId.
+   status code 401 is returned. HTTP server intercepts this code and
+   redirects the user to a login page, where the user is requested to
+   sign-in with BrowserId.
 
-![User not authenticated](img/not-authenticated.png)
+![User not authenticated](https://github.com/wrr/wwwhisper/raw/master/img/not-authenticated.png)
 
 2. If a user is authenticated and is authorized to access the
- requested resource (user's email is on a list of allowed users),
- sub-request returns HTTP status code 200. HTTP server intercepts this
- code and allows the original request.
+   requested resource (user's email is on a list of allowed users),
+   sub-request returns HTTP status code 200. HTTP server intercepts this
+   code and allows the original request.
 
-![User authorized](img/authorized.png)
+![User authorized](https://github.com/wrr/wwwhisper/raw/master/img/authorized.png)
 
 3. If a user is authenticated but is not authorized to access the
- requested resource, sub-request return HTTP status code 403, which is
- returned to the user.
-![User not authorized](img/not-authorized.png)
+   requested resource, sub-request return HTTP status code 403, which is
+   returned to the user.
+![User not authorized](https://github.com/wrr/wwwhisper/raw/master/img/not-authorized.png)
 
 
