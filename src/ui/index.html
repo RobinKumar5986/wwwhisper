@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <title>Web Access Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <style>
+      body {
+      padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="access_control.css" rel="stylesheet">
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+        <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+
+    <!-- Le fav and touch icons -->
+    <link rel="shortcut icon" href="http://twitter.github.com/bootstrap/examples/images/favicon.ico">
+    <link rel="apple-touch-icon" href="http://twitter.github.com/bootstrap/examples/images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="http://twitter.github.com/bootstrap/examples/images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="http://twitter.github.com/bootstrap/examples/images/apple-touch-icon-114x114.png">
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="#">
+            UI mock of access control for <span class='resources-root'></span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="alert alert-success">
+        <a class="close" data-dismiss="alert">&times;</a>
+        <p>
+          Left side: resources under <span class='resources-root'></span>
+          to which Alice wants to grant access. <br />
+          Right side: emails of users that can access a select resource.
+        </p>
+
+        <p>
+          Granting access to a resource gives also access to all
+          sub-resources unless a more specific access control rule is
+          defined.  The more specific rule overwrites a more generic
+          one.  <!--For example, if a user is on a list granting
+          access to /foo she can access /foo/bar but if there is more
+          specific access control list for /foo/baz and the user is
+          not on this list, she can't access anything under
+          /foo/baz. -->
+        </p>
+
+        <p>
+          Use <i class="icon-envelope"></i> to compose a notification
+          about a shared resource.
+        </p>
+      </div> <!-- /.alert -->
+
+      <div class="tabbable tabs-left">
+        <ul class="nav nav-tabs" id="resource-path-list">
+          <li id="resource-path-list-item">
+            <a class="url" href="#resource-info-list-item" data-toggle="tab">
+              <span class="path">/foo/bar</span>
+              <i class="menu-item icon-remove spaced-left remove-resource"></i>
+              <i class="menu-item icon-envelope notify"></i>
+            </a>
+          </li>
+          <li>
+            <div class="well spaced-top spaced-right" id="add-resource">
+              <input type="text" placeholder="Enter a path to a resource"
+                     id="add-resource-input"/>
+            </div>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="resource-info-list">
+
+          <div class="tab-pane" id="resource-info-list-item">
+            <div class="row">
+              <div class="span4">
+                <ul class="allowed-user-list">
+                  <li id="allowed-user-list-item">
+                    <span class="user-mail">jimi@google.com</span>
+                    <i class="menu-item icon-remove remove-user"></i>
+                  </li>
+                </ul>
+              </div> <!-- /.span4 -->
+            </div> <!-- /.row -->
+
+            <div class="well spaced-top">
+              <input type="text"
+                     placeholder="Enter a person's email to grant her access"
+                     class="add-allowed-user input-wide"/>
+            </div>
+          </div> <!-- /.tab-pane -->
+
+        </div> <!-- /.tab-content -->
+      </div> <!-- /.tabbable -->
+
+
+      <div class="alert alert-success">
+        <a class="close" data-dismiss="alert">&times;</a>
+
+        <p>
+          Use <i class="icon-search"></i> to quickly check which
+          resources a person can access (green color). <br />
+          Use <i class="icon-envelope"></i> to compose a notification
+          about all resources shared with a person.
+        </p>
+      </div>  <!-- /.alert -->
+
+      <h3>Contacts</h3>
+      <div class="row">
+        <div class="span4">
+          <ul id="contact-list">
+            <li class="contact-list-item">
+              <span class="user-mail">
+                jimi@example.com
+              </span>
+              <i class="menu-item icon-remove spaced-left remove-user"></i>
+              <i class="menu-item icon-envelope notify"></i>
+              <i class="menu-item icon-search highlight"></i>
+            </li>
+          </ul>
+        </div> <!-- /.span4 -->
+      </div> <!-- /.row -->
+
+
+      <div class="alert alert-warning">
+        <a class="close" data-dismiss="alert">&times;</a>
+
+        <p>
+        This mock demonstrates only the most basic functionality that
+        the access management application should offer.
+        <h3>TODO:</h3>
+        <ul>
+          <li>Grouping emails (work, family, etc.).</li>
+          <li>Drag & drop.</li>
+          <li>Sorting resources and contacts.</li>
+        </ul>
+        </p>
+      </div>  <!-- /.alert -->
+
+    </div> <!-- /.container -->
+
+    <div class="modal hide fade" id="notify-modal">
+      <div class="modal-header">
+        <a class="close" data-dismiss="modal">&times;</a>
+        <h3>Email invitation</h3>
+      </div>
+      <div class="modal-body">
+        <form class="form-horizontal in-dialog">
+          <div class="control-group">
+            <label class="control-label" for="notify-to">To</label>
+            <div class="controls">
+              <input type="text" class="input-xlarge input-wide" id="notify-to"
+                     value="jimi@example.com" />
+            </div>
+            <label class="control-label" for="notify-subject">Subject</label>
+            <div class="controls">
+              <input type="text" class="input-xlarge input-wide"
+                     id="notify-subject" value="Invitation" />
+            </div>
+          </div>
+          <div class="control-group">
+            <div class="controls">
+              <textarea class="input-xlarge input-wide" id="notify-body"
+                        rows="7">
+              </textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <a href="#" class="btn btn-primary">Send</a>
+        <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+      </div>
+    </div>
+
+    <!-- Le javascript
+         ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="assets/js/jquery.js"></script>
+    <script src="assets/js/bootstrap-transition.js"></script>
+    <script src="assets/js/bootstrap-alert.js"></script>
+    <script src="assets/js/bootstrap-modal.js"></script>
+    <script src="assets/js/bootstrap-dropdown.js"></script>
+    <script src="assets/js/bootstrap-scrollspy.js"></script>
+    <script src="assets/js/bootstrap-tab.js"></script>
+    <script src="assets/js/bootstrap-tooltip.js"></script>
+    <script src="assets/js/bootstrap-popover.js"></script>
+    <script src="assets/js/bootstrap-button.js"></script>
+    <script src="assets/js/bootstrap-collapse.js"></script>
+    <script src="assets/js/bootstrap-carousel.js"></script>
+    <script src="assets/js/bootstrap-typeahead.js"></script>
+    <script src="access_control.js"></script>
+
+</body></html>
