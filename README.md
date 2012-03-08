@@ -7,7 +7,7 @@ not concerned what the resources are, it can be used to restrict
 access to any resource served by HTTP server. The project will provide
 a sample implementation of the access control layer and a guidance how
 to use it with popular HTTP servers. The project will also provide
-[sampleUI](http://mixedbit.org/wwwhisper) for granting and revoking
+[sample UI](http://mixedbit.org/wwwhisper) for granting and revoking
 access to web resources.
 
 
@@ -61,7 +61,7 @@ Alice would like to share resources in a convenient way:
    server or host it by herself.
 
 
-HTTP + BrowserId based access control = open sharing
+HTTP + BrowserID based access control = flexible, open sharing
 ---------------------------------------------------
 
 The great thing about HTTP protocol is its generality. The protocol
@@ -94,7 +94,7 @@ three possible ways.
 1. If a user is not authenticated (no authentication cookie set), HTTP
    status code 401 is returned. HTTP server intercepts this code and
    redirects the user to a login page, where the user is requested to
-   sign-in with BrowserId. [See flow diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authenticated.png)
+   sign-in with BrowserID. [See flow diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authenticated.png)
 
 2. If a user is authenticated and is authorized to access the
    requested resource (user's email is on a list of allowed users),
