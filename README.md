@@ -61,22 +61,6 @@ Alice would like to share resources in a convenient way:
    server or host it by herself.
 
 
-HTTP + BrowserID based access control = flexible, open sharing
----------------------------------------------------
-
-The great thing about HTTP protocol is its generality. The protocol
-specifies resource identifiers (URLs) and a set methods that can be
-performed on resources (GET, POST, PUT, etc.). It does not specify
-what resources are and what the methods do, this is left to
-applications. To enable flexible sharing, access control layer should
-match the level of generality of HTTP. The layer should allow to
-specify which users can perform which methods on which resources. This
-is the lowest level, that usually won't be exposed to the user that
-shares resources, the user will configure access in more granular way
-(say specify a set of users that can execute all methods on resources
-under a given path).
-
-
 Technical details
 -----------------
 
