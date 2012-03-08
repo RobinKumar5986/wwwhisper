@@ -18,15 +18,15 @@ System that allows sharing with limited audience needs to identify
 users to ensure only authorized ones can access a protected
 resource. Today, the most popular way of identifying allowed audience
 are application specific identifiers. This approach enables sharing
-only with other users of the application and introduces chicken and
-egg dilemma - a new application that enables sharing of private
-resources is not very useful, because it has few users, but it won't
-have more users until it is useful. Even Facebook, the most popular
-application that enables sharing, is very limiting in who you can
-share with. Facebook has about 900 million users. This seems a lot,
-but it is less than a half of the Internet population, which means if
-you need to share something with 10 random Internet users, the chance
-that all of them use Facebook is less than one in a thousand (0.5^10).
+only with other users of the application and introduces critical mass
+problem - a new application that enables sharing of private resources
+is not very useful, because it has few users, but it won't have more
+users until it is useful. Even Facebook, the most popular application
+that enables sharing, is very limiting in who you can share
+with. Facebook has about 900 million users. This seems a lot, but it
+is less than a half of the Internet population, which means if you
+need to share something with 10 random Internet users, the chance that
+all of them use Facebook is less than one in a thousand (0.5^10).
 
 A better approach is to use open standard of identifying users. There
 are several such standards OpenID, WebID, BrowserID. From a point of
