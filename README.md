@@ -83,7 +83,7 @@ Technical details
 A web server Alice uses is configured to authorize access to all
 resources within /protected path. Alice uses a generic web application
 to grant/revoke access to resources in /protected and to optionally
-notify users about shared resources. See [prototype of
+notify users about shared resources. See [prototype
 UI](http://mixedbit.org/wwwhisper) of such application.
 
 Each time the request is made to a protected resource, the web server
@@ -94,15 +94,18 @@ three possible ways.
 1. If a user is not authenticated (no authentication cookie set), HTTP
    status code 401 is returned. HTTP server intercepts this code and
    redirects the user to a login page, where the user is requested to
-   sign-in with BrowserID. [See flow diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authenticated.png)
+   sign-in with BrowserID. [See flow
+   diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authenticated.png)
 
 2. If a user is authenticated and is authorized to access the
    requested resource (user's email is on a list of allowed users),
-   sub-request returns HTTP status code 200. HTTP server intercepts this
-   code and allows the original request. [See flow diagram](https://github.com/wrr/wwwhisper/raw/master/img/authorized.png)
+   sub-request returns HTTP status code 200. HTTP server intercepts
+   this code and allows the original request. [See flow
+   diagram](https://github.com/wrr/wwwhisper/raw/master/img/authorized.png)
 
 3. If a user is authenticated but is not authorized to access the
-   requested resource, sub-request return HTTP status code 403, which is
-   returned to the user. [See flow diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authorized.png)
+   requested resource, sub-request return HTTP status code 403, which
+   is returned to the user. [See flow
+   diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authorized.png)
 
 
