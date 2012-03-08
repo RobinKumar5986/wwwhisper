@@ -3,12 +3,12 @@ audience. It specifies a generic HTTP access control layer, that
 grants access to HTTP resources based on users' emails.  BrowserID
 (aka Persona) from Mozilla is used to prove that a visitor owns an
 allowed email. WWWhisper is not an application nor a platform. It is
-not concerned what the resources are, it can be used to restrict
+not concerned whit what the resources are, it can be used to restrict
 access to any resource served by HTTP server. The project will provide
 a sample implementation of the access control layer and a guidance how
 to use it with popular HTTP servers. The project will also provide
-[sample UI](http://mixedbit.org/protected/wwwhisper) for granting and revoking
-access to web resources.
+[sample UI](http://mixedbit.org/protected/wwwhisper) for granting and
+revoking access to web resources.
 
 
 Introduction
