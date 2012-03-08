@@ -104,7 +104,7 @@ three possible ways.
    diagram](https://github.com/wrr/wwwhisper/raw/master/img/authorized.png)
 
 3. If a user is authenticated but is not authorized to access the
-   requested resource, sub-request return HTTP status code 403, which
+   requested resource, sub-request returns HTTP status code 403, which
    is returned to the user. [See flow
    diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authorized.png)
 
