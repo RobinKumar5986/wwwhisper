@@ -94,20 +94,15 @@ three possible ways.
 1. If a user is not authenticated (no authentication cookie set), HTTP
    status code 401 is returned. HTTP server intercepts this code and
    redirects the user to a login page, where the user is requested to
-   sign-in with BrowserId.
-
-![User not authenticated](https://github.com/wrr/wwwhisper/raw/master/img/not-authenticated.png)
+   sign-in with BrowserId. [See flow diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authenticated.png)
 
 2. If a user is authenticated and is authorized to access the
    requested resource (user's email is on a list of allowed users),
    sub-request returns HTTP status code 200. HTTP server intercepts this
-   code and allows the original request.
-
-![User authorized](https://github.com/wrr/wwwhisper/raw/master/img/authorized.png)
+   code and allows the original request. [See flow diagram](https://github.com/wrr/wwwhisper/raw/master/img/authorized.png)
 
 3. If a user is authenticated but is not authorized to access the
    requested resource, sub-request return HTTP status code 403, which is
-   returned to the user.
-![User not authorized](https://github.com/wrr/wwwhisper/raw/master/img/not-authorized.png)
+   returned to the user. [See flow diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authorized.png)
 
 
