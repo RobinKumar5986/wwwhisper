@@ -14,10 +14,10 @@ access to web resources.
 Introduction
 ------------
 
-System that allows sharing of resources with limited audience needs to
-identify users to ensure only allowed ones can access a protected
+System that allows sharing with limited audience needs to identify
+users to ensure only authorized ones can access a protected
 resource. Today, the most popular way of identifying allowed audience
-are application specific identifiers. This approach allows sharing
+are application specific identifiers. This approach enables sharing
 only with other users of the application and introduces chicken and
 egg dilemma - a new application that enables sharing of private
 resources is not very useful, because it has few users, but it won't
@@ -30,7 +30,7 @@ that all of them use Facebook is less than one in a thousand (0.5^10).
 
 A better approach is to use open standard of identifying users. There
 are several such standards OpenID, WebID, BrowserID. From a point of
-view of sharing, BrowserID is the best choice, because it is based on
+view of sharing BrowserID is the best choice, because it is based on
 email, which almost every Internet user has. BrowserID allows owner of
 even the smallest site to share resources with audience select from
 the whole Internet population! Another nice feature of email based ids
