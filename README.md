@@ -1,7 +1,3 @@
-WWWhisper
-=========
-
-
 WWWhisper aims to simplify sharing of Web resources with limited
 audience. It specifies a generic HTTP access control layer, that
 grants access to HTTP resources based on users' emails.
@@ -44,6 +40,7 @@ Use cases
 ---------
 
 Lets consider an example of Alice. Alice has following resources to share:
+
 *  A private blog that she would like to share with her family and friends.
 *  A work related wiki that she would like to be share with her colleagues.
 *  A site created for a conference that Alice co-organized.  Alice would
@@ -52,6 +49,7 @@ Lets consider an example of Alice. Alice has following resources to share:
    organizers should be able to submit photos from the conference.
 
 Alice would like to share resources in a convenient way:
+
 *  She would like to easily grant and revoke access to her sites and check
    who can access what.
 *  She wouldn't like anyone to create yet another account and manage yet
