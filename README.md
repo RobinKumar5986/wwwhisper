@@ -31,7 +31,7 @@ that all of them use Facebook is less than one in a thousand (0.5^10).
 A better approach is to use open standard of identifying users. There
 are several such standards OpenID, WebID, BrowserID. From a point of
 view of sharing, BrowserID is the best choice, because it is based on
-emails, which almost every Internet user has. BrowserID allows user of
+email, which almost every Internet user has. BrowserID allows owner of
 even the smallest site to share resources with audience select from
 the whole Internet population! Another nice feature of email based ids
 is that emails can be used to notify users about shared resources.
