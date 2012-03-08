@@ -1,3 +1,7 @@
+WWWhisper
+=========
+
+
 WWWhisper aims to simplify sharing of Web resources with limited
 audience. It specifies a generic HTTP access control layer, that
 grants access to HTTP resources based on users' emails.
@@ -7,7 +11,7 @@ platform. It is not concerned what the resources are, it can be used
 to restrict access to any resource served by HTTP server. The project
 will provide a sample implementation of the access control layer and a
 guidance how to use it with popular HTTP servers. The project will
-also provide a sample UI for granting and revoking access to web
+also provide sample UI for granting and revoking access to web
 resources.
 
 
@@ -83,7 +87,7 @@ resources within /protected path.
 
 Alice uses a generic web application to grant/revoke access to
 resources in /protected and to optionally notify users about shared
-resources. See [prototype of the UI](http://mixedbit.org/wwwhisper) of
+resources. See [prototype of UI](http://mixedbit.org/wwwhisper) of
 such application.
 
 Each time the request is made to a protected resource, the web server
