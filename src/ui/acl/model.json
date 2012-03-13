@@ -1,0 +1,59 @@
+{
+    "resourcesRoot" : "mixedbit.org/protected",
+    "mockMode": true,
+    "resources" : [
+      {
+        "path": "/photo-album",
+        "allowedUsers": [
+          "vito@genco-pura.com",
+          "michael@genco-pura.com",
+          "sonny@genco-pura.com",
+          "clemenza@genco-pura.com",
+          "alice@wonderland.org"
+        ]
+      },
+      {
+        "path": "/work-wiki",
+        "allowedUsers": [
+          "tony@montana-co.com",
+          "sosa@plantation.bo",
+          "clemenza@genco-pura.com",
+          "alice@wonderland.org"
+        ]
+      },
+      {
+        "path": "/conference/papers",
+        "allowedUsers": [
+          "profFoo@universityA.org",
+          "drBar@universityB.com",
+          "msBaz@universityC.edu",
+          "alice@wonderland.org"
+        ]
+      },
+      {
+        "path": "/conference/upload-photos",
+        "allowedUsers": [
+          "drBar@universityB.com",
+          "alice@wonderland.org"
+        ]
+      },
+      {
+        "path": "/wwwhisper",
+        "allowedUsers": [
+          "alice@wonderland.org"
+        ]
+      }
+    ],
+    "contacts" : [
+      "alice@wonderland.org",
+      "vito@genco-pura.com",
+      "michael@genco-pura.com",
+      "sonny@genco-pura.com",
+      "clemenza@genco-pura.com",
+      "tony@montana-co.com",
+      "sosa@plantation.bo",
+      "profFoo@universityA.org",
+      "drBar@universityB.com",
+      "msBaz@universityC.edu"
+    ]
+}

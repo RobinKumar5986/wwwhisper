@@ -2,64 +2,7 @@
   'use strict';
   var model, view, refresh;
 
-  model = {
-    resourcesRoot : 'mixedbit.org/protected',
-    resources : [
-      {
-        path: '/photo-album',
-        allowedUsers: [
-          'vito@genco-pura.com',
-          'michael@genco-pura.com',
-          'sonny@genco-pura.com',
-          'clemenza@genco-pura.com',
-          'alice@wonderland.org'
-        ]
-      },
-      {
-        path: '/work-wiki',
-        allowedUsers: [
-          'tony@montata-co.com',
-          'sosa@plantation.bo',
-          'clemenza@genco-pura.com',
-          'alice@wonderland.org'
-        ]
-      },
-      {
-        path: '/conference/papers',
-        allowedUsers: [
-          'profFoo@universityA.org',
-          'drBar@universityB.com',
-          'msBaz@universityC.edu',
-          'alice@wonderland.org'
-        ]
-      },
-      {
-        path: '/conference/upload-photos',
-        allowedUsers: [
-          'drBar@universityB.com',
-          'alice@wonderland.org'
-        ]
-      },
-      {
-        path: '/wwwhisper',
-        allowedUsers: [
-          'alice@wonderland.org'
-        ]
-      }
-    ],
-    contacts : [
-      'alice@wonderland.org',
-      'vito@genco-pura.com',
-      'michael@genco-pura.com',
-      'sonny@genco-pura.com',
-      'clemenza@genco-pura.com',
-      'tony@montata-co.com',
-      'sosa@plantation.bo',
-      'profFoo@universityA.org',
-      'drBar@universityB.com',
-      'msBaz@universityC.edu',
-    ]
-  };
+  model = null;
 
   view = {
     resourcePath : null,
@@ -110,18 +53,91 @@
     return $('#resource-path-list').find('.active').index();
   }
 
-  function allowAccessByUser(resourceId, userMailArg) {
-    var userMail = $.trim(userMailArg);
+  function mockAjaxCalls() {
+    return model !== null && model.mockMode;
+  }
+
+  function ajax(method, resource, params, successCallback) {
+    if (!mockAjaxCalls()) {
+      $.ajax({
+        url: 'acl/' + resource,
+        type: method,
+        data: JSON.stringify(params),
+        dataType: method === 'GET' ?  'json' : 'text',
+        success: successCallback,
+        error: function(jqXHR) {
+          $('body').html(jqXHR.responseText);
+        }
+      });
+    } else {
+      successCallback();
+    }
+  }
+
+  function getModel() {
+    ajax('GET', 'model.json', {}, function(result) {
+      model = result;
+      $('.resources-root').html(model.resourcesRoot);
+      refresh();
+    });
+  }
+
+  function addContact(userMail, onSuccessCallback) {
+    ajax('PUT', 'contact', {email: userMail},
+         function() {
+           model.contacts.push(userMail);
+           refresh();
+           onSuccessCallback();
+         });
+  }
+
+  function removeContact(userMail) {
+    ajax('DELETE', 'contact', {email: userMail},
+         function() {
+           $.each(model.resources, function(resourceId, resourceValue) {
+             if (inArray(userMail, resourceValue.allowedUsers)) {
+               removeFromArray(userMail, resourceValue.allowedUsers);
+             }
+           });
+           removeFromArray(userMail, model.contacts);
+           refresh();
+         });
+  }
+
+  function allowAccessByUser(userMailArg, resourceId) {
+    var userMail, resource, grantPermissionCallback;
+    userMail = $.trim(userMailArg);
+    resource = model.resources[resourceId];
     if (userMail.length === 0
         || inArray(userMail, model.resources[resourceId].allowedUsers)) {
       return;
     }
-    if (inArray(userMail, model.contacts)) {
-      model.contacts.push(userMail);
+    grantPermissionCallback = function() {
+      ajax('PUT', 'permission', {email: userMail,
+                                 path: resource.path},
+           function() {
+             resource.allowedUsers.push(userMail);
+             refresh();
+             $('#' + resourceInfoId(resourceId) + ' ' + '.add-allowed-user')
+               .focus();
+           });
+    };
+
+    if (!inArray(userMail, model.contacts)) {
+      addContact(userMail, grantPermissionCallback);
+    } else {
+      grantPermissionCallback();
     }
-    model.resources[resourceId].allowedUsers.push(userMail);
-    refresh();
-    $('#' + resourceInfoId(resourceId) + ' ' + '.add-allowed-user').focus();
+  }
+
+  // TODO: Fix assymetry (resourceId above, resource here).
+  function revokeAccessByUser( userMail, resource) {
+    ajax('DELETE', 'permission', {email: userMail,
+                               path: resource.path},
+           function() {
+             removeFromArray(userMail, resource.allowedUsers);
+             refresh();
+           });
   }
 
   function addResource(resourcePathArg) {
@@ -130,39 +146,30 @@
         || inArray(resourcePath, allResourcesPaths())) {
       return;
     }
-    model.resources.push({
-      'path': resourcePath,
-      'allowedUsers': []
-    });
-    refresh();
-    $('#add-resource-input').focus();
-  }
-
-  function revokeAccessByUser(userMail, resource) {
-    removeFromArray(userMail, resource.allowedUsers);
-    refresh();
-  }
-
-  function removeContact(userMail) {
-    removeFromArray(userMail, model.contacts);
-    $.each(model.resources, function(resourceId, resourceValue) {
-      if (inArray(userMail, resourceValue.allowedUsers)) {
-        removeFromArray(userMail, resourceValue.allowedUsers);
-      }
-    });
-    refresh();
+    ajax('PUT', 'resource', {path: resourcePath},
+         function() {
+               model.resources.push({
+                 'path': resourcePath,
+                 'allowedUsers': []
+               });
+           refresh();
+           $('#add-resource-input').focus();
+         });
   }
 
   function removeResource(resourceId) {
-    model.resources.splice(resourceId, 1);
-    var selectResourceId = findSelectResourceId();
-    if (selectResourceId === resourceId) {
-      refresh(0);
-    } else if (selectResourceId > resourceId) {
-      refresh(selectResourceId - 1);
-    } else {
-      refresh(selectResourceId);
-    }
+    ajax('DELETE', 'resource', {path: model.resources[resourceId].path},
+         function() {
+           model.resources.splice(resourceId, 1);
+           var selectResourceId = findSelectResourceId();
+           if (selectResourceId === resourceId) {
+             refresh(0);
+           } else if (selectResourceId > resourceId) {
+             refresh(selectResourceId - 1);
+           } else {
+             refresh(selectResourceId);
+           }
+         });
   }
 
   function showResourceInfo(resourceId) {
@@ -215,7 +222,7 @@
       .attr('id', resourceInfoId(resourceId))
       .find('.add-allowed-user')
       .change(function() {
-        allowAccessByUser(resourceId, $(this).val());
+        allowAccessByUser($(this).val(), resourceId);
       })
       .typeahead({
         'source': model.contacts
@@ -299,14 +306,14 @@
 
 
   $(document).ready(function() {
-    $('.resources-root').html(model.resourcesRoot);
     view.resourcePath = $('#resource-path-list-item').clone(true);
     view.resourceInfo = $('#resource-info-list-item').clone(true);
     view.allowedUser = $('#allowed-user-list-item').clone(true);
     view.resourceInfo.find('#allowed-user-list-item').remove();
     view.addResource = $('#add-resource').clone(true);
     view.contact = $('.contact-list-item').clone(true);
-    refresh();
+
+    getModel();
   });
 
 }());
