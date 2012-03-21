@@ -58,6 +58,9 @@
   }
 
   function ajax(method, resource, params, successCallback) {
+    if (model !== null) {
+      params.csrfToken = model.csrfToken;
+    }
     if (!mockAjaxCalls()) {
       $.ajax({
         url: 'acl/' + resource,
@@ -77,7 +80,7 @@
   function getModel() {
     ajax('GET', 'model.json', {}, function(result) {
       model = result;
-      $('.resources-root').html(model.resourcesRoot);
+      $('.resources-root').text(model.resourcesRoot);
       refresh();
     });
   }
@@ -147,11 +150,11 @@
       return;
     }
     ajax('PUT', 'resource', {path: resourcePath},
-         function() {
-               model.resources.push({
-                 'path': resourcePath,
-                 'allowedUsers': []
-               });
+         function(escapedPath) {
+           model.resources.push({
+             'path': escapedPath,
+             'allowedUsers': []
+           });
            refresh();
            $('#add-resource-input').focus();
          });
@@ -212,7 +215,7 @@
     }
     $('#notify-modal')
       .find('#notify-to').attr('value', to.join(', ')).end()
-      .find('#notify-body').html(body).end()
+      .find('#notify-body').text(body).end()
       .modal('show');
   }
 
@@ -232,7 +235,7 @@
     allowedUserList = resourceInfo.find('.allowed-user-list');
     $.each(allowedUsers, function(userIdx, userMail) {
       view.allowedUser.clone(true)
-        .find('.user-mail').html(userMail).end()
+        .find('.user-mail').text(userMail).end()
         .find('.remove-user').click(function() {
           revokeAccessByUser(userMail, model.resources[resourceId]);
         }).end()
@@ -245,7 +248,7 @@
     var contact;
     $.each(model.contacts, function(userIdx, userMail) {
       contact = view.contact.clone(true);
-      contact.find('.user-mail').html(userMail).end()
+      contact.find('.user-mail').text(userMail).end()
         .find('.remove-user').click(function() {
           removeContact(userMail);
         }).end()
@@ -264,7 +267,7 @@
       view.resourcePath.clone(true)
         .attr('id', resourcePathId(resourceId))
         .find('.url').attr('href', '#' + resourceInfoId(resourceId)).end()
-        .find('.path').html(resourceValue.path).end()
+        .find('.path').text(resourceValue.path).end()
         .find('.remove-resource').click(function(event) {
           // Do not show removed resource info.
           event.preventDefault();

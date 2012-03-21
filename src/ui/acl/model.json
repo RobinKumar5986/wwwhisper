@@ -1,6 +1,8 @@
 {
     "resourcesRoot" : "mixedbit.org/protected",
     "mockMode": true,
+    "csrfToken": "123",
+
     "resources" : [
       {
         "path": "/photo-album",
