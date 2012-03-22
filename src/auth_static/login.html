@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <title>Web Access Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="assets/wwwhisper.css" rel="stylesheet">
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+        <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+
+  </head>
+
+  <body>
+    <div class="container hidden">
+    <header class="jumbotron subhead" id="overview">
+         <h1>Protected site</h1>
+         <p class="lead">Access to <span class='site'>this site</span>
+         is restricted. Please sign in with your email:</p>
+         <p>
+           <a href="#" id="browserid" title="Sign-in with BrowserID">
+             <img src="assets/img/sign_in_green.png" alt="Sign in">
+           </a>
+         </p>
+    </header>
+    </div>
+
+
+    <script src="assets/js/jquery.js"></script>
+    <script src="login.js"></script>
+    <script src="https://browserid.org/include.js" type="text/javascript">
+    </script>
+  </body>
+</html>

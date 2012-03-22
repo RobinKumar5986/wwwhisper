@@ -1,3 +1,8 @@
+body {
+ /* to make the container go all the way to the bottom of the topbar */
+ padding-top: 60px;
+}
+
 .menu-item {
   float: right;
   opacity: 0.2;
