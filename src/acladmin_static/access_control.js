@@ -79,6 +79,7 @@
 
   function getModel() {
     ajax('GET', 'model.json', {}, function(result) {
+      // TODO: parse json here.
       model = result;
       $('.resources-root').text(model.resourcesRoot);
       refresh();
