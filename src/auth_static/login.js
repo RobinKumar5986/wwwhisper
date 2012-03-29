@@ -1,44 +1,37 @@
 (function () {
   'use strict';
+  // TODO: can this global be removed?
+  var csrfToken = null;
 
-  // http://stackoverflow.com/questions/1403888/get-url-parameter-with-jquery
-  function getURLParameter(name) {
-    return decodeURI(
-        (RegExp(name + '=' + '(.+?)(&|$)').exec(location.search)||[,''])[1]
-    );
+  // TODO: remove duplication
+  function ajax(method, resource, params, successCallback) {
+    $.ajax({
+      url: '/auth/api/' + resource,
+      type: method,
+      data: JSON.stringify(params),
+      dataType: method === 'GET' ?  'json' : 'text',
+      headers: csrfToken != null ? {'X-CSRFToken' : csrfToken}: {},
+      success: successCallback,
+      error: function(jqXHR) {
+        $('body').html(jqXHR.responseText);
+      }
+    });
   }
 
-
-  // http://stackoverflow.com/questions/3846271/
-  // jquery-submit-post-synchronously-not-ajax
   function sendAssertion(assertion) {
     if (assertion) {
-      $('body').append($('<form/>', {
-        id: 'hidden-form',
-        method: 'POST',
-        action: 'api/browserid/verify/',
-      }));
-
-      $('#hidden-form').append($('<input/>', {
-        type: 'hidden',
-        name: 'assertion',
-        value: assertion.toString()
-      }));
-
-      $('#hidden-form').append($('<input/>', {
-        type: 'hidden',
-        name: 'next',
-        value: getURLParameter('next')
-      }));
-
-      $('#hidden-form').submit();
+      ajax('GET', 'csrftoken/', {}, function(result) {
+        csrfToken = result.csrfToken;
+        ajax('POST', 'verify/', {'assertion' : assertion.toString()},
+             function(result) {
+               window.location.reload(true);
+             });
+      });
     } else {
       alert('BrowserID assertion not set');
     }
   }
 
-  $('.site').text(location.host + getURLParameter('next'));
-  $('.hidden').removeClass('hidden');
   $('#browserid').click(function() {
     navigator.id.get(sendAssertion);
     return false;
