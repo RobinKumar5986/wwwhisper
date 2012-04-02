@@ -31,7 +31,7 @@ class CsrfToken(View):
                             status=200)
 
 def auth(request):
-    print "HELLLLLLLLLLLLLLLLLOW" + str(request) \
+    print "auth request" + str(request) \
         + " PATH: " + str(request.path) \
         + " METHOD: " + str(request.method) \
         + " COOKIES: " + str(request.COOKIES) \
@@ -43,12 +43,12 @@ def auth(request):
     path = request.GET['uri']
     method = request.GET['method']
     if user.is_authenticated():
-        print "Pieknie. Rozpoznalem usera: " + user.email
+        print "user recognized: " + user.email
         if acl.can_access(user.email, path):
-            print "Dostep do " + path + " zezwolony: " + user.email
+            print "access to " + path + " granted for : " + user.email
             return HttpResponse("Hello, world. " + user.email)
         else:
-            print "Dostep do " + path + " zabroniony: " + user.email
+            print "Access to " + path + " denied for: " + user.email
             response = HttpResponse("Not authorized " + user.email, status=401)
             #TODO which page
             response['X-Error-Msg'] = '%s is not allowed to access this page' % (user.email)
@@ -98,7 +98,7 @@ class Logout(View):
 @require_POST
 def verify(request):
     """Process browserid assertions."""
-    print("INVOKEEEEEEEEEEEEEEEEEEEEEEEED")
+    print("verify assertion")
     # redirect_to = request.REQUEST.get(redirect_field_name, '')
     # if not redirect_to:
     #     redirect_to = getattr(settings, 'LOGIN_REDIRECT_URL', '/')
@@ -121,7 +121,7 @@ def verify(request):
         else:
             # TODO: test this.
             print "User " + str(user) + " is not active."
-            HttpResponse("User is not active", status=400)
+            return HttpResponse("User is not active", status=400)
     else:
-        print "INVALID FORM"
-    return HttpResponse("blebleble", status=400)
+        print "assertion not set"
+    return HttpResponse("assertion not set", status=400)

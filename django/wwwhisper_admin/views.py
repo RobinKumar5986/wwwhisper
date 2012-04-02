@@ -94,9 +94,8 @@ def validate_path(path):
 
 class Model(View):
     def get(self, request):
-        print "FIUUUUUUUUU"
         data = model2json(request.session.session_key)
-        print "FFFFIUUUU2 " + str(data) + " session: " \
+        print "model: " + str(data) + " session: " \
             + request.session.session_key
         return HttpResponse(data, mimetype="application/json")
 
