@@ -5,8 +5,8 @@ from django.contrib.auth.models import User
 from django.views.generic import View
 from django.core import serializers
 from django.http import HttpResponse
-from auth.models import HttpResource
-from auth.models import HttpPermission
+from wwwhisper_auth.models import HttpResource
+from wwwhisper_auth.models import HttpPermission
 from functools import wraps
 from urlparse import urlparse
 

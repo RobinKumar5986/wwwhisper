@@ -12,8 +12,8 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
-from auth.models import HttpResource
-from auth.models import HttpPermission
+from wwwhisper_auth.models import HttpResource
+from wwwhisper_auth.models import HttpPermission
 #from django_browserid.auth import authenticate
 
 import json
