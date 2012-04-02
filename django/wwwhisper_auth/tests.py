@@ -19,12 +19,12 @@ class Acl(TestCase):
     def test_del_missing_resource(self):
         self.assertFalse(acl.del_resource('/foo/bar'))
 
-    def test_get_resources(self):
+    def test_get_paths(self):
         acl.add_resource('/foo/bar')
         acl.add_resource('/baz/bar')
-        self.assertEqual(sorted(acl.resources()), ['/baz/bar', '/foo/bar'])
+        self.assertEqual(sorted(acl.paths()), ['/baz/bar', '/foo/bar'])
         acl.del_resource('/foo/bar')
-        self.assertEqual(acl.resources(), ['/baz/bar'])
+        self.assertEqual(acl.paths(), ['/baz/bar'])
 
-    def test_get_resources_when_empty(self):
-        self.assertEqual(acl.resources(), [])
+    def test_get_paths_when_empty(self):
+        self.assertEqual(acl.paths(), [])
