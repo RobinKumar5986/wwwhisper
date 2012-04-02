@@ -59,4 +59,5 @@ def revoke_access(email, path):
     return _del(HttpPermission, user__email=email, http_resource=path)
 
 def allowed_emails(path):
-    pass
+    return [permission.user.email for permission in
+            HttpPermission.objects.filter(http_resource=path)]

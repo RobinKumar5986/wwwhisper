@@ -98,15 +98,13 @@ class Acl(TestCase):
         acl.grant_access('bar@example.com', '/foo/bar')
 
         self.assertEqual(['bar@example.com', 'foo@example.com'],
-                         sorted(acl.get_allowed_emails('/foo/bar')))
-        self.assertEqual(['baz@example.com'],
-                         acl.get_allowed_emails('/foo/baz')))
+                         sorted(acl.allowed_emails('/foo/bar')))
+        self.assertEqual(['baz@example.com'], acl.allowed_emails('/foo/baz'))
 
         acl.revoke_access('foo@example.com', '/foo/bar')
-        self.assertEqual(['bar@example.com'],
-                         acl.get_allowed_emails('/foo/baz')))
+        self.assertEqual(['bar@example.com'], acl.allowed_emails('/foo/bar'))
 
-    def test_get_allowed_emails_when_empty():
-        self.assertEqual([], acl.get_allowed_emails('/foo/bar'))
+    def test_get_allowed_emails_when_empty(self):
+        self.assertEqual([], acl.allowed_emails('/foo/bar'))
 
     # TODO: test that removing user and resource revokes access

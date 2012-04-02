@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.views.generic import View
 from django.core import serializers
 from django.http import HttpResponse
-from wwwhisper_auth.models import HttpPermission
 from functools import wraps
 from urlparse import urlparse
 
@@ -19,14 +18,10 @@ import posixpath
 
 #TODO: acladmin ->admin?
 
-def getAllowedUsersList(resourcePath):
-    return [permission.user.email for permission in
-            HttpPermission.objects.filter(http_resource = resourcePath)]
-
 def getResourceList():
     return [ {
             'path': path,
-            'allowedUsers': getAllowedUsersList(path)
+            'allowedUsers': acl.allowed_emails(path)
             } for path in acl.paths()]
 
 def model2json(csrf_token):
