@@ -6,47 +6,45 @@ def _add(model_class, **kwargs):
     resource, created = model_class.objects.get_or_create(**kwargs)
     return created
 
+def _del(model_class, **kwargs):
+    object_to_del = model_class.objects.filter(**kwargs)
+    assert object_to_del.count() <= 1
+    if object_to_del.count() == 0:
+        return False
+    object_to_del.delete()
+    return True
+
+def _find(model_class, **kwargs):
+    count = model_class.objects.filter(**kwargs).count()
+    assert count <= 1
+    return count > 0
+
+def _all(model_class, field):
+    return [object.__dict__[field] for object in model_class.objects.all()]
+
+
 def add_resource(path):
     return _add(HttpResource, path=path)
-#    resource, created = HttpResource.objects.get_or_create(path=path)
-#    return created
 
 def del_resource(path):
-    resource = HttpResource.objects.filter(path=path)
-    assert resource.count() <= 1
-    if resource.count() == 0:
-        return False
-    resource.delete()
-    return True
+    return _del(HttpResource, path=path)
 
 def find_resource(path):
-    count = HttpResource.objects.filter(path=path).count()
-    assert count <= 1
-    return count > 0
+    return _find(HttpResource, path=path)
 
 def paths():
-    return [resource.path for resource in HttpResource.objects.all()]
-
+    return _all(HttpResource, 'path')
 
 def add_user(email):
-    user, created = User.objects.get_or_create(
-        username=email, email=email, is_active=True)
-    return created
+    return _add(User, username=email, email=email, is_active=True)
 
 def del_user(email):
-    user = User.objects.filter(email=email)
-    assert user.count() <= 1
-    if user.count() == 0:
-        return False
-    user.delete()
-    return True
+    return _del(User, email=email)
 
 def find_user(email):
-    count = User.objects.filter(email=email).count()
-    assert count <= 1
-    return count > 0
+    return _find(User, email=email)
 
 def emails():
-    return [user.email for user in User.objects.all()]
+    return _all(User, 'email')
 
 
