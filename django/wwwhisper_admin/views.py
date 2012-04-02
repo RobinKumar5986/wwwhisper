@@ -30,10 +30,6 @@ def getResourceList():
             'allowedUsers': getAllowedUsersList(resource.path)
             } for resource in HttpResource.objects.all()]
 
-def can_access(email, path):
-    return HttpPermission.objects.filter(
-        http_resource = path, user__email = email).count() > 0
-
 def model2json(csrf_token):
     site_url = getattr(settings, 'SITE_URL',
                        'WARNING: SITE_URL is not set')
@@ -169,15 +165,9 @@ class Contact(RestView):
 class Permission(RestView):
     def put(self, request, email, path):
         print "Grant permission to " + path + " for " + email
-        if not acl.find_user(email):
-            return error('Unknown user ' + email)
-        if not acl.find_path(path):
-            return error('Resource does not exist ' + path)
-        if can_access(email, path):
-            return error(email + ' already can access ' + path)
-        user_id = User.objects.get(email=email).id
-        HttpPermission.objects.create(
-            http_resource_id = path, user_id = user_id).save()
+        (success, msg) = acl.grant_access(email, path)
+        if not success:
+            return error(msg)
         return success()
 
     def delete(self, request, email, path):

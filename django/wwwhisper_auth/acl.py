@@ -3,7 +3,7 @@ from wwwhisper_auth.models import HttpResource
 from wwwhisper_auth.models import HttpPermission
 
 def _add(model_class, **kwargs):
-    resource, created = model_class.objects.get_or_create(**kwargs)
+    obj, created = model_class.objects.get_or_create(**kwargs)
     return created
 
 def _del(model_class, **kwargs):
@@ -20,7 +20,7 @@ def _find(model_class, **kwargs):
     return count > 0
 
 def _all(model_class, field):
-    return [object.__dict__[field] for object in model_class.objects.all()]
+    return [obj.__dict__[field] for obj in model_class.objects.all()]
 
 def add_resource(path):
     return _add(HttpResource, path=path)
@@ -46,4 +46,15 @@ def find_user(email):
 def emails():
     return _all(User, 'email')
 
+def can_access(email, path):
+    return _find(HttpPermission, user__email=email, http_resource=path)
+
+def grant_access(email, path):
+    add_user(email)
+    add_resource(path)
+    if can_access(email, path):
+        return False
+    user_id = User.objects.get(email=email).id
+    HttpPermission.objects.create(http_resource_id=path, user_id=user_id).save()
+    return True
 
