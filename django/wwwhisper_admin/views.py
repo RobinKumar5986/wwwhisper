@@ -170,10 +170,8 @@ class Permission(RestView):
 
     def delete(self, request, email, path):
         print "Revoke permission to " + path + " for " + email
-        p = HttpPermission.objects.filter(
-            user__email = email, http_resource = path);
-        if p.count() == 0:
-            return error(email + ' can not access ' + path)
-        p.delete()
+        access_revoked = acl.revoke_access(email, path)
+        if not access_revoked:
+            return error('User already can not access path.')
         return success()
 

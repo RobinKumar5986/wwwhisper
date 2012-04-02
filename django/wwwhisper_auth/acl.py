@@ -57,3 +57,6 @@ def grant_access(email, path):
 
 def revoke_access(email, path):
     return _del(HttpPermission, user__email=email, http_resource=path)
+
+def allowed_emails(path):
+    pass
