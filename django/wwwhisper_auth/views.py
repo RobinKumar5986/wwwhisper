@@ -12,8 +12,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
-from wwwhisper_auth.models import HttpResource
-from wwwhisper_auth.models import HttpPermission
+import wwwhisper_auth.acl as acl
 #from django_browserid.auth import authenticate
 
 import json
@@ -22,21 +21,6 @@ def error(message):
     # TODO: change status.
     return HttpResponse(message, status=400)
 
-def can_access(email, path):
-    longest_path_len = -1
-    longest_path = ""
-    path_len = len(path)
-    for resource in HttpResource.objects.all():
-        l = len(resource.path)
-        if path.startswith(resource.path) and \
-                l > longest_path_len and \
-                (l == path_len or path[l] == '/'):
-            longest_path_len = l
-            longest_path = resource.path
-    print "LONGEST PATH " + longest_path
-    return longest_path_len != -1 and \
-        HttpPermission.objects.filter(user__email = email,
-                                      http_resource = longest_path).count() > 0
 class CsrfToken(View):
 
     @method_decorator(ensure_csrf_cookie)
@@ -60,7 +44,7 @@ def auth(request):
     method = request.GET['method']
     if user.is_authenticated():
         print "Pieknie. Rozpoznalem usera: " + user.email
-        if can_access(user.email, path):
+        if acl.can_access(user.email, path):
             print "Dostep do " + path + " zezwolony: " + user.email
             return HttpResponse("Hello, world. " + user.email)
         else:

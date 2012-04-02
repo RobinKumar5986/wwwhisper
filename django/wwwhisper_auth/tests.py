@@ -83,6 +83,12 @@ class Acl(TestCase):
         self.assertFalse(acl.grant_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
 
+    def test_grant_access_gives_access_to_subpaths(self):
+        self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/baz'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/baz/bar/'))
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/foo/bar'))
+
     def test_revoke_access(self):
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))

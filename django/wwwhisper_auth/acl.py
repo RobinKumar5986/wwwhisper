@@ -46,9 +46,6 @@ def find_user(email):
 def emails():
     return _all(User, 'email')
 
-def can_access(email, path):
-    return _find(HttpPermission, user__email=email, http_resource=path)
-
 def grant_access(email, path):
     add_user(email)
     add_resource(path)
@@ -61,3 +58,21 @@ def revoke_access(email, path):
 def allowed_emails(path):
     return [permission.user.email for permission in
             HttpPermission.objects.filter(http_resource=path)]
+
+def can_access(email, path):
+    path_len = len(path)
+    longest_path_len = -1
+    longest_path = ""
+    for resource in HttpResource.objects.all():
+        l = len(resource.path)
+        if path.startswith(resource.path) and \
+                l > longest_path_len and \
+                (l == path_len or path[l] == '/'):
+            longest_path_len = l
+            longest_path = resource.path
+    return longest_path_len != -1 and \
+        _find(HttpPermission, user__email=email, http_resource=longest_path)
+
+        # HttpPermission.objects.filter(user__email = email,
+        #                               http_resource = longest_path).count() > 0
+#    return _find(HttpPermission, user__email=email, http_resource=path)
