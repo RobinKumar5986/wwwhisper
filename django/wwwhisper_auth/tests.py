@@ -83,4 +83,13 @@ class Acl(TestCase):
         self.assertFalse(acl.grant_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
 
+    def test_revoke_access(self):
+        self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
+        self.assertTrue(acl.revoke_access('foo@example.com', '/foo/bar'))
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/bar'))
+
+    def test_revoke_non_granted_access(self):
+        self.assertFalse(acl.revoke_access('foo@example.com', '/foo/bar'))
+
     # TODO: test that removing user and resource revokes access

@@ -52,9 +52,8 @@ def can_access(email, path):
 def grant_access(email, path):
     add_user(email)
     add_resource(path)
-    if can_access(email, path):
-        return False
     user_id = User.objects.get(email=email).id
-    HttpPermission.objects.create(http_resource_id=path, user_id=user_id).save()
-    return True
+    return _add(HttpPermission, http_resource_id=path, user_id=user_id)
 
+def revoke_access(email, path):
+    return _del(HttpPermission, user__email=email, http_resource=path)
