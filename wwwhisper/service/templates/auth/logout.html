@@ -1,0 +1,16 @@
+{% extends "auth/base.html" %}
+
+{% block body %}
+<div class="container">
+  <header class="jumbotron subhead" id="overview">
+    <p class="lead">
+      You are authenticated as <i>{{ email }}</i>.<br />
+      <a href="#" id="logout">sign out</a>
+  </header>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/auth/assets/js/jquery.js"></script>
+<script src="/auth/logout.js"></script>
+{% endblock %}
