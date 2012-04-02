@@ -5,7 +5,6 @@ from django.contrib.auth.models import User
 from django.views.generic import View
 from django.core import serializers
 from django.http import HttpResponse
-from wwwhisper_auth.models import HttpResource
 from wwwhisper_auth.models import HttpPermission
 from functools import wraps
 from urlparse import urlparse
@@ -26,9 +25,9 @@ def getAllowedUsersList(resourcePath):
 
 def getResourceList():
     return [ {
-            'path': resource.path,
-            'allowedUsers': getAllowedUsersList(resource.path)
-            } for resource in HttpResource.objects.all()]
+            'path': path,
+            'allowedUsers': getAllowedUsersList(path)
+            } for path in acl.paths()]
 
 def model2json(csrf_token):
     site_url = getattr(settings, 'SITE_URL',
@@ -148,7 +147,7 @@ class Resource(RestView):
 class Contact(RestView):
     def put(self, request, email):
         print "Add contact " + email
-        if not email_valid(email)
+        if not email_valid(email):
             return error('Invalid email format')
         user_added = acl.add_user(email)
         if not user_added:
@@ -165,9 +164,8 @@ class Contact(RestView):
 class Permission(RestView):
     def put(self, request, email, path):
         print "Grant permission to " + path + " for " + email
-        (success, msg) = acl.grant_access(email, path)
-        if not success:
-            return error(msg)
+        if not acl.grant_access(email, path):
+            return error('User already can access path.')
         return success()
 
     def delete(self, request, email, path):
