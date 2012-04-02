@@ -2,13 +2,14 @@ from django.contrib.auth.models import User
 from wwwhisper_auth.models import HttpResource
 from wwwhisper_auth.models import HttpPermission
 
-# def _add(model_class, **kwargs):
-#     resource, created = model_class.objects.get_or_create(**kwargs)
-#     return created
+def _add(model_class, **kwargs):
+    resource, created = model_class.objects.get_or_create(**kwargs)
+    return created
 
 def add_resource(path):
-    resource, created = HttpResource.objects.get_or_create(path=path)
-    return created
+    return _add(HttpResource, path=path)
+#    resource, created = HttpResource.objects.get_or_create(path=path)
+#    return created
 
 def del_resource(path):
     resource = HttpResource.objects.filter(path=path)
