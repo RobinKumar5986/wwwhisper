@@ -59,20 +59,21 @@ def allowed_emails(path):
     return [permission.user.email for permission in
             HttpPermission.objects.filter(http_resource=path)]
 
+# TODO: How to handle trailing '/'? Maybe remove it prior to adding path to db?
 def can_access(email, path):
     path_len = len(path)
-    longest_path_len = -1
-    longest_path = ""
-    for resource in HttpResource.objects.all():
-        l = len(resource.path)
-        if path.startswith(resource.path) and \
-                l > longest_path_len and \
-                (l == path_len or path[l] == '/'):
-            longest_path_len = l
-            longest_path = resource.path
-    return longest_path_len != -1 and \
-        _find(HttpPermission, user__email=email, http_resource=longest_path)
+    longest_match = ""
+    longest_match_len = -1
 
-        # HttpPermission.objects.filter(user__email = email,
-        #                               http_resource = longest_path).count() > 0
-#    return _find(HttpPermission, user__email=email, http_resource=path)
+    for probed_path in paths():
+        probed_path_len = len(probed_path)
+        stripped_probed_path = probed_path.rstrip('/')
+        stripped_probed_path_len = len(stripped_probed_path)
+        if (path.startswith(stripped_probed_path) and
+            probed_path_len > longest_match_len and
+            (stripped_probed_path_len == path_len
+             or path[stripped_probed_path_len] == '/')):
+            longest_match_len = probed_path_len
+            longest_match = probed_path
+    return longest_match_len != -1 and \
+        _find(HttpPermission, user__email=email, http_resource=longest_match)

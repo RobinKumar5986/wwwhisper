@@ -85,9 +85,43 @@ class Acl(TestCase):
 
     def test_grant_access_gives_access_to_subpaths(self):
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
+
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/b'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/baz'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/baz/bar/'))
+
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/ba'))
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/barr'))
         self.assertFalse(acl.can_access('foo@example.com', '/foo/foo/bar'))
+
+    def test_more_specific_path_takes_precedence_over_shorter_path(self):
+        self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
+        self.assertTrue(acl.add_resource('/foo/bar/baz/'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/ba'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/bazz'))
+
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/bar/baz'))
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/bar/baz/'))
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/bar/baz/bam'))
+
+    def test_trailing_slash_ignored(self):
+        self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar/'))
+
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/'))
+
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/barr'))
+        self.assertFalse(acl.can_access('foo@example.com', '/foo/ba/'))
+
+    def test_grant_access_to_root(self):
+        self.assertTrue(acl.grant_access('foo@example.com', '/'))
+
+        self.assertTrue(acl.can_access('foo@example.com', '/'))
+        self.assertTrue(acl.can_access('foo@example.com', '/f'))
+        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/baz'))
 
     def test_revoke_access(self):
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
