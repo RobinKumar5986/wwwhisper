@@ -10,6 +10,7 @@ from wwwhisper_auth.models import HttpPermission
 from functools import wraps
 from urlparse import urlparse
 
+import wwwhisper_auth.acl as acl
 import json
 import string
 import re
@@ -28,9 +29,6 @@ def getResourceList():
             'path': resource.path,
             'allowedUsers': getAllowedUsersList(resource.path)
             } for resource in HttpResource.objects.all()]
-
-def onResourceList(path_arg):
-    return HttpResource.objects.filter(path = path_arg).count() > 0
 
 # Rename (user not contact)
 def getContactList():
@@ -143,19 +141,18 @@ class Resource(RestView):
         (is_correct, result) = validate_path(path)
         if not is_correct:
             return error(result)
-        if onResourceList(result):
+        resource_added = acl.add_resource(path)
+        if not resource_added:
             return error(result + ' already exists')
-        HttpResource(path = result).save()
         # TODO: should each put return result for symetry?
         # TODO: should this be returned as json object?
         return success(result)
 
     def delete(self, request, path):
         print "Remove resource " + path
-        r = HttpResource.objects.filter(path = path)
-        if r.count() == 0:
+        resource_deleted = acl.del_resource(path)
+        if not resource_deleted:
             return error(path + ' does not exist')
-        r.delete()
         return success()
 
 class Contact(RestView):
@@ -183,7 +180,7 @@ class Permission(RestView):
         print "Grant permission to " + path + " for " + email
         if not onContactList(email):
             return error('Unknown user ' + email)
-        if not onResourceList(path):
+        if not acl.resource_exists(path):
             return error('Resource does not exist ' + path)
         if can_access(email, path):
             return error(email + ' already can access ' + path)

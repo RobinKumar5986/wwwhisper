@@ -13,7 +13,10 @@ def del_resource(path):
     resource.delete()
     return True
 
-def resource_exists(path):
+def find_resource(path):
     count = HttpResource.objects.filter(path = path).count()
     assert count <= 1
     return count > 0
+
+def resources():
+    return [resource.path for resource in HttpResource.objects.all()]

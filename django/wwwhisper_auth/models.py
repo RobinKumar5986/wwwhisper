@@ -7,9 +7,14 @@ class HttpResource(models.Model):
     def __unicode__(self):
         return "%s" % (self.path)
 
+def add_resource(path):
+    HttpResource(path = path).save()
+
 class HttpPermission(models.Model):
     http_resource = models.ForeignKey(HttpResource)
+    # TODO: rename to allowed_user
     user = models.ForeignKey(User)
 
     def __unicode__(self):
         return "%s, %s" % (self.http_resource, self.user.email)
+
