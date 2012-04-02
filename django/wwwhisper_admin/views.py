@@ -30,13 +30,6 @@ def getResourceList():
             'allowedUsers': getAllowedUsersList(resource.path)
             } for resource in HttpResource.objects.all()]
 
-# Rename (user not contact)
-def getContactList():
-    return [user.email for user in User.objects.all()]
-
-def onContactList(email_arg):
-    return User.objects.filter(email = email_arg).count() > 0
-
 def can_access(email, path):
     return HttpPermission.objects.filter(
         http_resource = path, user__email = email).count() > 0
@@ -48,7 +41,7 @@ def model2json(csrf_token):
             'resourcesRoot': site_url,
             'csrfToken': csrf_token,
             'resources': getResourceList(),
-            'contacts': getContactList()
+            'contacts': acl.emails()
             })
 
 def success(message=None):
@@ -155,32 +148,30 @@ class Resource(RestView):
             return error(path + ' does not exist')
         return success()
 
+# TODO rename contact
 class Contact(RestView):
     def put(self, request, email):
         print "Add contact " + email
-        if onContactList(email):
-            return error(email + ' already on contact list')
-        if not email_valid(email):
+        if not email_valid(email)
             return error('Invalid email format')
-        user = User.objects.create_user(email, email)
-        user.is_active = True
-        user.save()
+        user_added = acl.add_user(email)
+        if not user_added:
+            return error(email + ' already on contact list')
         return success()
 
     def delete(self, request, email):
         print "Remove contact " + email
-        u = User.objects.filter(email = email)
-        if u.count() == 0:
+        user_deleted = acl.del_user(email)
+        if not user_deleted:
             return error(email + ' is not on contact list')
-        u.delete()
         return success()
 
 class Permission(RestView):
     def put(self, request, email, path):
         print "Grant permission to " + path + " for " + email
-        if not onContactList(email):
+        if not acl.find_user(email):
             return error('Unknown user ' + email)
-        if not acl.resource_exists(path):
+        if not acl.find_path(path):
             return error('Resource does not exist ' + path)
         if can_access(email, path):
             return error(email + ' already can access ' + path)

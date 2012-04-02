@@ -22,7 +22,6 @@ def _find(model_class, **kwargs):
 def _all(model_class, field):
     return [object.__dict__[field] for object in model_class.objects.all()]
 
-
 def add_resource(path):
     return _add(HttpResource, path=path)
 
