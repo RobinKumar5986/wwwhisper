@@ -1,4 +1,6 @@
 from django.test import TestCase
+from wwwhisper_auth.acl import InvalidPath
+
 import wwwhisper_auth.acl as acl
 
 class Acl(TestCase):
@@ -175,4 +177,41 @@ class Acl(TestCase):
         self.assertFalse(acl.is_email_valid('z@y.z@y.z'))
         self.assertFalse(acl.is_email_valid(''))
 
+    def test_encode_path(self):
+        self.assertEqual('/', acl.encode_path('/'))
+        self.assertEqual('/foo', acl.encode_path('/foo'))
+        self.assertEqual('/foo/', acl.encode_path('/foo/'))
+        self.assertEqual('/foo.', acl.encode_path('/foo.'))
+        self.assertEqual('/foo..', acl.encode_path('/foo..'))
+        self.assertEqual('/foo%20bar', acl.encode_path('/foo bar'))
+        self.assertEqual('/foo~', acl.encode_path('/foo~'))
+        self.assertEqual('/foo/bar%21%407%2A', acl.encode_path('/foo/bar!@7*'))
+
+    def test_encode_invalid_path(self):
+        self.assertRaisesRegexp(InvalidPath, "empty", acl.encode_path,
+                                '')
+        self.assertRaisesRegexp(InvalidPath, "empty", acl.encode_path,
+                                ' ')
+        self.assertRaisesRegexp(InvalidPath, "parameters", acl.encode_path,
+                                '/foo;bar')
+        self.assertRaisesRegexp(InvalidPath, "query", acl.encode_path,
+                                '/foo?s=bar')
+        self.assertRaisesRegexp(InvalidPath, "fragment", acl.encode_path,
+                                '/foo#bar')
+        self.assertRaisesRegexp(InvalidPath, "scheme", acl.encode_path,
+                                'file://foo')
+        self.assertRaisesRegexp(InvalidPath, "domain", acl.encode_path,
+                                'http://example.com/foo')
+        self.assertRaisesRegexp(InvalidPath, "port", acl.encode_path,
+                                'http://example.com:81/foo')
+        self.assertRaisesRegexp(InvalidPath, "username", acl.encode_path,
+                                'http://boo@example.com/foo')
+        self.assertRaisesRegexp(InvalidPath, "normalized", acl.encode_path,
+                                '/foo/./')
+        self.assertRaisesRegexp(InvalidPath, "normalized", acl.encode_path,
+                                '/foo/..')
+        self.assertRaisesRegexp(InvalidPath, "normalized", acl.encode_path,
+                                '/foo/../bar/')
+        self.assertRaisesRegexp(InvalidPath, "normalized", acl.encode_path,
+                                '/foo//bar')
     # TODO: test that removing user and location revokes access

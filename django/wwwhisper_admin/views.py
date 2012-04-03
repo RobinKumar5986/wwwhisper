@@ -6,13 +6,9 @@ from django.views.generic import View
 from django.core import serializers
 from django.http import HttpResponse
 from functools import wraps
-from urlparse import urlparse
 
 import wwwhisper_auth.acl as acl
 import json
-import string
-import urllib
-import posixpath
 #TODO: style guide. Cammel names or names with '_'?
 
 #TODO: acladmin ->admin?
@@ -49,39 +45,6 @@ def methodNotAllowed():
 def csrf_token_valid(token, session_key):
     return token == session_key
 
-#TODO: make these 3 symetric
-def validate_path(path):
-    parsed_url = urlparse(path)
-    not_expected = []
-    if parsed_url.scheme != '':
-        not_expected.append("scheme: '%s'" % parsed_url.scheme)
-    if parsed_url.netloc != '':
-        not_expected.append("domain: '%s'" % parsed_url.netloc)
-    if parsed_url.params != '':
-        not_expected.append("parameters: '%s'" % parsed_url.params)
-    if parsed_url.query != '':
-        not_expected.append("query: '%s'" % parsed_url.query)
-    if parsed_url.fragment != '':
-        not_expected.append("fragment: '%s'" % parsed_url.fragment)
-    if parsed_url.port != None:
-        not_expected.append("port: '%d'" % parsed_url.port)
-    if parsed_url.username != None:
-        not_expected.append("username: '%s'" % parsed_url.username)
-    if len(not_expected):
-        return (False, "Invalid path. Specify only a path to a resource " \
-                    "without %s" % string.join(not_expected, ", "))
-    path = parsed_url.path.strip()
-    if path == '':
-        return (False, 'Empty path.')
-    if posixpath.normpath(path) != path:
-        return (False, "Path '%s' should be normalized " \
-                    "(without .., /./, //)" % path)
-    #TODO: test if this makes sense at all.
-    try:
-        path = path.encode('utf-8', 'strict')
-    except UnicodeError, er:
-        return (False, 'Invalid encoding of path %s' % str(er))
-    return (True, urllib.quote(path, '/~'))
 
 class Model(View):
     def get(self, request):
@@ -112,9 +75,10 @@ class RestView(View):
 class Resource(RestView):
     def put(self, request, path):
         print "Add location " + path
-        (is_correct, result) = validate_path(path)
-        if not is_correct:
-            return error(result)
+        try:
+            result = acl.encode_path(path)
+        except acl.InvalidPath, ex:
+            return error(str(ex))
         location_added = acl.add_location(result)
         if not location_added:
             return error(result + ' already exists')
