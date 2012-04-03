@@ -37,7 +37,11 @@ def locations():
     return _all(HttpLocation, 'path')
 
 def is_email_valid(email):
-    pass
+    """Validates email with regexp defined by BrowserId:
+    browserid/browserid/static/dialog/resources/validation.js
+    """
+    return re.match("^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
+                    email) != None
 
 def add_user(email):
     return _add(User, username=email, email=email, is_active=True)

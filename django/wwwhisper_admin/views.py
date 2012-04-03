@@ -11,7 +11,6 @@ from urlparse import urlparse
 import wwwhisper_auth.acl as acl
 import json
 import string
-import re
 import urllib
 import posixpath
 #TODO: style guide. Cammel names or names with '_'?
@@ -49,14 +48,6 @@ def methodNotAllowed():
 
 def csrf_token_valid(token, session_key):
     return token == session_key
-
-def email_valid(email):
-    """Validates email with regexp defined by BrowserId:
-    browserid/static/dialog/resources/validation.js
-    """
-    return re.match(
-        "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
-        email) != None;
 
 #TODO: make these 3 symetric
 def validate_path(path):
@@ -124,7 +115,7 @@ class Resource(RestView):
         (is_correct, result) = validate_path(path)
         if not is_correct:
             return error(result)
-        location_added = acl.add_location(path)
+        location_added = acl.add_location(result)
         if not location_added:
             return error(result + ' already exists')
         # TODO: should each put return result for symetry?
@@ -142,7 +133,7 @@ class Resource(RestView):
 class Contact(RestView):
     def put(self, request, email):
         print "Add contact " + email
-        if not email_valid(email):
+        if not acl.is_email_valid(email):
             return error('Invalid email format')
         user_added = acl.add_user(email)
         if not user_added:
