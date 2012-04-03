@@ -2,32 +2,32 @@ from django.test import TestCase
 import wwwhisper_auth.acl as acl
 
 class Acl(TestCase):
-    def test_add_resource(self):
-        self.assertFalse(acl.find_resource('/foo/bar'))
-        self.assertTrue(acl.add_resource('/foo/bar'))
-        self.assertTrue(acl.find_resource('/foo/bar'))
+    def test_add_location(self):
+        self.assertFalse(acl.find_location('/foo/bar'))
+        self.assertTrue(acl.add_location('/foo/bar'))
+        self.assertTrue(acl.find_location('/foo/bar'))
 
-    def test_add_resource_twice(self):
-        self.assertTrue(acl.add_resource('/foo/bar'))
-        self.assertFalse(acl.add_resource('/foo/bar'))
+    def test_add_location_twice(self):
+        self.assertTrue(acl.add_location('/foo/bar'))
+        self.assertFalse(acl.add_location('/foo/bar'))
 
-    def test_del_resource(self):
-        self.assertTrue(acl.add_resource('/foo/bar'))
-        self.assertTrue(acl.del_resource('/foo/bar'))
-        self.assertFalse(acl.find_resource('/foo/bar'))
+    def test_del_location(self):
+        self.assertTrue(acl.add_location('/foo/bar'))
+        self.assertTrue(acl.del_location('/foo/bar'))
+        self.assertFalse(acl.find_location('/foo/bar'))
 
-    def test_del_missing_resource(self):
-        self.assertFalse(acl.del_resource('/foo/bar'))
+    def test_del_missing_location(self):
+        self.assertFalse(acl.del_location('/foo/bar'))
 
-    def test_get_paths(self):
-        acl.add_resource('/foo/bar')
-        acl.add_resource('/baz/bar')
-        self.assertEqual(['/baz/bar', '/foo/bar'], sorted(acl.paths()))
-        acl.del_resource('/foo/bar')
-        self.assertEqual(['/baz/bar'], acl.paths())
+    def test_get_locations(self):
+        acl.add_location('/foo/bar')
+        acl.add_location('/baz/bar')
+        self.assertListEqual(['/baz/bar', '/foo/bar'], sorted(acl.locations()))
+        acl.del_location('/foo/bar')
+        self.assertListEqual(['/baz/bar'], acl.locations())
 
-    def test_get_paths_when_empty(self):
-        self.assertEqual([], acl.paths())
+    def test_get_locations_when_empty(self):
+        self.assertEqual([], acl.locations())
 
     def test_add_user(self):
         self.assertFalse(acl.find_user('foo@example.com'))
@@ -49,41 +49,42 @@ class Acl(TestCase):
     def test_get_emails(self):
         acl.add_user('foo@example.com')
         acl.add_user('bar@example.com')
-        self.assertEqual(['bar@example.com', 'foo@example.com'],
-                         sorted(acl.emails()))
+        self.assertListEqual(['bar@example.com', 'foo@example.com'],
+                             sorted(acl.emails()))
         acl.del_user('foo@example.com')
-        self.assertEqual(['bar@example.com'], acl.emails())
+        self.assertListEqual(['bar@example.com'], acl.emails())
 
     def test_get_emails_when_empty(self):
         self.assertEqual([], acl.emails())
 
     def test_grant_access(self):
         acl.add_user('foo@example.com')
-        acl.add_resource('/foo/bar')
+        acl.add_location('/foo/bar')
         self.assertFalse(acl.can_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
 
+    def test_grant_access_to_non_existing_location(self):
+        acl.add_user('foo@example.com')
+        self.assertFalse(acl.find_location('/foo/bar'))
+        self.assertRaises(LookupError, acl.grant_access,
+                          'foo@example.com', '/foo/bar')
+
     def test_grant_access_for_non_existing_user(self):
-        acl.add_resource('/foo/bar')
+        acl.add_location('/foo/bar')
         self.assertFalse(acl.find_user('foo@example.com'))
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.find_user('foo@example.com'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
 
-    def test_grant_access_to_non_existing_path(self):
-        acl.add_user('foo@example.com')
-        self.assertFalse(acl.find_resource('/foo/bar'))
-        self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
-        self.assertTrue(acl.find_resource('/foo/bar'))
-        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
-
     def test_grant_access_if_already_granted(self):
+        acl.add_location('/foo/bar')
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
         self.assertFalse(acl.grant_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
 
-    def test_grant_access_gives_access_to_subpaths(self):
+    def test_grant_access_gives_access_to_sublocations(self):
+        acl.add_location('/foo/bar')
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
 
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
@@ -96,9 +97,10 @@ class Acl(TestCase):
         self.assertFalse(acl.can_access('foo@example.com', '/foo/barr'))
         self.assertFalse(acl.can_access('foo@example.com', '/foo/foo/bar'))
 
-    def test_more_specific_path_takes_precedence_over_shorter_path(self):
+    def test_more_specific_location_takes_precedence_over_generic(self):
+        acl.add_location('/foo/bar')
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
-        self.assertTrue(acl.add_resource('/foo/bar/baz/'))
+        acl.add_location('/foo/bar/baz/')
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/ba'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/bazz'))
@@ -108,6 +110,8 @@ class Acl(TestCase):
         self.assertFalse(acl.can_access('foo@example.com', '/foo/bar/baz/bam'))
 
     def test_trailing_slash_ignored(self):
+        # TODO: what about this / here.
+        acl.add_location('/foo/bar/')
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar/'))
 
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
@@ -117,6 +121,7 @@ class Acl(TestCase):
         self.assertFalse(acl.can_access('foo@example.com', '/foo/ba/'))
 
     def test_grant_access_to_root(self):
+        acl.add_location('/')
         self.assertTrue(acl.grant_access('foo@example.com', '/'))
 
         self.assertTrue(acl.can_access('foo@example.com', '/'))
@@ -124,22 +129,28 @@ class Acl(TestCase):
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar/baz'))
 
     def test_revoke_access(self):
+        acl.add_location('/foo/bar')
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
         self.assertTrue(acl.revoke_access('foo@example.com', '/foo/bar'))
         self.assertFalse(acl.can_access('foo@example.com', '/foo/bar'))
 
     def test_revoke_non_granted_access(self):
+        acl.add_location('/foo/bar')
         self.assertFalse(acl.revoke_access('foo@example.com', '/foo/bar'))
 
     def test_get_allowed_emails(self):
+        acl.add_location('/foo/bar')
+        acl.add_location('/foo/baz')
+
         acl.grant_access('foo@example.com', '/foo/bar')
         acl.grant_access('baz@example.com', '/foo/baz')
         acl.grant_access('bar@example.com', '/foo/bar')
 
-        self.assertEqual(['bar@example.com', 'foo@example.com'],
-                         sorted(acl.allowed_emails('/foo/bar')))
-        self.assertEqual(['baz@example.com'], acl.allowed_emails('/foo/baz'))
+        self.assertListEqual(['bar@example.com', 'foo@example.com'],
+                             sorted(acl.allowed_emails('/foo/bar')))
+        self.assertListEqual(['baz@example.com'],
+                             acl.allowed_emails('/foo/baz'))
 
         acl.revoke_access('foo@example.com', '/foo/bar')
         self.assertEqual(['bar@example.com'], acl.allowed_emails('/foo/bar'))
@@ -147,4 +158,4 @@ class Acl(TestCase):
     def test_get_allowed_emails_when_empty(self):
         self.assertEqual([], acl.allowed_emails('/foo/bar'))
 
-    # TODO: test that removing user and resource revokes access
+    # TODO: test that removing user and location revokes access

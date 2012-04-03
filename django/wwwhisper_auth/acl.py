@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from wwwhisper_auth.models import HttpResource
+from wwwhisper_auth.models import HttpLocation
 from wwwhisper_auth.models import HttpPermission
 
 def _add(model_class, **kwargs):
@@ -22,17 +22,17 @@ def _find(model_class, **kwargs):
 def _all(model_class, field):
     return [obj.__dict__[field] for obj in model_class.objects.all()]
 
-def add_resource(path):
-    return _add(HttpResource, path=path)
+def add_location(path):
+    return _add(HttpLocation, path=path)
 
-def del_resource(path):
-    return _del(HttpResource, path=path)
+def del_location(path):
+    return _del(HttpLocation, path=path)
 
-def find_resource(path):
-    return _find(HttpResource, path=path)
+def find_location(path):
+    return _find(HttpLocation, path=path)
 
-def paths():
-    return _all(HttpResource, 'path')
+def locations():
+    return _all(HttpLocation, 'path')
 
 def add_user(email):
     return _add(User, username=email, email=email, is_active=True)
@@ -46,18 +46,21 @@ def find_user(email):
 def emails():
     return _all(User, 'email')
 
-def grant_access(email, path):
+def grant_access(email, location_path):
+    if not find_location(location_path):
+        raise LookupError('Location does not exist')
     add_user(email)
-    add_resource(path)
     user_id = User.objects.get(email=email).id
-    return _add(HttpPermission, http_resource_id=path, user_id=user_id)
+    return _add(HttpPermission, http_location_id=location_path, user_id=user_id)
 
-def revoke_access(email, path):
-    return _del(HttpPermission, user__email=email, http_resource=path)
+def revoke_access(email, location_path):
+#    if not find_location(location_path):
+#        raise LookupError('Location does not exist')
+    return _del(HttpPermission, user__email=email, http_location=location_path)
 
 def allowed_emails(path):
     return [permission.user.email for permission in
-            HttpPermission.objects.filter(http_resource=path)]
+            HttpPermission.objects.filter(http_location=path)]
 
 # TODO: How to handle trailing '/'? Maybe remove it prior to adding path to db?
 def can_access(email, path):
@@ -65,7 +68,7 @@ def can_access(email, path):
     longest_match = ""
     longest_match_len = -1
 
-    for probed_path in paths():
+    for probed_path in locations():
         probed_path_len = len(probed_path)
         stripped_probed_path = probed_path.rstrip('/')
         stripped_probed_path_len = len(stripped_probed_path)
@@ -76,4 +79,4 @@ def can_access(email, path):
             longest_match_len = probed_path_len
             longest_match = probed_path
     return longest_match_len != -1 and \
-        _find(HttpPermission, user__email=email, http_resource=longest_match)
+        _find(HttpPermission, user__email=email, http_location=longest_match)

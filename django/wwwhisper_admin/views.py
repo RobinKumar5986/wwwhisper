@@ -22,7 +22,7 @@ def getResourceList():
     return [ {
             'path': path,
             'allowedUsers': acl.allowed_emails(path)
-            } for path in acl.paths()]
+            } for path in acl.locations()]
 
 def model2json(csrf_token):
     site_url = getattr(settings, 'SITE_URL',
@@ -117,23 +117,24 @@ class RestView(View):
         # TODO: maybe do not pass request?
         return handler(request, **request_args)
 
+# TODO: rename resource -> location
 class Resource(RestView):
     def put(self, request, path):
-        print "Add resource " + path
+        print "Add location " + path
         (is_correct, result) = validate_path(path)
         if not is_correct:
             return error(result)
-        resource_added = acl.add_resource(path)
-        if not resource_added:
+        location_added = acl.add_location(path)
+        if not location_added:
             return error(result + ' already exists')
         # TODO: should each put return result for symetry?
         # TODO: should this be returned as json object?
         return success(result)
 
     def delete(self, request, path):
-        print "Remove resource " + path
-        resource_deleted = acl.del_resource(path)
-        if not resource_deleted:
+        print "Remove location " + path
+        location_deleted = acl.del_location(path)
+        if not location_deleted:
             return error(path + ' does not exist')
         return success()
 
