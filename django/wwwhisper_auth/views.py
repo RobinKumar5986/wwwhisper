@@ -45,7 +45,7 @@ def auth(request):
     if user.is_authenticated():
         print "user recognized: " + user.email
         if acl.can_access(user.email, path):
-            print "access to " + path + " granted for : " + user.email
+            print "Access to " + path + " granted for : " + user.email
             return HttpResponse("Hello, world. " + user.email)
         else:
             print "Access to " + path + " denied for: " + user.email

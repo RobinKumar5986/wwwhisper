@@ -2,6 +2,8 @@ from django.contrib.auth.models import User
 from wwwhisper_auth.models import HttpLocation
 from wwwhisper_auth.models import HttpPermission
 
+import re
+
 def _add(model_class, **kwargs):
     obj, created = model_class.objects.get_or_create(**kwargs)
     return created
@@ -34,6 +36,9 @@ def find_location(path):
 def locations():
     return _all(HttpLocation, 'path')
 
+def is_email_valid(email):
+    pass
+
 def add_user(email):
     return _add(User, username=email, email=email, is_active=True)
 
@@ -54,10 +59,11 @@ def grant_access(email, location_path):
     return _add(HttpPermission, http_location_id=location_path, user_id=user_id)
 
 def revoke_access(email, location_path):
-#    if not find_location(location_path):
-#        raise LookupError('Location does not exist')
+    if not find_location(location_path):
+        raise LookupError('Location does not exist')
     return _del(HttpPermission, user__email=email, http_location=location_path)
 
+# TODO: should this work only for defined locations or check parent locations?
 def allowed_emails(path):
     return [permission.user.email for permission in
             HttpPermission.objects.filter(http_location=path)]

@@ -135,9 +135,13 @@ class Acl(TestCase):
         self.assertTrue(acl.revoke_access('foo@example.com', '/foo/bar'))
         self.assertFalse(acl.can_access('foo@example.com', '/foo/bar'))
 
-    def test_revoke_non_granted_access(self):
+    def test_revoke_access_to_non_existing_location(self):
         acl.add_location('/foo/bar')
         self.assertFalse(acl.revoke_access('foo@example.com', '/foo/bar'))
+
+    def test_revoke_non_granted_access(self):
+        self.assertRaises(LookupError, acl.revoke_access,
+                          'foo@example.com', '/foo/bar')
 
     def test_get_allowed_emails(self):
         acl.add_location('/foo/bar')
