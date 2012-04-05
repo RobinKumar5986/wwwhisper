@@ -1,6 +1,5 @@
 from django.core.context_processors import csrf
 from django.http import HttpResponse
-from django.http import HttpResponseForbidden
 from django.template import Context, loader
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -77,7 +76,7 @@ class Login(RestView):
 
 # TODO: Logout -> signout?
 class Logout(RestView):
-    #should get be at /auth/api/logout not at /auth/logout
+    # TODO: should get be at /auth/api/logout not at /auth/logout?
     def get(self, request):
         user = request.user
         if not user.is_authenticated():
