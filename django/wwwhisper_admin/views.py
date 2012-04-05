@@ -11,22 +11,18 @@ from django.views.decorators.csrf import csrf_protect
 
 import wwwhisper_auth.acl as acl
 import json
-#TODO: style guide. Cammel names or names with '_'?
 
 #TODO: acladmin ->admin?
-
-def getResourceList():
-    return [ {
-            'path': path,
-            'allowedUsers': acl.allowed_emails(path)
-            } for path in acl.locations()]
 
 def model2json():
     site_url = getattr(settings, 'SITE_URL',
                        'WARNING: SITE_URL is not set')
     return json.dumps({
             'resourcesRoot': site_url,
-            'resources': getResourceList(),
+            'resources': [ {
+                    'path': path,
+                    'allowedUsers': acl.allowed_emails(path)
+                    } for path in acl.locations()],
             'contacts': acl.emails()
             })
 

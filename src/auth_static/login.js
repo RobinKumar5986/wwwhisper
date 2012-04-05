@@ -22,7 +22,7 @@
     if (assertion) {
       ajax('GET', 'csrftoken/', {}, function(result) {
         csrfToken = result.csrfToken;
-        ajax('POST', 'verify/', {'assertion' : assertion.toString()},
+        ajax('POST', 'login/', {'assertion' : assertion.toString()},
              function(result) {
                window.location.reload(true);
              });

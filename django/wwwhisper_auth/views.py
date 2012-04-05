@@ -17,8 +17,34 @@ def error(message):
     # TODO: change status.
     return HttpResponse(message, status=400)
 
-class CsrfToken(View):
+class Auth(View):
+    def get(self, request):
+        print "auth request" + str(request) \
+            + " PATH: " + str(request.path) \
+            + " METHOD: " + str(request.method) \
+            + " COOKIES: " + str(request.COOKIES) \
+            + " HOST: " + str(request.get_host())
+        user = request.user
+        if not request.GET.has_key('uri') and request.GET.has_key('method'):
+            # TODO: this gets translated to 500 by nginx
+            return error('Incorrect request params')
+        path = request.GET['uri']
+        method = request.GET['method']
+        if user.is_authenticated():
+            print "user recognized: " + user.email
+            if acl.can_access(user.email, path):
+                print "Access to " + path + " granted for : " + user.email
+                return HttpResponse("Hello, world. " + user.email)
+            else:
+                print "Access to " + path + " denied for: " + user.email
+                response = HttpResponse("Not authorized " + user.email, status=401)
+            #TODO which page
+                response['X-Error-Msg'] = '%s is not allowed to access this page' % (user.email)
+                return response
+        else:
+            return HttpResponseForbidden('Get out!')
 
+class CsrfToken(View):
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         csrf_token = csrf(request).values()[0]
@@ -26,37 +52,43 @@ class CsrfToken(View):
         return HttpResponse(json_response, mimetype="application/json",
                             status=200)
 
-def auth(request):
-    print "auth request" + str(request) \
-        + " PATH: " + str(request.path) \
-        + " METHOD: " + str(request.method) \
-        + " COOKIES: " + str(request.COOKIES) \
-        + " HOST: " + str(request.get_host())
-    user = request.user
-    if not request.GET.has_key('uri') and request.GET.has_key('method'):
-        # TODO: this gets translated to 500 by nginx
-        return error('Incorrect request params')
-    path = request.GET['uri']
-    method = request.GET['method']
-    if user.is_authenticated():
-        print "user recognized: " + user.email
-        if acl.can_access(user.email, path):
-            print "Access to " + path + " granted for : " + user.email
-            return HttpResponse("Hello, world. " + user.email)
+
+class Login(View):
+    def get(self, request):
+        print "Please login" + str(request)
+        t = loader.get_template('auth/login.html')
+        return HttpResponse(t.render(Context({})))
+
+    @method_decorator(csrf_protect)
+    def post(self, request):
+        """Process browserid assertions."""
+        print("verify assertion")
+        # redirect_to = request.REQUEST.get(redirect_field_name, '')
+        # if not redirect_to:
+        #     redirect_to = getattr(settings, 'LOGIN_REDIRECT_URL', '/')
+        # redirect_to_failure = getattr(settings, 'LOGIN_REDIRECT_URL_FAILURE', '/')
+    #print("validating from")
+        request_args = json.loads(request.raw_post_data)
+        assertion = request_args['assertion']
+    #form = BrowserIDForm(data=request.POST)
+    #print("from validation done")
+    # TODO: can it be None?
+        if assertion != None:
+        #assertion = form.cleaned_data['assertion']
+            print "Authenticating user"
+            user = contrib_auth.authenticate(assertion=assertion,
+                                             audience=get_audience(request))
+            print "user authenticated "
+            if user is not None and user.is_active:
+                contrib_auth.login(request, user)
+                return HttpResponse("Login ok")
+            else:
+            # TODO: test this.
+                print "User " + str(user) + " is not active."
+                return HttpResponse("User is not active", status=400)
         else:
-            print "Access to " + path + " denied for: " + user.email
-            response = HttpResponse("Not authorized " + user.email, status=401)
-            #TODO which page
-            response['X-Error-Msg'] = '%s is not allowed to access this page' % (user.email)
-            return response
-    else:
-        return HttpResponseForbidden('Get out!')
-
-
-def login(request):
-    print "Please login" + str(request)
-    t = loader.get_template('auth/login.html')
-    return HttpResponse(t.render(Context({})))
+            print "assertion not set"
+        return HttpResponse("assertion not set", status=400)
 
 def noauthorized(request):
     user = request.user
@@ -90,34 +122,3 @@ class Logout(View):
 
 
 
-@csrf_protect
-@require_POST
-def verify(request):
-    """Process browserid assertions."""
-    print("verify assertion")
-    # redirect_to = request.REQUEST.get(redirect_field_name, '')
-    # if not redirect_to:
-    #     redirect_to = getattr(settings, 'LOGIN_REDIRECT_URL', '/')
-    # redirect_to_failure = getattr(settings, 'LOGIN_REDIRECT_URL_FAILURE', '/')
-    #print("validating from")
-    request_args = json.loads(request.raw_post_data)
-    assertion = request_args['assertion']
-    #form = BrowserIDForm(data=request.POST)
-    #print("from validation done")
-    # TODO: can it be None?
-    if assertion != None:
-        #assertion = form.cleaned_data['assertion']
-        print "Authenticating user"
-        user = contrib_auth.authenticate(assertion=assertion,
-                            audience=get_audience(request))
-        print "user authenticated "
-        if user is not None and user.is_active:
-            contrib_auth.login(request, user)
-            return HttpResponse("Login ok")
-        else:
-            # TODO: test this.
-            print "User " + str(user) + " is not active."
-            return HttpResponse("User is not active", status=400)
-    else:
-        print "assertion not set"
-    return HttpResponse("assertion not set", status=400)
