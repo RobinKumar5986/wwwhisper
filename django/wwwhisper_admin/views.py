@@ -2,12 +2,9 @@
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.views.generic import View
 from django.core import serializers
 from django.http import HttpResponse
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.csrf import csrf_protect
+from wwwhisper_auth.rest_view import RestView
 
 import wwwhisper_auth.acl as acl
 import json
@@ -36,23 +33,6 @@ def error(message):
     # TODO: change status.
     return HttpResponse(message, status=400)
 
-
-class RestView(View):
-    @method_decorator(csrf_protect)
-    def dispatch(self, request):
-        method = request.method.lower()
-        request_args = {}
-
-        if method in self.http_method_names:
-            handler = getattr(
-                self, method, self.http_method_not_allowed)
-            if method != 'get':
-                request_args = json.loads(request.raw_post_data)
-        else:
-            handler = self.http_method_not_allowed
-
-        # TODO: maybe do not pass request?
-        return handler(request, **request_args)
 
 class Model(RestView):
     def get(self, request):

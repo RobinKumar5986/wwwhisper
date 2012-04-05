@@ -8,6 +8,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from django.views.generic import View
 from django_browserid.auth import get_audience
+from rest_view import RestView
 
 import django.contrib.auth as contrib_auth
 import json
@@ -49,42 +50,27 @@ class CsrfToken(View):
                             status=200)
 
 
-class Login(View):
+class Login(RestView):
     def get(self, request):
-        #print "Please login" + str(request)
         t = loader.get_template('auth/login.html')
         return HttpResponse(t.render(Context({})))
 
-    @method_decorator(csrf_protect)
-    def post(self, request):
+    def post(self, request, assertion):
         """Process browserid assertions."""
-        print("verify assertion")
-        # redirect_to = request.REQUEST.get(redirect_field_name, '')
-        # if not redirect_to:
-        #     redirect_to = getattr(settings, 'LOGIN_REDIRECT_URL', '/')
-        # redirect_to_failure = getattr(settings, 'LOGIN_REDIRECT_URL_FAILURE', '/')
-    #print("validating from")
-        request_args = json.loads(request.raw_post_data)
-        assertion = request_args['assertion']
-    #form = BrowserIDForm(data=request.POST)
-    #print("from validation done")
-    # TODO: can it be None?
-        if assertion != None:
-        #assertion = form.cleaned_data['assertion']
-            print "Authenticating user"
-            user = contrib_auth.authenticate(assertion=assertion,
-                                             audience=get_audience(request))
-            print "user authenticated "
-            if user is not None and user.is_active:
-                contrib_auth.login(request, user)
-                return HttpResponse("Login ok")
-            else:
-            # TODO: test this.
-                print "User " + str(user) + " is not active."
-                return HttpResponse("User is not active", status=400)
+        if assertion == None:
+            return error('BrowserId assertion not set')
+        # TODO: is get_audience here correct?
+        user = contrib_auth.authenticate(assertion=assertion,
+                                         audience=get_audience(request))
+        if user:
+            contrib_auth.login(request, user)
+            logger.debug('%s successfully logged.' % (user.email))
+            return HttpResponse("Login successful.")
         else:
-            print "assertion not set"
-        return HttpResponse("assertion not set", status=400)
+            logger.debug('Login failed (nothing shared with user '
+                         'or assertion incorrect).')
+            # TODO: show nice 'nothing shared' page here.
+            return HttpResponse('Login failed', status=400)
 
 # TODO: Logout -> signout?
 class Logout(View):
