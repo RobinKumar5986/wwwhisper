@@ -11,38 +11,34 @@ from django_browserid.auth import get_audience
 
 import django.contrib.auth as contrib_auth
 import json
+import logging
 import wwwhisper_auth.acl as acl
 
+logger = logging.getLogger(__name__)
+
 def error(message):
-    # TODO: change status.
+    logger.debug('error %s' % (message))
     return HttpResponse(message, status=400)
 
 class Auth(View):
     def get(self, request):
-        print "auth request" + str(request) \
-            + " PATH: " + str(request.path) \
-            + " METHOD: " + str(request.method) \
-            + " COOKIES: " + str(request.COOKIES) \
-            + " HOST: " + str(request.get_host())
+        path = request.GET.get('uri', None)
+        if path is None:
+            return error("Auth request should have 'uri' paramater.")
+        debug_msg = "Auth request to '%s'" % (path)
         user = request.user
-        if not request.GET.has_key('uri') and request.GET.has_key('method'):
-            # TODO: this gets translated to 500 by nginx
-            return error('Incorrect request params')
-        path = request.GET['uri']
-        method = request.GET['method']
-        if user.is_authenticated():
-            print "user recognized: " + user.email
+
+        if user and user.is_authenticated():
+            debug_msg += " by '%s'" % (user.email)
             if acl.can_access(user.email, path):
-                print "Access to " + path + " granted for : " + user.email
-                return HttpResponse("Hello, world. " + user.email)
+                logger.debug('%s: access granted.' % (debug_msg))
+                return HttpResponse('Access granted.', status=200)
             else:
-                print "Access to " + path + " denied for: " + user.email
-                response = HttpResponse("Not authorized " + user.email, status=401)
-            #TODO which page
-                response['X-Error-Msg'] = '%s is not allowed to access this page' % (user.email)
-                return response
+                logger.debug('%s: access denied.' % (debug_msg))
+                return HttpResponse('Access denied', status=401)
         else:
-            return HttpResponseForbidden('Get out!')
+            logger.debug('%s: user not authenticated.' % (debug_msg))
+            return HttpResponse('Login required.', status=403)
 
 class CsrfToken(View):
     @method_decorator(ensure_csrf_cookie)
@@ -55,7 +51,7 @@ class CsrfToken(View):
 
 class Login(View):
     def get(self, request):
-        print "Please login" + str(request)
+        #print "Please login" + str(request)
         t = loader.get_template('auth/login.html')
         return HttpResponse(t.render(Context({})))
 
@@ -90,20 +86,6 @@ class Login(View):
             print "assertion not set"
         return HttpResponse("assertion not set", status=400)
 
-def noauthorized(request):
-    user = request.user
-    # TODO: test this.
-    if not user.is_authenticated():
-        return login(request)
-    t = loader.get_template('auth/noauthorized.html')
-    c = Context({'email' : user.email})
-    return HttpResponseForbidden(t.render(c))
-#    if user.is_authenticated():
-#        return HttpResponseForbidden(
-#            '%s is not allowed to access this page' % (user.email))
-#    else:
-#        return HttpResponseForbidden('Get out!')
-
 # TODO: Logout -> signout?
 class Logout(View):
     #should get be at /auth/api/logout not at /auth/logout
@@ -121,4 +103,19 @@ class Logout(View):
         return HttpResponse("Logged out")
 
 
+
+
+def noauthorized(request):
+    user = request.user
+    # TODO: test this.
+    if not user.is_authenticated():
+        return login(request)
+    t = loader.get_template('auth/noauthorized.html')
+    c = Context({'email' : user.email})
+    return HttpResponseForbidden(t.render(c))
+#    if user.is_authenticated():
+#        return HttpResponseForbidden(
+#            '%s is not allowed to access this page' % (user.email))
+#    else:
+#        return HttpResponseForbidden('Get out!')
 
