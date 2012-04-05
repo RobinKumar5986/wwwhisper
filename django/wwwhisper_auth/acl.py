@@ -50,33 +50,6 @@ def is_email_valid(email):
     return re.match("^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
                     email) != None
 
-# def is_path_valid(path):
-#     parsed_url = urlparse(path)
-#     not_expected = []
-#     if parsed_url.scheme != '':
-#         not_expected.append("scheme: '%s'" % parsed_url.scheme)
-#     if parsed_url.netloc != '':
-#         not_expected.append("domain: '%s'" % parsed_url.netloc)
-#     if parsed_url.params != '':
-#         not_expected.append("parameters: '%s'" % parsed_url.params)
-#     if parsed_url.query != '':
-#         not_expected.append("query: '%s'" % parsed_url.query)
-#     if parsed_url.fragment != '':
-#         not_expected.append("fragment: '%s'" % parsed_url.fragment)
-#     if parsed_url.port != None:
-#         not_expected.append("port: '%d'" % parsed_url.port)
-#     if parsed_url.username != None:
-#         not_expected.append("username: '%s'" % parsed_url.username)
-#     if len(not_expected):
-#         return (False, "%s should be removed.'
-#                 % string.join(not_expected, ', '))
-#     path = parsed_url.path.strip()
-#     if path == '':
-#         return (False, 'path should not be empty.')
-
-# def is_path_normalized(path):
-#     pass
-
 def encode_path(path):
     parsed_url = urlparse(path)
     not_expected = []

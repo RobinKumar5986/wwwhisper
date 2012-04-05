@@ -1,7 +1,8 @@
 (function () {
   'use strict';
-  var model, view, refresh;
+  var csrfToken, model, view, refresh;
 
+  csrfToken = null;
   model = null;
 
   view = {
@@ -9,7 +10,7 @@
     resourceInfo : null,
     allowedUser : null,
     addResource : null,
-    contact : null
+    contact : null,
   };
 
   function inArray(value, array) {
@@ -57,16 +58,30 @@
     return model !== null && model.mockMode;
   }
 
+  // TODO: remove duplication.
+  function getCsrfToken(successCallback) {
+    $.ajax({
+      url: '/auth/api/csrftoken/',
+      type: 'GET',
+      dataType: 'json',
+      success: function(result) {
+        csrfToken = result.csrfToken;
+        successCallback();
+      },
+      error: function(jqXHR) {
+        $('body').html(jqXHR.responseText);
+      }
+    })
+  }
+
   function ajax(method, resource, params, successCallback) {
-    if (model !== null) {
-      params.csrfToken = model.csrfToken;
-    }
     if (!mockAjaxCalls()) {
       $.ajax({
         url: 'acl/' + resource,
         type: method,
         data: JSON.stringify(params),
         dataType: method === 'GET' ?  'json' : 'text',
+        headers: {'X-CSRFToken' : csrfToken},
         success: successCallback,
         error: function(jqXHR) {
           $('body').html(jqXHR.responseText);
@@ -317,7 +332,7 @@
     view.addResource = $('#add-resource').clone(true);
     view.contact = $('.contact-list-item').clone(true);
 
-    getModel();
+    getCsrfToken(getModel);
   });
 
 }());

@@ -1,21 +1,17 @@
-import django.contrib.auth as contrib_auth
-import string
-
-from django_browserid.auth import get_audience
-from django.template import Context, loader
-#from django_browserid.context_processors import browserid_form
+from django.core.context_processors import csrf
 from django.http import HttpResponse
 from django.http import HttpResponseForbidden
-from django.core.context_processors import csrf
-from django.views.generic import View
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.csrf import csrf_protect
-from django.views.decorators.http import require_POST
+from django.template import Context, loader
 from django.utils.decorators import method_decorator
-import wwwhisper_auth.acl as acl
-#from django_browserid.auth import authenticate
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_POST
+from django.views.generic import View
+from django_browserid.auth import get_audience
 
+import django.contrib.auth as contrib_auth
 import json
+import wwwhisper_auth.acl as acl
 
 def error(message):
     # TODO: change status.
@@ -87,7 +83,7 @@ class Logout(View):
         c = Context({'email' : user.email})
         return HttpResponse(t.render(c))
 
-    @method_decorator(ensure_csrf_cookie)
+    @method_decorator(csrf_protect)
     def post(self, request):
         contrib_auth.logout(request)
         return HttpResponse("Logged out")

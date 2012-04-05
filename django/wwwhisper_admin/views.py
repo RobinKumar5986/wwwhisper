@@ -5,7 +5,9 @@ from django.contrib.auth.models import User
 from django.views.generic import View
 from django.core import serializers
 from django.http import HttpResponse
-from functools import wraps
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.csrf import csrf_protect
 
 import wwwhisper_auth.acl as acl
 import json
@@ -19,12 +21,11 @@ def getResourceList():
             'allowedUsers': acl.allowed_emails(path)
             } for path in acl.locations()]
 
-def model2json(csrf_token):
+def model2json():
     site_url = getattr(settings, 'SITE_URL',
                        'WARNING: SITE_URL is not set')
     return json.dumps({
             'resourcesRoot': site_url,
-            'csrfToken': csrf_token,
             'resources': getResourceList(),
             'contacts': acl.emails()
             })
@@ -39,28 +40,19 @@ def error(message):
     # TODO: change status.
     return HttpResponse(message, status=400)
 
-def methodNotAllowed():
-    return HttpResponse(status=405)
-
-def csrf_token_valid(token, session_key):
-    return token == session_key
-
 
 class Model(View):
     def get(self, request):
-        data = model2json(request.session.session_key)
+        data = model2json()
         print "model: " + str(data) + " session: " \
             + request.session.session_key
         return HttpResponse(data, mimetype="application/json")
 
 class RestView(View):
+
+    @method_decorator(csrf_protect)
     def dispatch(self, request):
         request_args = json.loads(request.raw_post_data)
-        csrf_token = request_args.pop('csrfToken', None)
-        if csrf_token == None:
-            return error('CSRF protection token missing')
-        if not csrf_token_valid(csrf_token, request.session.session_key):
-            return error('Invalid CSRF protection token')
 
         if request.method.lower() in self.http_method_names:
             handler = getattr(
