@@ -60,7 +60,7 @@ class Login(RestView):
     def post(self, request, assertion):
         """Process browserid assertions."""
         if assertion == None:
-            return error('BrowserId assertion not set')
+            return error('BrowserId assertion not set.')
         # TODO: is get_audience here correct?
         user = contrib_auth.authenticate(assertion=assertion,
                                          audience=get_audience(request))
