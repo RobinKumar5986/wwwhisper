@@ -3,12 +3,10 @@ from django.http import HttpResponse
 from django.http import HttpResponseForbidden
 from django.template import Context, loader
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.http import require_POST
 from django.views.generic import View
 from django_browserid.auth import get_audience
-from rest_view import RestView
+from wwwhisper_auth.rest_view import RestView
 
 import django.contrib.auth as contrib_auth
 import json
@@ -20,6 +18,11 @@ logger = logging.getLogger(__name__)
 def error(message):
     logger.debug('error %s' % (message))
     return HttpResponse(message, status=400)
+
+def access_denied_page(email):
+    t = loader.get_template('auth/noauthorized.html')
+    c = Context({'email' : email})
+    return t.render(c)
 
 class Auth(View):
     def get(self, request):
@@ -36,7 +39,7 @@ class Auth(View):
                 return HttpResponse('Access granted.', status=200)
             else:
                 logger.debug('%s: access denied.' % (debug_msg))
-                return HttpResponse('Access denied', status=401)
+                return HttpResponse(access_denied_page(user.email), status=401)
         else:
             logger.debug('%s: user not authenticated.' % (debug_msg))
             return HttpResponse('Login required.', status=403)
@@ -65,7 +68,7 @@ class Login(RestView):
         if user:
             contrib_auth.login(request, user)
             logger.debug('%s successfully logged.' % (user.email))
-            return HttpResponse("Login successful.")
+            return HttpResponse("Login successful.", status=200)
         else:
             logger.debug('Login failed (nothing shared with user '
                          'or assertion incorrect).')
@@ -73,7 +76,7 @@ class Login(RestView):
             return HttpResponse('Login failed', status=400)
 
 # TODO: Logout -> signout?
-class Logout(View):
+class Logout(RestView):
     #should get be at /auth/api/logout not at /auth/logout
     def get(self, request):
         user = request.user
@@ -83,25 +86,8 @@ class Logout(View):
         c = Context({'email' : user.email})
         return HttpResponse(t.render(c))
 
-    @method_decorator(csrf_protect)
     def post(self, request):
         contrib_auth.logout(request)
-        return HttpResponse("Logged out")
+        return HttpResponse("Logged out", status=200)
 
-
-
-
-def noauthorized(request):
-    user = request.user
-    # TODO: test this.
-    if not user.is_authenticated():
-        return login(request)
-    t = loader.get_template('auth/noauthorized.html')
-    c = Context({'email' : user.email})
-    return HttpResponseForbidden(t.render(c))
-#    if user.is_authenticated():
-#        return HttpResponseForbidden(
-#            '%s is not allowed to access this page' % (user.email))
-#    else:
-#        return HttpResponseForbidden('Get out!')
 
