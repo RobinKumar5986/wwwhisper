@@ -1,5 +1,3 @@
-# Create your views here.
-
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import serializers
@@ -28,8 +26,8 @@ def model2json():
     site_url = getattr(settings, 'SITE_URL',
                        'WARNING: SITE_URL is not set')
     return json.dumps({
-            'resourcesRoot': site_url,
-            'resources': [ {
+            'locationsRoot': site_url,
+            'locations': [ {
                     'path': path,
                     'allowedUsers': acl.allowed_emails(path)
                     } for path in acl.locations()],
@@ -42,7 +40,7 @@ class Model(RestView):
         return HttpResponse(data, mimetype="application/json")
 
 # TODO: rename resource -> location
-class Resource(RestView):
+class Location(RestView):
     def put(self, request, path):
         try:
             result = acl.encode_path(path)

@@ -6,10 +6,10 @@
   model = null;
 
   view = {
-    resourcePath : null,
-    resourceInfo : null,
+    locationPath : null,
+    locationInfo : null,
     allowedUser : null,
-    addResource : null,
+    addLocation : null,
     contact : null,
   };
 
@@ -25,33 +25,33 @@
     array.splice(idx, 1);
   }
 
-  function extractResourcesPaths(resources) {
-    return $.map(resources, function(item) {
+  function extractLocationsPaths(locations) {
+    return $.map(locations, function(item) {
       return item.path;
     });
   }
 
-  function allResourcesPaths() {
-    return extractResourcesPaths(model.resources);
+  function allLocationsPaths() {
+    return extractLocationsPaths(model.locations);
   }
 
-  function accessibleResourcesPaths(userMail) {
-    var accessibleResources = $.grep(model.resources, function(resource) {
-      return inArray(userMail, resource.allowedUsers);
+  function accessibleLocationsPaths(userMail) {
+    var accessibleLocations = $.grep(model.locations, function(location) {
+      return inArray(userMail, location.allowedUsers);
     });
-    return extractResourcesPaths(accessibleResources);
+    return extractLocationsPaths(accessibleLocations);
   }
 
-  function resourcePathId(resourceId) {
-    return 'resource-path' + resourceId.toString();
+  function locationPathId(locationId) {
+    return 'location-path' + locationId.toString();
   }
 
-  function resourceInfoId(resourceId) {
-    return 'resouce-info' + resourceId.toString();
+  function locationInfoId(locationId) {
+    return 'resouce-info' + locationId.toString();
   }
 
-  function findSelectResourceId() {
-    return $('#resource-path-list').find('.active').index();
+  function findSelectLocationId() {
+    return $('#location-path-list').find('.active').index();
   }
 
   function mockAjaxCalls() {
@@ -60,18 +60,23 @@
 
   // TODO: remove duplication.
   function getCsrfToken(successCallback) {
-    $.ajax({
-      url: '/auth/api/csrftoken/',
-      type: 'GET',
-      dataType: 'json',
-      success: function(result) {
-        csrfToken = result.csrfToken;
-        successCallback();
-      },
-      error: function(jqXHR) {
-        $('body').html(jqXHR.responseText);
-      }
-    })
+    if (!mockAjaxCalls()) {
+      $.ajax({
+        url: '/auth/api/csrftoken/',
+        type: 'GET',
+        dataType: 'json',
+        success: function(result) {
+          csrfToken = result.csrfToken;
+          successCallback();
+        },
+        error: function(jqXHR) {
+          $('body').html(jqXHR.responseText);
+        }
+      })
+    } else {
+      csrfToken = "mockCsrfToken";
+      successCallback();
+    }
   }
 
   function ajax(method, resource, params, successCallback) {
@@ -96,7 +101,7 @@
     ajax('GET', 'model.json', {}, function(result) {
       // TODO: parse json here.
       model = result;
-      $('.resources-root').text(model.resourcesRoot);
+      $('.locations-root').text(model.locationsRoot);
       refresh();
     });
   }
@@ -113,9 +118,9 @@
   function removeContact(userMail) {
     ajax('DELETE', 'contact', {email: userMail},
          function() {
-           $.each(model.resources, function(resourceId, resourceValue) {
-             if (inArray(userMail, resourceValue.allowedUsers)) {
-               removeFromArray(userMail, resourceValue.allowedUsers);
+           $.each(model.locations, function(locationId, locationValue) {
+             if (inArray(userMail, locationValue.allowedUsers)) {
+               removeFromArray(userMail, locationValue.allowedUsers);
              }
            });
            removeFromArray(userMail, model.contacts);
@@ -123,21 +128,21 @@
          });
   }
 
-  function allowAccessByUser(userMailArg, resourceId) {
-    var userMail, resource, grantPermissionCallback;
+  function allowAccessByUser(userMailArg, locationId) {
+    var userMail, location, grantPermissionCallback;
     userMail = $.trim(userMailArg);
-    resource = model.resources[resourceId];
+    location = model.locations[locationId];
     if (userMail.length === 0
-        || inArray(userMail, model.resources[resourceId].allowedUsers)) {
+        || inArray(userMail, model.locations[locationId].allowedUsers)) {
       return;
     }
     grantPermissionCallback = function() {
       ajax('PUT', 'permission', {email: userMail,
-                                 path: resource.path},
+                                 path: location.path},
            function() {
-             resource.allowedUsers.push(userMail);
+             location.allowedUsers.push(userMail);
              refresh();
-             $('#' + resourceInfoId(resourceId) + ' ' + '.add-allowed-user')
+             $('#' + locationInfoId(locationId) + ' ' + '.add-allowed-user')
                .focus();
            });
     };
@@ -149,57 +154,57 @@
     }
   }
 
-  // TODO: Fix assymetry (resourceId above, resource here).
-  function revokeAccessByUser( userMail, resource) {
+  // TODO: Fix assymetry (locationId above, location here).
+  function revokeAccessByUser( userMail, location) {
     ajax('DELETE', 'permission', {email: userMail,
-                               path: resource.path},
+                               path: location.path},
            function() {
-             removeFromArray(userMail, resource.allowedUsers);
+             removeFromArray(userMail, location.allowedUsers);
              refresh();
            });
   }
 
-  function addResource(resourcePathArg) {
-    var resourcePath = $.trim(resourcePathArg);
-    if (resourcePath.length === 0
-        || inArray(resourcePath, allResourcesPaths())) {
+  function addLocation(locationPathArg) {
+    var locationPath = $.trim(locationPathArg);
+    if (locationPath.length === 0
+        || inArray(locationPath, allLocationsPaths())) {
       return;
     }
-    ajax('PUT', 'resource', {path: resourcePath},
+    ajax('PUT', 'location', {path: locationPath},
          function(escapedPath) {
-           model.resources.push({
+           model.locations.push({
              'path': escapedPath,
              'allowedUsers': []
            });
            refresh();
-           $('#add-resource-input').focus();
+           $('#add-location-input').focus();
          });
   }
 
-  function removeResource(resourceId) {
-    ajax('DELETE', 'resource', {path: model.resources[resourceId].path},
+  function removeLocation(locationId) {
+    ajax('DELETE', 'location', {path: model.locations[locationId].path},
          function() {
-           model.resources.splice(resourceId, 1);
-           var selectResourceId = findSelectResourceId();
-           if (selectResourceId === resourceId) {
+           model.locations.splice(locationId, 1);
+           var selectLocationId = findSelectLocationId();
+           if (selectLocationId === locationId) {
              refresh(0);
-           } else if (selectResourceId > resourceId) {
-             refresh(selectResourceId - 1);
+           } else if (selectLocationId > locationId) {
+             refresh(selectLocationId - 1);
            } else {
-             refresh(selectResourceId);
+             refresh(selectLocationId);
            }
          });
   }
 
-  function showResourceInfo(resourceId) {
-    $('#' + resourcePathId(resourceId)).addClass('active');
-    $('#' + resourceInfoId(resourceId)).addClass('active');
+  function showLocationInfo(locationId) {
+    $('#' + locationPathId(locationId)).addClass('active');
+    $('#' + locationInfoId(locationId)).addClass('active');
   }
 
-  function highlightAccessibleResources(userMail) {
-    $.each(model.resources, function(resourceId, resourceValue) {
-      var id = '#' + resourcePathId(resourceId);
-      if (inArray(userMail, resourceValue.allowedUsers)) {
+  function highlightAccessibleLocations(userMail) {
+    $.each(model.locations, function(locationId, locationValue) {
+      var id = '#' + locationPathId(locationId);
+      if (inArray(userMail, locationValue.allowedUsers)) {
         $(id + ' a').addClass('accessible');
       } else {
         $(id + ' a').addClass('not-accessible');
@@ -207,27 +212,27 @@
     });
   }
 
-  function highlighResourcesOff() {
-    $('#resource-path-list a').removeClass('accessible');
-    $('#resource-path-list a').removeClass('not-accessible');
+  function highlighLocationsOff() {
+    $('#location-path-list a').removeClass('accessible');
+    $('#location-path-list a').removeClass('not-accessible');
   }
 
-  function showNotifyDialog(to, resources) {
-    var body, website, resourcesString, delimiter;
-    if (resources.length === 0) {
+  function showNotifyDialog(to, locations) {
+    var body, website, locationsString, delimiter;
+    if (locations.length === 0) {
       body = 'I have shared nothing with you. Enjoy.';
     } else {
       website = 'a website';
-      if (resources.length > 1) {
+      if (locations.length > 1) {
         website = 'websites';
       }
-      resourcesString = $.map(resources, function(resourcePath) {
-        delimiter = (resourcePath[0] !== '/') ? '/' : '';
-        return 'https://' + model.resourcesRoot + delimiter + resourcePath;
+      locationsString = $.map(locations, function(locationPath) {
+        delimiter = (locationPath[0] !== '/') ? '/' : '';
+        return 'https://' + model.locationsRoot + delimiter + locationPath;
       }).join('\n');
 
       body = 'I have shared ' + website + ' with you.\n'
-        + 'Please visit:\n' + resourcesString;
+        + 'Please visit:\n' + locationsString;
     }
     $('#notify-modal')
       .find('#notify-to').attr('value', to.join(', ')).end()
@@ -235,29 +240,29 @@
       .modal('show');
   }
 
-  function createResourceInfo(resourceId, allowedUsers) {
-    var resourceInfo, allowedUserList;
-    resourceInfo = view.resourceInfo.clone(true)
-      .attr('id', resourceInfoId(resourceId))
+  function createLocationInfo(locationId, allowedUsers) {
+    var locationInfo, allowedUserList;
+    locationInfo = view.locationInfo.clone(true)
+      .attr('id', locationInfoId(locationId))
       .find('.add-allowed-user')
       .change(function() {
-        allowAccessByUser($(this).val(), resourceId);
+        allowAccessByUser($(this).val(), locationId);
       })
       .typeahead({
         'source': model.contacts
       })
       .end();
 
-    allowedUserList = resourceInfo.find('.allowed-user-list');
+    allowedUserList = locationInfo.find('.allowed-user-list');
     $.each(allowedUsers, function(userIdx, userMail) {
       view.allowedUser.clone(true)
         .find('.user-mail').text(userMail).end()
         .find('.remove-user').click(function() {
-          revokeAccessByUser(userMail, model.resources[resourceId]);
+          revokeAccessByUser(userMail, model.locations[locationId]);
         }).end()
         .appendTo(allowedUserList);
     });
-    resourceInfo.appendTo('#resource-info-list');
+    locationInfo.appendTo('#location-info-list');
   }
 
   function showContacts() {
@@ -269,67 +274,67 @@
           removeContact(userMail);
         }).end()
         .find('.highlight').hover(function() {
-          highlightAccessibleResources(userMail);
-        }, highlighResourcesOff).end()
+          highlightAccessibleLocations(userMail);
+        }, highlighLocationsOff).end()
         .find('.notify').click(function() {
-          showNotifyDialog([userMail], accessibleResourcesPaths(userMail));
+          showNotifyDialog([userMail], accessibleLocationsPaths(userMail));
         }).end()
         .appendTo('#contact-list');
     });
   }
 
-  function showResources() {
-    $.each(model.resources, function(resourceId, resourceValue) {
-      view.resourcePath.clone(true)
-        .attr('id', resourcePathId(resourceId))
-        .find('.url').attr('href', '#' + resourceInfoId(resourceId)).end()
-        .find('.path').text(resourceValue.path).end()
-        .find('.remove-resource').click(function(event) {
-          // Do not show removed resource info.
+  function showLocations() {
+    $.each(model.locations, function(locationId, locationValue) {
+      view.locationPath.clone(true)
+        .attr('id', locationPathId(locationId))
+        .find('.url').attr('href', '#' + locationInfoId(locationId)).end()
+        .find('.path').text(locationValue.path).end()
+        .find('.remove-location').click(function(event) {
+          // Do not show removed location info.
           event.preventDefault();
-          removeResource(resourceId);
+          removeLocation(locationId);
         }).end()
         .find('.notify').click(function() {
-          showNotifyDialog(resourceValue.allowedUsers, [resourceValue.path]);
+          showNotifyDialog(locationValue.allowedUsers, [locationValue.path]);
         }).end()
-        .appendTo('#resource-path-list');
-      createResourceInfo(resourceId, resourceValue.allowedUsers);
+        .appendTo('#location-path-list');
+      createLocationInfo(locationId, locationValue.allowedUsers);
     });
-    view.addResource.clone(true)
-      .find('#add-resource-input').typeahead({
-        'source': allResourcesPaths()
+    view.addLocation.clone(true)
+      .find('#add-location-input').typeahead({
+        'source': allLocationsPaths()
       })
       .change(function() {
-        addResource($(this).val());
+        addLocation($(this).val());
       }).end()
-      .appendTo('#resource-path-list');
+      .appendTo('#location-path-list');
   }
 
-  refresh = function(selectResourceId) {
-    if (typeof selectResourceId === 'undefined') {
-      selectResourceId = findSelectResourceId();
+  refresh = function(selectLocationId) {
+    if (typeof selectLocationId === 'undefined') {
+      selectLocationId = findSelectLocationId();
     }
-    if (selectResourceId === -1) {
-      selectResourceId = 0;
+    if (selectLocationId === -1) {
+      selectLocationId = 0;
     }
 
-    $('#resource-path-list').empty();
-    $('#resource-info-list').empty();
+    $('#location-path-list').empty();
+    $('#location-info-list').empty();
     $('#contact-list').empty();
 
-    showResources();
+    showLocations();
     showContacts();
 
-    showResourceInfo(selectResourceId);
+    showLocationInfo(selectLocationId);
   }
 
 
   $(document).ready(function() {
-    view.resourcePath = $('#resource-path-list-item').clone(true);
-    view.resourceInfo = $('#resource-info-list-item').clone(true);
+    view.locationPath = $('#location-path-list-item').clone(true);
+    view.locationInfo = $('#location-info-list-item').clone(true);
     view.allowedUser = $('#allowed-user-list-item').clone(true);
-    view.resourceInfo.find('#allowed-user-list-item').remove();
-    view.addResource = $('#add-resource').clone(true);
+    view.locationInfo.find('#allowed-user-list-item').remove();
+    view.addLocation = $('#add-location').clone(true);
     view.contact = $('.contact-list-item').clone(true);
 
     getCsrfToken(getModel);

@@ -25,7 +25,7 @@
       <div class="navbar-inner">
         <div class="container">
           <a class="brand" href="#">
-            UI mock of access control for <span class='resources-root'></span>
+            UI mock of access control for <span class='locations-root'></span>
           </a>
         </div>
       </div>
@@ -35,14 +35,14 @@
       <div class="alert alert-success">
         <a class="close" data-dismiss="alert">&times;</a>
         <p>
-          Left side: resources under <span class='resources-root'></span>
+          Left side: locations under <span class='locations-root'></span>
           to which Alice wants to grant access. <br />
-          Right side: emails of users that can access a select resource.
+          Right side: emails of users that can access a select location.
         </p>
 
         <p>
-          Granting access to a resource gives also access to all
-          sub-resources unless a more specific access control rule is
+          Granting access to a location gives also access to all
+          sub-locations unless a more specific access control rule is
           defined.  The more specific rule overwrites a more generic
           one.  <!--For example, if a user is on a list granting
           access to /foo she can access /foo/bar but if there is more
@@ -53,30 +53,30 @@
 
         <p>
           Use <i class="icon-envelope"></i> to compose a notification
-          about a shared resource.
+          about a shared site.
         </p>
       </div> <!-- /.alert -->
 
       <div class="tabbable tabs-left">
-        <ul class="nav nav-tabs" id="resource-path-list">
-          <li id="resource-path-list-item">
-            <a class="url" href="#resource-info-list-item" data-toggle="tab">
+        <ul class="nav nav-tabs" id="location-path-list">
+          <li id="location-path-list-item">
+            <a class="url" href="#location-info-list-item" data-toggle="tab">
               <span class="path">/foo/bar</span>
-              <i class="menu-item icon-remove spaced-left remove-resource"></i>
+              <i class="menu-item icon-remove spaced-left remove-location"></i>
               <i class="menu-item icon-envelope notify"></i>
             </a>
           </li>
           <li>
-            <div class="well spaced-top spaced-right" id="add-resource">
-              <input type="text" placeholder="Enter a path to a resource"
-                     id="add-resource-input"/>
+            <div class="well spaced-top spaced-right" id="add-location">
+              <input type="text" placeholder="Enter a location"
+                     id="add-location-input"/>
             </div>
           </li>
         </ul>
 
-        <div class="tab-content" id="resource-info-list">
+        <div class="tab-content" id="location-info-list">
 
-          <div class="tab-pane" id="resource-info-list-item">
+          <div class="tab-pane" id="location-info-list-item">
             <div class="row">
               <div class="span4">
                 <ul class="allowed-user-list">
@@ -104,7 +104,7 @@
 
         <p>
           Use <i class="icon-search"></i> to quickly check which
-          resources a person can access (green color). <br />
+          locations a person can access (green color). <br />
           Use <i class="icon-envelope"></i> to compose a notification
           about all resources shared with a person.
         </p>
@@ -137,7 +137,7 @@
         <ul>
           <li>Grouping emails (work, family, etc.).</li>
           <li>Drag & drop.</li>
-          <li>Sorting resources and contacts.</li>
+          <li>Sorting locations and contacts.</li>
         </ul>
         </p>
       </div>  <!-- /.alert -->
