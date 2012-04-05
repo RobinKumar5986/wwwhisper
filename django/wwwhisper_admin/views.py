@@ -41,27 +41,29 @@ def error(message):
     return HttpResponse(message, status=400)
 
 
-class Model(View):
-    def get(self, request):
-        data = model2json()
-        print "model: " + str(data) + " session: " \
-            + request.session.session_key
-        return HttpResponse(data, mimetype="application/json")
-
 class RestView(View):
-
     @method_decorator(csrf_protect)
     def dispatch(self, request):
-        request_args = json.loads(request.raw_post_data)
+        method = request.method.lower()
+        request_args = {}
 
-        if request.method.lower() in self.http_method_names:
+        if method in self.http_method_names:
             handler = getattr(
-                self, request.method.lower(), self.http_method_not_allowed)
+                self, method, self.http_method_not_allowed)
+            if method != 'get':
+                request_args = json.loads(request.raw_post_data)
         else:
             handler = self.http_method_not_allowed
 
         # TODO: maybe do not pass request?
         return handler(request, **request_args)
+
+class Model(RestView):
+    def get(self, request):
+        data = model2json()
+        print "model: " + str(data) + " session: " \
+            + request.session.session_key
+        return HttpResponse(data, mimetype="application/json")
 
 # TODO: rename resource -> location
 class Resource(RestView):
