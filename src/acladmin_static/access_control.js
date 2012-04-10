@@ -10,7 +10,7 @@
     locationInfo : null,
     allowedUser : null,
     addLocation : null,
-    contact : null,
+    user : null,
   };
 
   function inArray(value, array) {
@@ -107,24 +107,24 @@
     });
   }
 
-  function addContact(userMail, onSuccessCallback) {
-    ajax('PUT', 'contact', {email: userMail},
+  function addUser(userMail, onSuccessCallback) {
+    ajax('PUT', 'user', {email: userMail},
          function() {
-           model.contacts.push(userMail);
+           model.users.push(userMail);
            refresh();
            onSuccessCallback();
          });
   }
 
-  function removeContact(userMail) {
-    ajax('DELETE', 'contact', {email: userMail},
+  function removeUser(userMail) {
+    ajax('DELETE', 'user', {email: userMail},
          function() {
            $.each(model.locations, function(locationId, locationValue) {
              if (inArray(userMail, locationValue.allowedUsers)) {
                removeFromArray(userMail, locationValue.allowedUsers);
              }
            });
-           removeFromArray(userMail, model.contacts);
+           removeFromArray(userMail, model.users);
            refresh();
          });
   }
@@ -148,8 +148,8 @@
            });
     };
 
-    if (!inArray(userMail, model.contacts)) {
-      addContact(userMail, grantPermissionCallback);
+    if (!inArray(userMail, model.users)) {
+      addUser(userMail, grantPermissionCallback);
     } else {
       grantPermissionCallback();
     }
@@ -250,7 +250,7 @@
         allowAccessByUser($(this).val(), locationId);
       })
       .typeahead({
-        'source': model.contacts
+        'source': model.users
       })
       .end();
 
@@ -266,13 +266,13 @@
     locationInfo.appendTo('#location-info-list');
   }
 
-  function showContacts() {
-    var contact;
-    $.each(model.contacts, function(userIdx, userMail) {
-      contact = view.contact.clone(true);
-      contact.find('.user-mail').text(userMail).end()
+  function showUsers() {
+    var user;
+    $.each(model.users, function(userIdx, userMail) {
+      user = view.user.clone(true);
+      user.find('.user-mail').text(userMail).end()
         .find('.remove-user').click(function() {
-          removeContact(userMail);
+          removeUser(userMail);
         }).end()
         .find('.highlight').hover(function() {
           highlightAccessibleLocations(userMail);
@@ -280,7 +280,7 @@
         .find('.notify').click(function() {
           showNotifyDialog([userMail], accessibleLocationsPaths(userMail));
         }).end()
-        .appendTo('#contact-list');
+        .appendTo('#user-list');
     });
   }
 
@@ -321,10 +321,10 @@
 
     $('#location-list').empty();
     $('#location-info-list').empty();
-    $('#contact-list').empty();
+    $('#user-list').empty();
 
     showLocations();
-    showContacts();
+    showUsers();
 
     showLocationInfo(selectLocationId);
   }
@@ -336,7 +336,7 @@
     view.allowedUser = $('#allowed-user-list-item').clone(true);
     view.locationInfo.find('#allowed-user-list-item').remove();
     view.addLocation = $('#add-location').clone(true);
-    view.contact = $('.contact-list-item').clone(true);
+    view.user = $('.user-list-item').clone(true);
 
     getCsrfToken(getModel);
   });

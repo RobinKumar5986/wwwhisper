@@ -29,7 +29,7 @@ def model2json():
                     'path': path,
                     'allowedUsers': acl.allowed_emails(path)
                     } for path in acl.locations()],
-            'contacts': acl.emails()
+            'users': acl.emails()
             })
 
 class Model(RestView):
@@ -57,19 +57,19 @@ class Location(RestView):
         return success()
 
 # TODO rename contact
-class Contact(RestView):
+class User(RestView):
     def put(self, request, email):
         if not acl.is_email_valid(email):
             return error('Invalid email format.')
         user_added = acl.add_user(email)
         if not user_added:
-            return error('Email already on contact list.')
+            return error('User already exists.')
         return success()
 
     def delete(self, request, email):
         user_deleted = acl.del_user(email)
         if not user_deleted:
-            return error('Email is not on contact list.')
+            return error('User does not exist.')
         return success()
 
 class Permission(RestView):
