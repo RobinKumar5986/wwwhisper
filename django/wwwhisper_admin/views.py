@@ -1,6 +1,4 @@
 from django.conf import settings
-from django.contrib.auth.models import User
-from django.core import serializers
 from django.http import HttpResponse
 from wwwhisper_auth.rest_view import RestView
 
@@ -39,7 +37,6 @@ class Model(RestView):
         data = model2json()
         return HttpResponse(data, mimetype="application/json")
 
-# TODO: rename resource -> location
 class Location(RestView):
     def put(self, request, path):
         try:

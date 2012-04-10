@@ -43,7 +43,7 @@
   }
 
   function locationPathId(locationId) {
-    return 'location-path' + locationId.toString();
+    return 'location' + locationId.toString();
   }
 
   function locationInfoId(locationId) {
@@ -51,9 +51,10 @@
   }
 
   function findSelectLocationId() {
-    return $('#location-path-list').find('.active').index();
+    return $('#location-list').find('.active').index();
   }
 
+  // TODO: this no longer works, because addLocation call returns result.
   function mockAjaxCalls() {
     return model !== null && model.mockMode;
   }
@@ -213,8 +214,8 @@
   }
 
   function highlighLocationsOff() {
-    $('#location-path-list a').removeClass('accessible');
-    $('#location-path-list a').removeClass('not-accessible');
+    $('#location-list a').removeClass('accessible');
+    $('#location-list a').removeClass('not-accessible');
   }
 
   function showNotifyDialog(to, locations) {
@@ -297,7 +298,7 @@
         .find('.notify').click(function() {
           showNotifyDialog(locationValue.allowedUsers, [locationValue.path]);
         }).end()
-        .appendTo('#location-path-list');
+        .appendTo('#location-list');
       createLocationInfo(locationId, locationValue.allowedUsers);
     });
     view.addLocation.clone(true)
@@ -307,7 +308,7 @@
       .change(function() {
         addLocation($(this).val());
       }).end()
-      .appendTo('#location-path-list');
+      .appendTo('#location-list');
   }
 
   refresh = function(selectLocationId) {
@@ -318,7 +319,7 @@
       selectLocationId = 0;
     }
 
-    $('#location-path-list').empty();
+    $('#location-list').empty();
     $('#location-info-list').empty();
     $('#contact-list').empty();
 
@@ -330,7 +331,7 @@
 
 
   $(document).ready(function() {
-    view.locationPath = $('#location-path-list-item').clone(true);
+    view.locationPath = $('#location-list-item').clone(true);
     view.locationInfo = $('#location-info-list-item').clone(true);
     view.allowedUser = $('#allowed-user-list-item').clone(true);
     view.locationInfo.find('#allowed-user-list-item').remove();
