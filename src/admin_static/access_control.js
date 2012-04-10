@@ -83,7 +83,7 @@
   function ajax(method, resource, params, successCallback) {
     if (!mockAjaxCalls()) {
       $.ajax({
-        url: 'acl/' + resource,
+        url: 'api/' + resource,
         type: method,
         data: JSON.stringify(params),
         dataType: method === 'GET' ?  'json' : 'text',
@@ -99,7 +99,7 @@
   }
 
   function getModel() {
-    ajax('GET', 'model.json', {}, function(result) {
+    ajax('GET', 'model.json/', {}, function(result) {
       // TODO: parse json here.
       model = result;
       $('.locations-root').text(model.locationsRoot);
@@ -108,7 +108,7 @@
   }
 
   function addUser(userMail, onSuccessCallback) {
-    ajax('PUT', 'user', {email: userMail},
+    ajax('PUT', 'user/', {email: userMail},
          function() {
            model.users.push(userMail);
            refresh();
@@ -117,7 +117,7 @@
   }
 
   function removeUser(userMail) {
-    ajax('DELETE', 'user', {email: userMail},
+    ajax('DELETE', 'user/', {email: userMail},
          function() {
            $.each(model.locations, function(locationId, locationValue) {
              if (inArray(userMail, locationValue.allowedUsers)) {
@@ -138,8 +138,8 @@
       return;
     }
     grantPermissionCallback = function() {
-      ajax('PUT', 'permission', {email: userMail,
-                                 path: location.path},
+      ajax('PUT', 'permission/', {email: userMail,
+                                  path: location.path},
            function() {
              location.allowedUsers.push(userMail);
              refresh();
@@ -157,8 +157,8 @@
 
   // TODO: Fix assymetry (locationId above, location here).
   function revokeAccessByUser( userMail, location) {
-    ajax('DELETE', 'permission', {email: userMail,
-                               path: location.path},
+    ajax('DELETE', 'permission/', {email: userMail,
+                                   path: location.path},
            function() {
              removeFromArray(userMail, location.allowedUsers);
              refresh();
@@ -171,7 +171,7 @@
         || inArray(locationPath, allLocationsPaths())) {
       return;
     }
-    ajax('PUT', 'location', {path: locationPath},
+    ajax('PUT', 'location/', {path: locationPath},
          function(escapedPath) {
            model.locations.push({
              'path': escapedPath,
@@ -183,7 +183,7 @@
   }
 
   function removeLocation(locationId) {
-    ajax('DELETE', 'location', {path: model.locations[locationId].path},
+    ajax('DELETE', 'location/', {path: model.locations[locationId].path},
          function() {
            model.locations.splice(locationId, 1);
            var selectLocationId = findSelectLocationId();

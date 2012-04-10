@@ -8,8 +8,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-#TODO: acladmin ->admin?
-
 def success(message=None):
     if message:
         return HttpResponse(message, status=200)
@@ -56,7 +54,6 @@ class Location(RestView):
             return error('Location does not exist.')
         return success()
 
-# TODO rename contact
 class User(RestView):
     def put(self, request, email):
         if not acl.is_email_valid(email):

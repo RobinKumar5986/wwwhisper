@@ -54,6 +54,7 @@ class CsrfToken(View):
 
 class Login(RestView):
     def get(self, request):
+        # TODO: login page for logged in users
         t = loader.get_template('auth/login.html')
         return HttpResponse(t.render(Context({})))
 

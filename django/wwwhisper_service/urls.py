@@ -10,9 +10,7 @@ urlpatterns = patterns('',
     # (r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     url(r'^auth/api/', include('wwwhisper_auth.urls')),
-    # TODO: rename to api
-    # TODO: rename acladmin->admin
-    url(r'^acladmin/acl/', include('wwwhisper_admin.urls')),
+    url(r'^admin/api/', include('wwwhisper_admin.urls')),
     # Uncomment the next line to enable the admin:
     # url(r'^admin/', include(admin.site.urls)),
 )

@@ -7,5 +7,5 @@ urlpatterns = patterns(
     url(r'^login/$', Login.as_view()),
     url(r'^logout/$', Logout.as_view()),
     # TODO: is authorized?
-    url(r'^$', Auth.as_view()),
+    url(r'^is_authorized/$', Auth.as_view()),
     )
