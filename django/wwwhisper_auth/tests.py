@@ -1,8 +1,8 @@
 from django.test import TestCase
+from django.test.client import Client
 from wwwhisper_auth.acl import InvalidPath
 
 import wwwhisper_auth.acl as acl
-
 class Acl(TestCase):
     def test_add_location(self):
         self.assertFalse(acl.find_location('/foo/bar'))
@@ -215,3 +215,11 @@ class Acl(TestCase):
         self.assertRaisesRegexp(InvalidPath, "normalized", acl.encode_path,
                                 '/foo//bar')
     # TODO: test that removing user and location revokes access
+
+class Auth(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_is_authorized_requires_path_parameter(self):
+        response = self.client.get('/auth/api/is_authorized/')
+        self.assertEqual(400, response.status_code)

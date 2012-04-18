@@ -25,9 +25,9 @@ def access_denied_page(email):
 
 class Auth(View):
     def get(self, request):
-        path = request.GET.get('uri', None)
+        path = request.GET.get('path', None)
         if path is None:
-            return error("Auth request should have 'uri' paramater.")
+            return error("Auth request should have 'path' paramater.")
         debug_msg = "Auth request to '%s'" % (path)
         user = request.user
 
