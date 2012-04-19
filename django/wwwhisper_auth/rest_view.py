@@ -1,8 +1,12 @@
+from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic import View
 
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RestView(View):
 
@@ -15,9 +19,17 @@ class RestView(View):
             handler = getattr(
                 self, method, self.http_method_not_allowed)
             if method != 'get':
-                request_args = json.loads(request.raw_post_data)
+                try:
+                    request_args = json.loads(request.raw_post_data)
+                except ValueError, err:
+                    logger.debug(
+                        'Failed to parse arguments as json object: %s' % (err))
         else:
             handler = self.http_method_not_allowed
 
-        # TODO: maybe do not pass request?
-        return handler(request, **request_args)
+        try:
+            return handler(request, **request_args)
+        except TypeError, err:
+            # TODO: test what happens when incorrect method is called.
+            logger.debug('Incorrect arguments, handler not found: %s' % (err))
+            return HttpResponse('Incorrect request arguments', status=400)

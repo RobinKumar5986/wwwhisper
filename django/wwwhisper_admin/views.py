@@ -14,7 +14,7 @@ def success(message=None):
     return HttpResponse(status=200)
 
 def error(message):
-    logger.debug('error %s' % (message))
+    logger.debug('Error %s' % (message))
     return HttpResponse(message, status=400)
 
 

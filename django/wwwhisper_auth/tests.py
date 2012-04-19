@@ -6,6 +6,8 @@ from django.contrib.auth.backends import ModelBackend
 
 import wwwhisper_auth.acl as acl
 
+import json
+
 class Acl(TestCase):
     def test_add_location(self):
         self.assertFalse(acl.find_location('/foo/bar'))
@@ -222,15 +224,18 @@ class Acl(TestCase):
 
 from django.contrib.auth.models import User
 
-class MockAuthBackend(ModelBackend):
-    def authenticate(self, email):
-        return User.objects.get(username=email)
+class FakeAssertionVeryfingBackend(ModelBackend):
+    def authenticate(self, assertion, audience = None):
+        try:
+            return User.objects.get(username=assertion)
+        except User.DoesNotExist:
+            return None
 
 class Auth(TestCase):
     def setUp(self):
         self.client = Client()
         settings.AUTHENTICATION_BACKENDS = (
-            'wwwhisper_auth.tests.MockAuthBackend',)
+            'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
 
     def test_is_authorized_requires_path_parameter(self):
         response = self.client.get('/auth/api/is_authorized/')
@@ -242,7 +247,7 @@ class Auth(TestCase):
 
     def test_is_authorized_for_not_authorized_user(self):
         self.assertTrue(acl.add_user('foo@example.com'))
-        self.assertTrue(self.client.login(email='foo@example.com'))
+        self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.client.get('/auth/api/is_authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
 
@@ -250,6 +255,35 @@ class Auth(TestCase):
         self.assertTrue(acl.add_user('foo@example.com'))
         self.assertTrue(acl.add_location('/foo/'))
         self.assertTrue(acl.grant_access('foo@example.com', '/foo/'))
-        self.assertTrue(self.client.login(email='foo@example.com'))
+        self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.client.get('/auth/api/is_authorized/?path=/foo/')
+        self.assertEqual(200, response.status_code)
+
+
+class Login(TestCase):
+    def setUp(self):
+        # TODO: extract class
+        self.client = Client()
+        settings.AUTHENTICATION_BACKENDS = (
+            'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
+
+    def json_post(self, path, args):
+        return self.client.post(path,
+                                json.dumps(args),
+                                'text/json',
+                                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def test_login_requires_assertion(self):
+        response = self.client.post('/auth/api/login/', {})
+        self.assertEqual(400, response.status_code)
+
+    def test_login_fails_if_unknown_user(self):
+        response = self.json_post('/auth/api/login/',
+                                  {'assertion' : 'foo@example.com'})
+        self.assertEqual(400, response.status_code)
+
+    def test_login_succeeds_if_known_user(self):
+        acl.add_user('foo@example.com')
+        response = self.json_post('/auth/api/login/',
+                                  {'assertion' : 'foo@example.com'})
         self.assertEqual(200, response.status_code)
