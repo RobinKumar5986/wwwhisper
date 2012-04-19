@@ -1,8 +1,11 @@
 from django.test import TestCase
 from django.test.client import Client
 from wwwhisper_auth.acl import InvalidPath
+from django.conf import settings
+from django.contrib.auth.backends import ModelBackend
 
 import wwwhisper_auth.acl as acl
+
 class Acl(TestCase):
     def test_add_location(self):
         self.assertFalse(acl.find_location('/foo/bar'))
@@ -216,10 +219,37 @@ class Acl(TestCase):
                                 '/foo//bar')
     # TODO: test that removing user and location revokes access
 
+
+from django.contrib.auth.models import User
+
+class MockAuthBackend(ModelBackend):
+    def authenticate(self, email):
+        return User.objects.get(username=email)
+
 class Auth(TestCase):
     def setUp(self):
         self.client = Client()
+        settings.AUTHENTICATION_BACKENDS = (
+            'wwwhisper_auth.tests.MockAuthBackend',)
 
     def test_is_authorized_requires_path_parameter(self):
         response = self.client.get('/auth/api/is_authorized/')
         self.assertEqual(400, response.status_code)
+
+    def test_is_authorized_for_not_authenticated_user(self):
+        response = self.client.get('/auth/api/is_authorized/?path=/bar/')
+        self.assertEqual(403, response.status_code)
+
+    def test_is_authorized_for_not_authorized_user(self):
+        self.assertTrue(acl.add_user('foo@example.com'))
+        self.assertTrue(self.client.login(email='foo@example.com'))
+        response = self.client.get('/auth/api/is_authorized/?path=/foo/')
+        self.assertEqual(401, response.status_code)
+
+    def test_is_authorized_for_authorized_user(self):
+        self.assertTrue(acl.add_user('foo@example.com'))
+        self.assertTrue(acl.add_location('/foo/'))
+        self.assertTrue(acl.grant_access('foo@example.com', '/foo/'))
+        self.assertTrue(self.client.login(email='foo@example.com'))
+        response = self.client.get('/auth/api/is_authorized/?path=/foo/')
+        self.assertEqual(200, response.status_code)
