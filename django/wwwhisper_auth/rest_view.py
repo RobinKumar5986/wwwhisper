@@ -30,6 +30,6 @@ class RestView(View):
         try:
             return handler(request, **request_args)
         except TypeError, err:
-            # TODO: test what happens when incorrect method is called.
-            logger.debug('Incorrect arguments, handler not found: %s' % (err))
-            return HttpResponse('Incorrect request arguments', status=400)
+            # TODO: test what happens when invalid method is called.
+            logger.debug('Invalid arguments, handler not found: %s' % (err))
+            return HttpResponse('Invalid request arguments', status=400)
