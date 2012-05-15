@@ -43,6 +43,7 @@ def find_location(path):
 def locations():
     return _all(HttpLocation, 'path')
 
+# TODO: capital letters in email are not accepted
 def is_email_valid(email):
     """Validates email with regexp defined by BrowserId:
     browserid/browserid/static/dialog/resources/validation.js

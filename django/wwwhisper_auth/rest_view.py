@@ -11,25 +11,19 @@ logger = logging.getLogger(__name__)
 class RestView(View):
 
     @method_decorator(csrf_protect)
-    def dispatch(self, request):
+    def dispatch(self, request, *args, **kwargs):
         method = request.method.lower()
-        request_args = {}
-
-        if method in self.http_method_names:
-            handler = getattr(
-                self, method, self.http_method_not_allowed)
-            if method != 'get':
-                try:
-                    request_args = json.loads(request.raw_post_data)
-                except ValueError, err:
-                    logger.debug(
-                        'Failed to parse arguments as json object: %s' % (err))
-        else:
-            handler = self.http_method_not_allowed
-
-        try:
-            return handler(request, **request_args)
-        except TypeError, err:
+        # TODO: remove delete
+        if method == 'post' or method == 'put' or method == 'delete':
+            try:
+                kwargs.update(json.loads(request.raw_post_data))
+            except ValueError, err:
+                logger.debug(
+                    'Failed to parse arguments as json object: %s' % (err))
+        #try:
+        return super(RestView, self).dispatch(request, *args, **kwargs)
+        #except TypeError, err:
+            # TODO: test that this is called
             # TODO: test what happens when invalid method is called.
-            logger.debug('Invalid arguments, handler not found: %s' % (err))
-            return HttpResponse('Invalid request arguments', status=400)
+         #   logger.debug('Invalid arguments, handler not found: %s' % (err))
+          #  return HttpResponse('Invalid request arguments', status=400)
