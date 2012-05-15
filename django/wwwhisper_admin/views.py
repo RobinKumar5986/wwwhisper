@@ -35,6 +35,7 @@ class Model(RestView):
         data = model2json()
         return HttpResponse(data, mimetype="application/json")
 
+# Addlocation, deletelocation?
 class Location(RestView):
     def put(self, request, path):
         try:

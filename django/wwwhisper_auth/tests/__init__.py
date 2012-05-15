@@ -12,6 +12,7 @@ class HttpTestCase(TestCase):
         self.client = Client()
 
     def json_post(self, path, args):
+        # TODO: remove duplication.
         return self.client.post(path,
                                 json.dumps(args),
                                 'text/json',
@@ -23,9 +24,10 @@ class HttpTestCase(TestCase):
                                'text/json',
                                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
-    def assert200(self, response):
-        self.assertEqual(200, response.status_code)
 
-    def assert400(self, response):
-        self.assertEqual(400, response.status_code)
+    def json_delete(self, path, args):
+        return self.client.delete(path,
+                                  json.dumps(args),
+                                  'text/json',
+                                  HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
