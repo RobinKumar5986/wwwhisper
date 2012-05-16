@@ -20,10 +20,11 @@ class RestView(View):
             except ValueError, err:
                 logger.debug(
                     'Failed to parse arguments as json object: %s' % (err))
-        #try:
-        return super(RestView, self).dispatch(request, *args, **kwargs)
-        #except TypeError, err:
+        try:
+            return super(RestView, self).dispatch(request, *args, **kwargs)
+        except TypeError, err:
             # TODO: test that this is called
             # TODO: test what happens when invalid method is called.
-         #   logger.debug('Invalid arguments, handler not found: %s' % (err))
-          #  return HttpResponse('Invalid request arguments', status=400)
+            logger.debug('Invalid arguments, handler not found: %s' % (err))
+            # TODO: change error code.
+            return HttpResponse('Invalid request arguments', status=400)
