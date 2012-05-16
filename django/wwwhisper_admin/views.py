@@ -35,6 +35,25 @@ class Model(RestView):
         data = model2json()
         return HttpResponse(data, mimetype="application/json")
 
+class User(RestView):
+    def put(self, request, email):
+        if not acl.is_email_valid(email):
+            return error('Invalid email format.')
+        user_added = acl.add_user(email)
+        if not user_added:
+            return error('User already exists.')
+        return success()
+
+    def delete(self, request, email):
+        user_deleted = acl.del_user(email)
+        if not user_deleted:
+            return error('User does not exist.')
+        return success()
+
+class User2(RestView):
+    def get(self, request, uuid):
+        return success('Callled!' + str(uuid))
+
 # Addlocation, deletelocation?
 class Location(RestView):
     def put(self, request, path):
@@ -53,21 +72,6 @@ class Location(RestView):
         location_deleted = acl.del_location(path)
         if not location_deleted:
             return error('Location does not exist.')
-        return success()
-
-class User(RestView):
-    def put(self, request, email):
-        if not acl.is_email_valid(email):
-            return error('Invalid email format.')
-        user_added = acl.add_user(email)
-        if not user_added:
-            return error('User already exists.')
-        return success()
-
-    def delete(self, request, email):
-        user_deleted = acl.del_user(email)
-        if not user_deleted:
-            return error('User does not exist.')
         return success()
 
 class Permission(RestView):
