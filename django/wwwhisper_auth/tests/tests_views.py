@@ -21,7 +21,7 @@ class AuthTestCase(TestCase):
         settings.AUTHENTICATION_BACKENDS = (
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
 
-    def json_post(self, path, args):
+    def post(self, path, args):
         return self.client.post(path,
                                 json.dumps(args),
                                 'text/json',
@@ -57,13 +57,13 @@ class Login(AuthTestCase):
         self.assertEqual(400, response.status_code)
 
     def test_login_fails_if_unknown_user(self):
-        response = self.json_post('/auth/api/login/',
+        response = self.post('/auth/api/login/',
                                   {'assertion' : 'foo@example.com'})
         self.assertEqual(400, response.status_code)
 
     def test_login_succeeds_if_known_user(self):
         acl.add_user('foo@example.com')
-        response = self.json_post('/auth/api/login/',
+        response = self.post('/auth/api/login/',
                                   {'assertion' : 'foo@example.com'})
         self.assertEqual(200, response.status_code)
 
@@ -71,7 +71,7 @@ class Login(AuthTestCase):
 class Logout(AuthTestCase):
     def test_authentication_requested_after_logout(self):
         acl.add_user('foo@example.com')
-        self.json_post('/auth/api/login/', {'assertion' : 'foo@example.com'})
+        self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
 
         response = self.client.get('/auth/api/is_authorized/?path=/bar/')
         # Not authorized
