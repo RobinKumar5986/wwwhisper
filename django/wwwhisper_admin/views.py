@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import HttpResponse
+from django.http import HttpResponseNotFound
 from wwwhisper_auth.rest_view import RestView
 
 import wwwhisper_auth.acl as acl
@@ -7,6 +8,10 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
+
+class HttpResponseNoContent(HttpResponse):
+    def __init__(self):
+        super(HttpResponseNoContent, self).__init__(status=204)
 
 def success(message=None):
     if message:
@@ -33,7 +38,7 @@ def model2json():
                        'WARNING: SITE_URL is not set')
     return json.dumps({
             'locationsRoot': site_url,
-            'locations': [ {
+            'locations': [{
                     'path': path,
                     'allowedUsers': acl.allowed_emails(path)
                     } for path in acl.locations()],
@@ -47,15 +52,17 @@ class Model(RestView):
 
 from django.contrib.auth.models import User as ModelUser
 
-def users_list():
-    return [ {
-            'self': full_url(user.get_absolute_url()),
-            'email': user.email,
-            'id': urn_from_uuid(user.username),
-            } for user in ModelUser.objects.all()
-             ]
+def user_dict(user):
+    return {
+        'self': full_url(user.get_absolute_url()),
+        'email': user.email,
+        'id': urn_from_uuid(user.username),
+        }
 
-class User(RestView):
+def users_list():
+    return [user_dict(user) for user in ModelUser.objects.all()]
+
+class UserCollection(RestView):
     def put(self, request, email):
         if not acl.is_email_valid(email):
             return error('Invalid email format.')
@@ -85,9 +92,23 @@ class User(RestView):
                 })
         return HttpResponse(data, mimetype="application/json")
 
-class User2(RestView):
+class User(RestView):
     def get(self, request, uuid):
-        return success('Callled!' + str(uuid))
+        query_set = ModelUser.objects.filter(username=uuid)
+        assert query_set.count() <= 1
+        if query_set.count() == 0:
+            return HttpResponseNotFound('TODO: error message', status=404)
+        user_info = user_dict(query_set.get())
+        return HttpResponse(json.dumps(user_info),
+                            mimetype="application/json")
+
+    def delete(self, request, uuid):
+        query_set = ModelUser.objects.filter(username=uuid)
+        assert query_set.count() <= 1
+        if object_to_del.count() == 0:
+            return HttpResponseNotFound('TODO: error message')
+        query_set.delete()
+        return HttpResponseNoContent()
 
 # Addlocation, deletelocation?
 class Location(RestView):
