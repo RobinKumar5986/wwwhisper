@@ -45,6 +45,24 @@ class UserTest(HttpTestCase):
 
       self.assertEqual(post_response.content, get_response.content)
 
+   def test_get_users_list(self):
+      self.assertEqual(201, self.post('/admin/api/users/',
+                                      {'email' : 'foo@bar.org'}).status_code)
+      self.assertEqual(201, self.post('/admin/api/users/',
+                                      {'email' : 'baz@bar.org'}).status_code)
+      self.assertEqual(201, self.post('/admin/api/users/',
+                                      {'email' : 'boo@bar.org'}).status_code)
+      response = self.get('/admin/api/users/')
+      self.assertEqual(200, response.status_code)
+      parsed_response_body = json.loads(response.content)
+      self.assertRegexpMatches(parsed_response_body['self'],
+                               '^%s/admin/api/users/$' % site_url())
+
+      users = parsed_response_body['users']
+      self.assertEqual(3, len(users))
+      self.assertItemsEqual(['foo@bar.org', 'baz@bar.org', 'boo@bar.org'],
+                            [item['email'] for item in users])
+
    # TODO: make this a generic test for the RestView.
    def test_add_user_invalid_arg_name(self):
       response = self.post('/admin/api/users/', {'eemail' : 'foo@bar.org'})
