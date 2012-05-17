@@ -1,9 +1,10 @@
 (function () {
   'use strict';
-  var csrfToken, model, view, refresh;
+  var csrfToken, model, users, view, refresh;
 
   csrfToken = null;
   model = null;
+  users = null;
 
   view = {
     locationPath : null,
@@ -86,10 +87,12 @@
         url: 'api/' + resource,
         type: method,
         data: JSON.stringify(params),
-        dataType: method === 'GET' ?  'json' : 'text',
+        //dataType: method === 'GET' ?  'json' : 'text',
+        dataType: 'json',
         headers: {'X-CSRFToken' : csrfToken},
         success: successCallback,
         error: function(jqXHR) {
+          // TODO: nice messages for user input related failures.
           $('body').html(jqXHR.responseText);
         }
       });
@@ -107,10 +110,18 @@
     });
   }
 
+  function getUsers() {
+    ajax('GET', 'users/', {}, function(result) {
+      // TODO: parse json here.
+      users = result.users;
+      refresh();
+    });
+  }
+
   function addUser(userMail, onSuccessCallback) {
-    ajax('PUT', 'users/', {email: userMail},
-         function() {
-           model.users.push(userMail);
+    ajax('POST', 'users/', {email: userMail},
+         function(result) {
+           users.push(result);
            refresh();
            onSuccessCallback();
          });
@@ -268,9 +279,9 @@
 
   function showUsers() {
     var user;
-    $.each(model.users, function(userIdx, userMail) {
+    $.each(users, function(userIdx, userListItem) {
       user = view.user.clone(true);
-      user.find('.user-mail').text(userMail).end()
+      user.find('.user-mail').text(userListItem.email).end()
         .find('.remove-user').click(function() {
           removeUser(userMail);
         }).end()
@@ -338,7 +349,10 @@
     view.addLocation = $('#add-location').clone(true);
     view.user = $('.user-list-item').clone(true);
 
-    getCsrfToken(getModel);
+    getCsrfToken(function() {
+      getModel();
+      getUsers();
+    })
   });
 
 }());

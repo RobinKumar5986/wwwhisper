@@ -6,6 +6,7 @@ from wwwhisper_auth.rest_view import RestView
 import wwwhisper_auth.acl as acl
 import json
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ def model2json():
                     'path': path,
                     'allowedUsers': acl.allowed_emails(path)
                     } for path in acl.locations()],
-            'users': acl.emails()
+            #'users': acl.emails()
             })
 
 class Model(RestView):
@@ -71,19 +72,22 @@ class UserCollection(RestView):
             return error('User already exists.')
         return success()
 
-    def delete(self, request, email):
-        user_deleted = acl.del_user(email)
-        if not user_deleted:
-            return error('User does not exist.')
-        return success()
-
-    # def post(self, request, email):
-    #     if not acl.is_email_valid(email):
-    #         return error('Invalid email format.')
-    #     user_added = acl.add_user(email)
-    #     if not user_added:
-    #         return error('User already exists.')
+    # def delete(self, request, email):
+    #     user_deleted = acl.del_user(email)
+    #     if not user_deleted:
+    #         return error('User does not exist.')
     #     return success()
+
+    def post(self, request, email):
+        if not acl.is_email_valid(email):
+            return error('Invalid email format.')
+        if acl.find_user(email):
+            return error('User already exists.')
+        user = ModelUser.objects.create(
+            username=str(uuid.uuid4()), email=email, is_active=True)
+        return HttpResponse(json.dumps(user_dict(user)),
+                            mimetype="application/json",
+                            status=201)
 
     def get(self, request):
         data = json.dumps({
@@ -97,7 +101,7 @@ class User(RestView):
         query_set = ModelUser.objects.filter(username=uuid)
         assert query_set.count() <= 1
         if query_set.count() == 0:
-            return HttpResponseNotFound('TODO: error message', status=404)
+            return HttpResponseNotFound('TODO: error message')
         user_info = user_dict(query_set.get())
         return HttpResponse(json.dumps(user_info),
                             mimetype="application/json")
