@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.contrib.auth.models import User as AuthUser
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 
@@ -46,7 +46,7 @@ class HttpLocation(models.Model):
 class HttpPermission(models.Model):
     http_location = models.ForeignKey(HttpLocation)
     # TODO: rename to allowed_user
-    user = models.ForeignKey(AuthUser)
+    user = models.ForeignKey(User)
 
     def __unicode__(self):
         return "%s, %s" % (self.http_location, self.user.email)
@@ -57,14 +57,14 @@ class CreationException(Exception):
 def add_user(email):
     if find_user(email):
         return False
-    AuthUser.objects.create(username=uuid.uuid4(), email=email, is_active=True)
+    User.objects.create(username=uuid.uuid4(), email=email, is_active=True)
     return True;
 
 def del_user(email):
-    return _del(AuthUser, email=email)
+    return _del(User, email=email)
 
 def find_user(email):
-    return _find(AuthUser, email=email)
+    return _find(User, email=email)
 
 # TODO: capital letters in email are not accepted
 def is_email_valid(email):
@@ -82,11 +82,11 @@ def attributes_dict(self):
         'email': self.email,
         'id': urn_from_uuid(self.username),
         }
-AuthUser.attributes_dict = attributes_dict
 
-class User:
+User.attributes_dict = attributes_dict
+
+class UserCollection:
     collection_name = 'users'
-    item_name = 'user'
 
     @staticmethod
     def create_item(email):
@@ -94,19 +94,19 @@ class User:
             raise CreationException('Invalid email format.')
         if find_user(email):
             raise CreationException('User already exists.')
-        return AuthUser.objects.create(
+        return User.objects.create(
             username=str(uuid.uuid4()), email=email, is_active=True)
 
     @staticmethod
     def all():
-        return AuthUser.objects.all()
+        return User.objects.all()
 
 
 #    def create_item(email)
 
 # TODO: remove this:
 class UserProfile(models.Model):
-    user = models.OneToOneField(AuthUser)
+    user = models.OneToOneField(User)
 #    uuid = models.CharField(max_length=36, null=False, primary_key=True,
 #                            editable=False)
 
@@ -120,4 +120,4 @@ def create_user_extras(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
 
-post_save.connect(create_user_extras, sender=AuthUser)
+post_save.connect(create_user_extras, sender=User)

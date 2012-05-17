@@ -34,6 +34,7 @@ def site_url():
 def full_url(absolute_path):
     return site_url() + absolute_path
 
+# TODO: remove duplicated copy
 def urn_from_uuid(uuid):
     return 'urn:uuid:' + uuid
 
@@ -66,31 +67,13 @@ def user_dict(user):
         'id': urn_from_uuid(user.username),
         }
 
-class UserCollectionStrategy:
-
-    def __init__(self):
-        self.collection_name = 'users'
-
-    def create_item(self, email):
-        if not acl.is_email_valid(email):
-            raise CreationException('Invalid email format.')
-        if acl.find_user(email):
-            raise CreationException('User already exists.')
-        user = ModelUser.objects.create(
-            username=str(uuid.uuid4()), email=email, is_active=True)
-        ModelUser.attributes_dict = user_dict
-        #user['attributes_dict'] = user_dict
-        return user
-
-    def all(self):
-        return ModelUser.objects.all()
 
 class CollectionView(RestView):
-    model = None
+    collection = None
 
     def post(self, request, **kwargs):
         try:
-            created_item = self.model.create_item(**kwargs)
+            created_item = self.collection.create_item(**kwargs)
         except CreationException, ex:
             return error(ex)
         attributes_dict = created_item.attributes_dict()
@@ -104,37 +87,16 @@ class CollectionView(RestView):
     def get(self, request):
         data = json.dumps({
                 'self' : full_url(request.path),
-                self.model.collection_name: [
-                    item.attributes_dict() for item in self.model.all()]
+                self.collection.collection_name: [
+                    item.attributes_dict() for item in self.collection.all()]
                 })
         return HttpResponse(data, mimetype="application/json")
 
-class UserCollection(RestView):
-    def post(self, request, email):
-        if not acl.is_email_valid(email):
-            return error('Invalid email format.')
-        if acl.find_user(email):
-            return error('User already exists.')
-        user = ModelUser.objects.create(
-            username=str(uuid.uuid4()), email=email, is_active=True)
-        user_info = user_dict(user)
-        response = HttpResponse(json.dumps(user_info),
-                                mimetype="application/json",
-                                status=201)
-        response['Location'] = user_info['self']
-        response['Content-Location'] = user_info['self']
-        return response
+class ItemView(RestView):
+    model = None
 
-    def get(self, request):
-        data = json.dumps({
-                'self' : full_url(request.path),
-                'users': users_list()
-                })
-        return HttpResponse(data, mimetype="application/json")
-
-class User(RestView):
     def get(self, request, uuid):
-        query_set = ModelUser.objects.filter(username=uuid)
+        query_set = self.model.objects.filter(username=uuid)
         assert query_set.count() <= 1
         if query_set.count() == 0:
             return HttpResponseNotFound('User not found')

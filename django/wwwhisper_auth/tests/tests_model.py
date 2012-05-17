@@ -1,5 +1,5 @@
 from django.test import TestCase
-from wwwhisper_auth.models import User
+from wwwhisper_auth.models import UserCollection
 
 class Model(TestCase):
     def test_is_email_valid(self):
