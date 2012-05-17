@@ -17,6 +17,16 @@ def error(message):
     logger.debug('Error %s' % (message))
     return HttpResponse(message, status=400)
 
+# TODO: can this warning be fatal initialization error?
+def site_url():
+    return getattr(settings, 'SITE_URL',
+                   'WARNING: SITE_URL is not set')
+
+def full_url(absolute_path):
+    return site_url() + absolute_path
+
+def urn_from_uuid(uuid):
+    return 'urn:uuid:' + uuid
 
 def model2json():
     site_url = getattr(settings, 'SITE_URL',
@@ -35,6 +45,16 @@ class Model(RestView):
         data = model2json()
         return HttpResponse(data, mimetype="application/json")
 
+from django.contrib.auth.models import User as ModelUser
+
+def users_list():
+    return [ {
+            'self': full_url(user.get_absolute_url()),
+            'email': user.email,
+            'id': urn_from_uuid(user.username),
+            } for user in ModelUser.objects.all()
+             ]
+
 class User(RestView):
     def put(self, request, email):
         if not acl.is_email_valid(email):
@@ -49,6 +69,21 @@ class User(RestView):
         if not user_deleted:
             return error('User does not exist.')
         return success()
+
+    # def post(self, request, email):
+    #     if not acl.is_email_valid(email):
+    #         return error('Invalid email format.')
+    #     user_added = acl.add_user(email)
+    #     if not user_added:
+    #         return error('User already exists.')
+    #     return success()
+
+    def get(self, request):
+        data = json.dumps({
+                'self' : full_url(request.path),
+                'users': users_list()
+                })
+        return HttpResponse(data, mimetype="application/json")
 
 class User2(RestView):
     def get(self, request, uuid):

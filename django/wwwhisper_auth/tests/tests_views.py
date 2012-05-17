@@ -11,7 +11,7 @@ import wwwhisper_auth.acl as acl
 class FakeAssertionVeryfingBackend(ModelBackend):
     def authenticate(self, assertion, audience = None):
         try:
-            return User.objects.get(username=assertion)
+            return User.objects.get(email=assertion)
         except User.DoesNotExist:
             return None
 

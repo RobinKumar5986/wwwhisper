@@ -18,19 +18,20 @@ class HttpPermission(models.Model):
     def __unicode__(self):
         return "%s, %s" % (self.http_location, self.user.email)
 
-class UserExtras(models.Model):
+# TODO: remove this:
+class UserProfile(models.Model):
     user = models.OneToOneField(User)
-    uuid = models.CharField(max_length=36, null=False, primary_key=True,
-                            editable=False)
+#    uuid = models.CharField(max_length=36, null=False, primary_key=True,
+#                            editable=False)
 
     def save(self, *args, **kwargs):
-        if not self.uuid:
-            self.uuid = uuid.uuid4()
-        return super(UserExtras, self).save(*args, **kwargs)
+#        if not self.uuid:
+#            self.uuid = uuid.uuid4()
+        return super(UserProfile, self).save(*args, **kwargs)
 
 
 def create_user_extras(sender, instance, created, **kwargs):
     if created:
-        UserExtras.objects.create(user=instance)
+        UserProfile.objects.create(user=instance)
 
 post_save.connect(create_user_extras, sender=User)

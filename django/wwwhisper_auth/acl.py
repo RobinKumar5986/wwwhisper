@@ -3,10 +3,13 @@ from urlparse import urlparse
 from wwwhisper_auth.models import HttpLocation
 from wwwhisper_auth.models import HttpPermission
 
+#import base64
+#import hashlib
 import posixpath
 import re
 import string
 import urllib
+import uuid
 
 class InvalidPath(ValueError):
     pass
@@ -88,7 +91,10 @@ def encode_path(path):
     return urllib.quote(encoded_path, '/~')
 
 def add_user(email):
-    return _add(User, username=email, email=email, is_active=True)
+    if find_user(email):
+        return False
+    User.objects.create(username=uuid.uuid4(), email=email, is_active=True)
+    return True;
 
 def del_user(email):
     return _del(User, email=email)
