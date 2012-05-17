@@ -56,7 +56,6 @@ from django.contrib.auth.models import User as ModelUser
 def user_dict(user):
     return {
         'self': full_url(user.get_absolute_url()),
-        'selfPath': user.get_absolute_url(),
         'email': user.email,
         'id': urn_from_uuid(user.username),
         }
@@ -72,9 +71,13 @@ class UserCollection(RestView):
             return error('User already exists.')
         user = ModelUser.objects.create(
             username=str(uuid.uuid4()), email=email, is_active=True)
-        return HttpResponse(json.dumps(user_dict(user)),
-                            mimetype="application/json",
-                            status=201)
+        user_info = user_dict(user)
+        response = HttpResponse(json.dumps(user_info),
+                                mimetype="application/json",
+                                status=201)
+        response['Location'] = user_info['self']
+        response['Content-Location'] = user_info['self']
+        return response
 
     def get(self, request):
         data = json.dumps({
