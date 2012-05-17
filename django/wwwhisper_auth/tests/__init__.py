@@ -11,23 +11,24 @@ class HttpTestCase(TestCase):
     def setUp(self):
         self.client = Client()
 
-    def json_post(self, path, args):
+    # TODO: rename without json_?
+    def json_post(self, url, args):
         # TODO: remove duplication.
-        return self.client.post(path,
+        return self.client.post(url,
                                 json.dumps(args),
                                 'text/json',
                                 HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
-    def json_put(self, path, args):
-        return self.client.put(path,
+    def json_get(self, url):
+        return self.client.get(url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def json_put(self, url, args):
+        return self.client.put(url,
                                json.dumps(args),
                                'text/json',
                                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
 
-    def json_delete(self, path, args):
-        return self.client.delete(path,
-                                  json.dumps(args),
-                                  'text/json',
-                                  HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+    def json_delete(self, url):
+        return self.client.delete(url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 

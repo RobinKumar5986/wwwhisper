@@ -91,7 +91,7 @@ class User(RestView):
         query_set = ModelUser.objects.filter(username=uuid)
         assert query_set.count() <= 1
         if query_set.count() == 0:
-            return HttpResponseNotFound('TODO: error message')
+            return HttpResponseNotFound('User not found')
         user_info = user_dict(query_set.get())
         return HttpResponse(json.dumps(user_info),
                             mimetype="application/json")
@@ -100,7 +100,7 @@ class User(RestView):
         query_set = ModelUser.objects.filter(username=uuid)
         assert query_set.count() <= 1
         if query_set.count() == 0:
-            return HttpResponseNotFound('TODO: error message')
+            return HttpResponseNotFound('User not found')
         query_set.delete()
         return HttpResponseNoContent()
 
