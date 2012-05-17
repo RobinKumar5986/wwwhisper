@@ -2,6 +2,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from wwwhisper_auth.rest_view import RestView
+from wwwhisper_auth.models import CreationException
 
 import wwwhisper_auth.acl as acl
 import json
@@ -24,10 +25,12 @@ def error(message):
     return HttpResponse(message, status=400)
 
 # TODO: can this warning be fatal initialization error?
+# TODO: remove duplicated copy
 def site_url():
     return getattr(settings, 'SITE_URL',
                    'WARNING: SITE_URL is not set')
 
+# TODO: remove duplicated copy
 def full_url(absolute_path):
     return site_url() + absolute_path
 
@@ -53,6 +56,9 @@ class Model(RestView):
 
 from django.contrib.auth.models import User as ModelUser
 
+def users_list():
+    return [user_dict(user) for user in ModelUser.objects.all()]
+
 def user_dict(user):
     return {
         'self': full_url(user.get_absolute_url()),
@@ -60,8 +66,48 @@ def user_dict(user):
         'id': urn_from_uuid(user.username),
         }
 
-def users_list():
-    return [user_dict(user) for user in ModelUser.objects.all()]
+class UserCollectionStrategy:
+
+    def __init__(self):
+        self.collection_name = 'users'
+
+    def create_item(self, email):
+        if not acl.is_email_valid(email):
+            raise CreationException('Invalid email format.')
+        if acl.find_user(email):
+            raise CreationException('User already exists.')
+        user = ModelUser.objects.create(
+            username=str(uuid.uuid4()), email=email, is_active=True)
+        ModelUser.attributes_dict = user_dict
+        #user['attributes_dict'] = user_dict
+        return user
+
+    def all(self):
+        return ModelUser.objects.all()
+
+class CollectionView(RestView):
+    model = None
+
+    def post(self, request, **kwargs):
+        try:
+            created_item = self.model.create_item(**kwargs)
+        except CreationException, ex:
+            return error(ex)
+        attributes_dict = created_item.attributes_dict()
+        response = HttpResponse(json.dumps(attributes_dict),
+                                mimetype="application/json",
+                                status=201)
+        response['Location'] = attributes_dict['self']
+        response['Content-Location'] = attributes_dict['self']
+        return response
+
+    def get(self, request):
+        data = json.dumps({
+                'self' : full_url(request.path),
+                self.model.collection_name: [
+                    item.attributes_dict() for item in self.model.all()]
+                })
+        return HttpResponse(data, mimetype="application/json")
 
 class UserCollection(RestView):
     def post(self, request, email):
@@ -103,6 +149,40 @@ class User(RestView):
             return HttpResponseNotFound('User not found')
         query_set.delete()
         return HttpResponseNoContent()
+
+class LocationCollection(RestView):
+    def post(self, request, path):
+        try:
+            encoded_path = acl.encode_path(path)
+        except acl.InvalidPath, ex:
+            return error('Invalid path ' + str(ex))
+        location_added = acl.add_location(encoded_path)
+        if not location_added:
+            return error('Location already exists.')
+        # TODO: should each put return result for symetry?
+        # TODO: should this be returned as json object?
+        return success(result)
+
+        if not acl.is_email_valid(email):
+            return error('Invalid email format.')
+        if acl.find_user(email):
+            return error('User already exists.')
+        user = ModelUser.objects.create(
+            username=str(uuid.uuid4()), email=email, is_active=True)
+        user_info = user_dict(user)
+        response = HttpResponse(json.dumps(user_info),
+                                mimetype="application/json",
+                                status=201)
+        response['Location'] = user_info['self']
+        response['Content-Location'] = user_info['self']
+        return response
+
+    def get(self, request):
+        data = json.dumps({
+                'self' : full_url(request.path),
+                'users': users_list()
+                })
+        return HttpResponse(data, mimetype="application/json")
 
 # Addlocation, deletelocation?
 class Location(RestView):

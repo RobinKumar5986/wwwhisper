@@ -46,14 +46,6 @@ def find_location(path):
 def locations():
     return _all(HttpLocation, 'path')
 
-# TODO: capital letters in email are not accepted
-def is_email_valid(email):
-    """Validates email with regexp defined by BrowserId:
-    browserid/browserid/static/dialog/resources/validation.js
-    """
-    return re.match("^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
-                    email) != None
-
 def encode_path(path):
     parsed_url = urlparse(path)
     not_expected = []
@@ -89,18 +81,6 @@ def encode_path(path):
     except UnicodeError, er:
         raise InvalidPath('Invalid path encoding %s' % str(er))
     return urllib.quote(encoded_path, '/~')
-
-def add_user(email):
-    if find_user(email):
-        return False
-    User.objects.create(username=uuid.uuid4(), email=email, is_active=True)
-    return True;
-
-def del_user(email):
-    return _del(User, email=email)
-
-def find_user(email):
-    return _find(User, email=email)
 
 def emails():
     return _all(User, 'email')

@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.test.client import Client
 
 from tests_acl import *
+from tests_model import *
 from tests_views import *
 
 import json

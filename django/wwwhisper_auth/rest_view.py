@@ -14,7 +14,7 @@ class RestView(View):
     def dispatch(self, request, *args, **kwargs):
         method = request.method.lower()
         # TODO: remove delete
-        if method == 'post' or method == 'put' or method == 'delete':
+        if method == 'post' or method == 'put':
             try:
                 kwargs.update(json.loads(request.raw_post_data))
             except ValueError, err:

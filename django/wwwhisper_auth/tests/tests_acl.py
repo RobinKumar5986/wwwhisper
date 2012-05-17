@@ -164,19 +164,6 @@ class Acl(TestCase):
     def test_get_allowed_emails_when_empty(self):
         self.assertEqual([], acl.allowed_emails('/foo/bar'))
 
-    def test_is_email_valid(self):
-        """Test strings taken from BrowserId tests."""
-        self.assertTrue(acl.is_email_valid('x@y.z'))
-        self.assertTrue(acl.is_email_valid('x@y.z.w'))
-        self.assertTrue(acl.is_email_valid('x.v@y.z.w'))
-        self.assertTrue(acl.is_email_valid('x_v@y.z.w'))
-
-        self.assertFalse(acl.is_email_valid('x'))
-        self.assertFalse(acl.is_email_valid('x@y'))
-        self.assertFalse(acl.is_email_valid('@y.z'))
-        self.assertFalse(acl.is_email_valid('z@y.z@y.z'))
-        self.assertFalse(acl.is_email_valid(''))
-
     def test_encode_path(self):
         self.assertEqual('/', acl.encode_path('/'))
         self.assertEqual('/foo', acl.encode_path('/foo'))
