@@ -81,12 +81,38 @@
     }
   }
 
+  // TODO: Remove this one.
   function ajax(method, resource, params, successCallback) {
     if (!mockAjaxCalls()) {
       $.ajax({
         url: 'api/' + resource,
         type: method,
         data: JSON.stringify(params),
+        //dataType: method === 'GET' ?  'json' : 'text',
+        dataType: 'json',
+        headers: {'X-CSRFToken' : csrfToken},
+        success: successCallback,
+        error: function(jqXHR) {
+          // TODO: nice messages for user input related failures.
+          $('body').html(jqXHR.responseText);
+        }
+      });
+    } else {
+      successCallback();
+    }
+  }
+
+  function ajaxWithUrl(method, resource, params, successCallback) {
+    var jsonData = null;
+    if (params !== null) {
+      jsonData = JSON.stringify(params);
+    }
+
+    if (!mockAjaxCalls()) {
+      $.ajax({
+        url: resource,
+        type: method,
+        data: jsonData,
         //dataType: method === 'GET' ?  'json' : 'text',
         dataType: 'json',
         headers: {'X-CSRFToken' : csrfToken},
@@ -127,15 +153,15 @@
          });
   }
 
-  function removeUser(userMail) {
-    ajax('DELETE', 'users/', {email: userMail},
+  function removeUser(user) {
+    ajaxWithUrl('DELETE', user.self, null,
          function() {
            $.each(model.locations, function(locationId, locationValue) {
-             if (inArray(userMail, locationValue.allowedUsers)) {
+             if (inArray(user.email, locationValue.allowedUsers)) {
                removeFromArray(userMail, locationValue.allowedUsers);
              }
            });
-           removeFromArray(userMail, model.users);
+           removeFromArray(user, users);
            refresh();
          });
   }
@@ -283,7 +309,7 @@
       user = view.user.clone(true);
       user.find('.user-mail').text(userListItem.email).end()
         .find('.remove-user').click(function() {
-          removeUser(userMail);
+          removeUser(userListItem);
         }).end()
         .find('.highlight').hover(function() {
           highlightAccessibleLocations(userMail);

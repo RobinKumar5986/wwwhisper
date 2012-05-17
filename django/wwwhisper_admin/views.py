@@ -56,6 +56,7 @@ from django.contrib.auth.models import User as ModelUser
 def user_dict(user):
     return {
         'self': full_url(user.get_absolute_url()),
+        'selfPath': user.get_absolute_url(),
         'email': user.email,
         'id': urn_from_uuid(user.username),
         }
@@ -64,20 +65,6 @@ def users_list():
     return [user_dict(user) for user in ModelUser.objects.all()]
 
 class UserCollection(RestView):
-    def put(self, request, email):
-        if not acl.is_email_valid(email):
-            return error('Invalid email format.')
-        user_added = acl.add_user(email)
-        if not user_added:
-            return error('User already exists.')
-        return success()
-
-    # def delete(self, request, email):
-    #     user_deleted = acl.del_user(email)
-    #     if not user_deleted:
-    #         return error('User does not exist.')
-    #     return success()
-
     def post(self, request, email):
         if not acl.is_email_valid(email):
             return error('Invalid email format.')
@@ -109,7 +96,7 @@ class User(RestView):
     def delete(self, request, uuid):
         query_set = ModelUser.objects.filter(username=uuid)
         assert query_set.count() <= 1
-        if object_to_del.count() == 0:
+        if query_set.count() == 0:
             return HttpResponseNotFound('TODO: error message')
         query_set.delete()
         return HttpResponseNoContent()
