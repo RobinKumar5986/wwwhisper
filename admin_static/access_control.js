@@ -108,7 +108,7 @@
   }
 
   function addUser(userMail, onSuccessCallback) {
-    ajax('PUT', 'user/', {email: userMail},
+    ajax('PUT', 'users/', {email: userMail},
          function() {
            model.users.push(userMail);
            refresh();
@@ -117,7 +117,7 @@
   }
 
   function removeUser(userMail) {
-    ajax('DELETE', 'user/', {email: userMail},
+    ajax('DELETE', 'users/', {email: userMail},
          function() {
            $.each(model.locations, function(locationId, locationValue) {
              if (inArray(userMail, locationValue.allowedUsers)) {
@@ -138,7 +138,7 @@
       return;
     }
     grantPermissionCallback = function() {
-      ajax('PUT', 'permission/', {email: userMail,
+      ajax('PUT', 'permissions/', {email: userMail,
                                   path: location.path},
            function() {
              location.allowedUsers.push(userMail);
@@ -157,7 +157,7 @@
 
   // TODO: Fix assymetry (locationId above, location here).
   function revokeAccessByUser( userMail, location) {
-    ajax('DELETE', 'permission/', {email: userMail,
+    ajax('DELETE', 'permissions/', {email: userMail,
                                    path: location.path},
            function() {
              removeFromArray(userMail, location.allowedUsers);
@@ -171,7 +171,7 @@
         || inArray(locationPath, allLocationsPaths())) {
       return;
     }
-    ajax('PUT', 'location/', {path: locationPath},
+    ajax('PUT', 'locations/', {path: locationPath},
          function(escapedPath) {
            model.locations.push({
              'path': escapedPath,
@@ -183,7 +183,7 @@
   }
 
   function removeLocation(locationId) {
-    ajax('DELETE', 'location/', {path: model.locations[locationId].path},
+    ajax('DELETE', 'locations/', {path: model.locations[locationId].path},
          function() {
            model.locations.splice(locationId, 1);
            var selectLocationId = findSelectLocationId();
