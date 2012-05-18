@@ -111,15 +111,6 @@ class ItemView(RestView):
                 '%s not found' % self.collection.item_name.capitalize())
         return HttpResponseNoContent()
 
-
-class Location(RestView):
-
-    def delete(self, request, path):
-        location_deleted = acl.del_location(path)
-        if not location_deleted:
-            return error('Location does not exist.')
-        return success()
-
 class Permission(RestView):
     def put(self, request, email, path):
         if not acl.grant_access(email, path):

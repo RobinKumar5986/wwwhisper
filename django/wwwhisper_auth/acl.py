@@ -183,13 +183,13 @@ class LocationCollection(object):
         try:
             encoded_path = encode_path(path)
         except InvalidPath, ex:
-            raise CreationException('Invalid path ' + str(ex))
+            raise CreationException('Invalid path: ' + str(ex))
         if find_location(encoded_path):
             raise CreationException('Location already exists.')
         return HttpLocation.objects.create(path=path)
 
     def all(self):
-        return Location.objects.all()
+        return HttpLocation.objects.all()
 
     def get(self, uuid):
         item = HttpLocation.objects.filter(uuid=uuid)

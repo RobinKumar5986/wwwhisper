@@ -101,6 +101,7 @@ class UserTest(HttpTestCase):
       self.assertRegexpMatches(response.content, 'User not found')
 
 
+# TODO: should these tests be unified with equivalent UserTest?
 class LocationTest(HttpTestCase):
 
    def test_add_location(self):
@@ -129,66 +130,67 @@ class LocationTest(HttpTestCase):
 
       self.assertEqual(post_response.content, get_response.content)
 
-   # def test_delete_location(self):
-   #    response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-   #    self.assertEqual(201, response.status_code)
+   def test_delete_location(self):
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      self.assertEqual(201, response.status_code)
 
-   #    parsed_response_body = json.loads(response.content)
-   #    response = self.delete(parsed_response_body['self'])
-   #    self.assertEqual(204, response.status_code)
+      parsed_response_body = json.loads(response.content)
+      response = self.delete(parsed_response_body['self'])
+      self.assertEqual(204, response.status_code)
 
-   # def test_get_locations_list(self):
-   #    self.assertEqual(201, self.post('/admin/api/locations/',
-   #                                    {'path' : '/foo/bar'}).status_code)
-   #    self.assertEqual(201, self.post('/admin/api/locations/',
-   #                                    {'path' : 'baz@bar.org'}).status_code)
-   #    self.assertEqual(201, self.post('/admin/api/locations/',
-   #                                    {'path' : 'boo@bar.org'}).status_code)
-   #    response = self.get('/admin/api/locations/')
-   #    self.assertEqual(200, response.status_code)
-   #    parsed_response_body = json.loads(response.content)
-   #    self.assertRegexpMatches(parsed_response_body['self'],
-   #                             '^%s/admin/api/locations/$' % site_url())
+   def test_get_locations_list(self):
+      self.assertEqual(201, self.post('/admin/api/locations/',
+                                      {'path' : '/foo/bar'}).status_code)
+      self.assertEqual(201, self.post('/admin/api/locations/',
+                                      {'path' : '/baz/bar'}).status_code)
+      self.assertEqual(201, self.post('/admin/api/locations/',
+                                      {'path' : '/boo/bar/'}).status_code)
+      response = self.get('/admin/api/locations/')
+      self.assertEqual(200, response.status_code)
+      parsed_response_body = json.loads(response.content)
+      self.assertRegexpMatches(parsed_response_body['self'],
+                               '^%s/admin/api/locations/$' % site_url())
 
-   #    locations = parsed_response_body['locations']
-   #    self.assertEqual(3, len(locations))
-   #    self.assertItemsEqual(['/foo/bar', 'baz@bar.org', 'boo@bar.org'],
-   #                          [item['path'] for item in locations])
+      locations = parsed_response_body['locations']
+      self.assertEqual(3, len(locations))
+      self.assertItemsEqual(['/foo/bar', '/baz/bar', '/boo/bar/'],
+                            [item['path'] for item in locations])
 
-   # def test_get_not_existing_location(self):
-   #    response = self.get(
-   #       '/admin/api/locations/41be0192-0fcc-4a9c-935d-69243b75533c/')
-   #    self.assertEqual(404, response.status_code)
-   #    self.assertRegexpMatches(response.content, 'Location not found')
+   def test_get_not_existing_location(self):
+      response = self.get(
+         '/admin/api/locations/41be0192-0fcc-4a9c-935d-69243b75533c/')
+      self.assertEqual(404, response.status_code)
+      self.assertRegexpMatches(response.content, 'Location not found')
 
-   # # TODO: make this a generic test for the RestView.
-   # def test_add_location_invalid_arg_name(self):
-   #    response = self.post('/admin/api/locations/', {'epath' : '/foo/bar'})
-   #    self.assertEqual(400, response.status_code)
-   #    self.assertRegexpMatches(response.content, 'Invalid request arguments')
+   # TODO: make this a generic test for the RestView.
+   def test_add_location_invalid_arg_name(self):
+      response = self.post('/admin/api/locations/', {'peth' : '/foo/bar'})
+      self.assertEqual(400, response.status_code)
+      self.assertRegexpMatches(response.content, 'Invalid request arguments')
 
-   # def test_add_location_invalid_path(self):
-   #    response = self.post('/admin/api/locations/', {'path' : 'foo.bar'})
-   #    self.assertEqual(400, response.status_code)
-   #    self.assertRegexpMatches(response.content, 'Invalid path format')
+   def test_add_location_invalid_path(self):
+      response = self.post('/admin/api/locations/', {'path' : '/foo/../bar'})
+      self.assertEqual(400, response.status_code)
+      self.assertRegexpMatches(response.content,
+                               'Invalid path: Path should be normalized')
 
-   # def test_add_existing_location(self):
-   #    response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-   #    self.assertEqual(201, response.status_code)
+   def test_add_existing_location(self):
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      self.assertEqual(201, response.status_code)
 
-   #    response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-   #    self.assertEqual(400, response.status_code)
-   #    self.assertRegexpMatches(response.content, 'Location already exists')
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      self.assertEqual(400, response.status_code)
+      self.assertRegexpMatches(response.content, 'Location already exists')
 
-   # def test_delete_location_twice(self):
-   #    response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-   #    self.assertEqual(201, response.status_code)
+   def test_delete_location_twice(self):
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      self.assertEqual(201, response.status_code)
 
-   #    parsed_response_body = json.loads(response.content)
-   #    response = self.delete(parsed_response_body['self'])
-   #    self.assertEqual(204, response.status_code)
+      parsed_response_body = json.loads(response.content)
+      response = self.delete(parsed_response_body['self'])
+      self.assertEqual(204, response.status_code)
 
-   #    response = self.delete(parsed_response_body['self'])
-   #    self.assertEqual(404, response.status_code)
-   #    self.assertRegexpMatches(response.content, 'Location not found')
+      response = self.delete(parsed_response_body['self'])
+      self.assertEqual(404, response.status_code)
+      self.assertRegexpMatches(response.content, 'Location not found')
 
