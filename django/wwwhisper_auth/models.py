@@ -9,9 +9,19 @@ import uuid
 # TODO: just location?
 class HttpLocation(models.Model):
     path = models.CharField(max_length=2000, null=False, primary_key=True)
-
+    uuid = models.CharField(max_length=36, null=False, db_index=True,
+                            editable=False)
     def __unicode__(self):
         return "%s" % (self.path)
+
+    def attributes_dict(self):
+        return {'path': self.path}
+
+    def save(self, *args, **kwargs):
+        if not self.uuid:
+            self.uuid = str(uuid.uuid4())
+        return super(HttpLocation, self).save(*args, **kwargs)
+
 
 class HttpPermission(models.Model):
     http_location = models.ForeignKey(HttpLocation)
@@ -20,7 +30,6 @@ class HttpPermission(models.Model):
 
     def __unicode__(self):
         return "%s, %s" % (self.http_location, self.user.email)
-
 
 #    def create_item(email)
 
@@ -37,7 +46,7 @@ class UserProfile(models.Model):
 
 
 User.attributes_dict = lambda(self): {'email': self.email}
-User.uuid = lambda(self): self.username
+User.uuid = property(lambda(self): self.username)
 
 def create_user_extras(sender, instance, created, **kwargs):
     if created:

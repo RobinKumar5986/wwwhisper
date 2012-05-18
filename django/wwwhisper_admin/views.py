@@ -24,9 +24,6 @@ def error(message):
     logger.debug('Error %s' % (message))
     return HttpResponse(message, status=400)
 
-def urn_from_uuid(uuid):
-    return 'urn:uuid:' + uuid
-
 # TODO: can this warning be fatal initialization error?
 def site_url():
     return getattr(settings, 'SITE_URL',
@@ -55,21 +52,8 @@ class Model(RestView):
         data = model2json()
         return HttpResponse(data, mimetype="application/json")
 
-from django.contrib.auth.models import User as ModelUser
-
-def users_list():
-    return [user_dict(user) for user in ModelUser.objects.all()]
-
-def user_dict(user):
-    return {
-        'self': full_url(user.get_absolute_url()),
-        'email': user.email,
-        'id': urn_from_uuid(user.username),
-        }
-
-
 def item_attributes(item, item_path):
-    urn = urn_from_uuid(item.uuid())
+    urn = urn_from_uuid(item.uuid)
     attributes_dict = {}
     attributes_dict['self'] = full_url(item_path)
     attributes_dict['id'] = urn
@@ -86,7 +70,7 @@ class CollectionView(RestView):
         except CreationException, ex:
             return error(ex)
         attributes_dict = item_attributes(
-            created_item, self._item_path(request.path, created_item.uuid()))
+            created_item, self._item_path(request.path, created_item.uuid))
         response = HttpResponse(json.dumps(attributes_dict),
                                 mimetype="application/json",
                                 status=201)
@@ -96,7 +80,7 @@ class CollectionView(RestView):
 
     def get(self, request):
         items_list = [
-            item_attributes(item, self._item_path(request.path, item.uuid()))
+            item_attributes(item, self._item_path(request.path, item.uuid))
             for item in self.collection.all()
             ]
         data = json.dumps({
@@ -112,7 +96,7 @@ class ItemView(RestView):
     collection = None
 
     def get(self, request, uuid):
-        item = self.collection.find(uuid)
+        item = self.collection.get(uuid)
         if item is None:
             return HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())
@@ -127,53 +111,8 @@ class ItemView(RestView):
                 '%s not found' % self.collection.item_name.capitalize())
         return HttpResponseNoContent()
 
-class LocationCollection(RestView):
-    def post(self, request, path):
-        try:
-            encoded_path = acl.encode_path(path)
-        except acl.InvalidPath, ex:
-            return error('Invalid path ' + str(ex))
-        location_added = acl.add_location(encoded_path)
-        if not location_added:
-            return error('Location already exists.')
-        # TODO: should each put return result for symetry?
-        # TODO: should this be returned as json object?
-        return success(result)
 
-        if not acl.is_email_valid(email):
-            return error('Invalid email format.')
-        if acl.find_user(email):
-            return error('User already exists.')
-        user = ModelUser.objects.create(
-            username=str(uuid.uuid4()), email=email, is_active=True)
-        user_info = user_dict(user)
-        response = HttpResponse(json.dumps(user_info),
-                                mimetype="application/json",
-                                status=201)
-        response['Location'] = user_info['self']
-        response['Content-Location'] = user_info['self']
-        return response
-
-    def get(self, request):
-        data = json.dumps({
-                'self' : full_url(request.path),
-                'users': users_list()
-                })
-        return HttpResponse(data, mimetype="application/json")
-
-# Addlocation, deletelocation?
 class Location(RestView):
-    def put(self, request, path):
-        try:
-            result = acl.encode_path(path)
-        except acl.InvalidPath, ex:
-            return error('Invalid path ' + str(ex))
-        location_added = acl.add_location(result)
-        if not location_added:
-            return error('Location already exists.')
-        # TODO: should each put return result for symetry?
-        # TODO: should this be returned as json object?
-        return success(result)
 
     def delete(self, request, path):
         location_deleted = acl.del_location(path)

@@ -149,7 +149,7 @@ def is_email_valid(email):
         "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
         email) != None
 
-class UserCollection:
+class UserCollection(object):
     collection_name = 'users'
     item_name = 'user'
 
@@ -159,12 +159,12 @@ class UserCollection:
         if find_user(email):
             raise CreationException('User already exists.')
         return User.objects.create(
-            username=str(uuid.uuid4()), email=email, is_active=True)
+            username=str(uuid.uuid4()), email=email)
 
     def all(self):
         return User.objects.all()
 
-    def find(self, uuid):
+    def get(self, uuid):
         item = User.objects.filter(username=uuid)
         assert item.count() <= 1
         if item.count() == 0:
@@ -173,3 +173,30 @@ class UserCollection:
 
     def delete(self, uuid):
         return _del(User, username=uuid)
+
+
+class LocationCollection(object):
+    collection_name = 'locations'
+    item_name = 'location'
+
+    def create_item(self, path):
+        try:
+            encoded_path = encode_path(path)
+        except InvalidPath, ex:
+            raise CreationException('Invalid path ' + str(ex))
+        if find_location(encoded_path):
+            raise CreationException('Location already exists.')
+        return HttpLocation.objects.create(path=path)
+
+    def all(self):
+        return Location.objects.all()
+
+    def get(self, uuid):
+        item = HttpLocation.objects.filter(uuid=uuid)
+        assert item.count() <= 1
+        if item.count() == 0:
+            return None
+        return item.get()
+
+    def delete(self, uuid):
+        return _del(HttpLocation, uuid=uuid)
