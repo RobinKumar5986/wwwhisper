@@ -111,11 +111,24 @@ class ItemView(RestView):
                 '%s not found' % self.collection.item_name.capitalize())
         return HttpResponseNoContent()
 
+class AllowAccessView(RestView):
+    locations_collection = None
+
+    def put(self, request, location_uuid, userid):
+        # TODO: check if urn is correct.
+        user_uuid = userid.replace('urn:uuid:', '')
+        location = self.locations_collection.get(location_uuid)
+        if not location:
+            return HttpResponseNotFound('Location not found')
+        try:
+            if not location.grant_access(user_uuid):
+                return error('User already can access location.')
+        except LookupError, ex:
+            # User not found.
+            return HttpResponseNotFound(ex)
+        return HttpResponseNoContent()
+
 class Permission(RestView):
-    def put(self, request, email, path):
-        if not acl.grant_access(email, path):
-            return error('User already can access location.')
-        return success()
 
     def delete(self, request, email, path):
         access_revoked = acl.revoke_access(email, path)

@@ -96,6 +96,7 @@ def grant_access(email, location_path):
     user_id = User.objects.get(email=email).id
     return _add(HttpPermission, http_location_id=location_path, user_id=user_id)
 
+
 def revoke_access(email, location_path):
     if not find_location(location_path):
         raise LookupError('Location does not exist')
@@ -149,7 +150,7 @@ def is_email_valid(email):
         "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
         email) != None
 
-class UserCollection(object):
+class UsersCollection(object):
     collection_name = 'users'
     item_name = 'user'
 
@@ -175,7 +176,7 @@ class UserCollection(object):
         return _del(User, username=uuid)
 
 
-class LocationCollection(object):
+class LocationsCollection(object):
     collection_name = 'locations'
     item_name = 'location'
 
@@ -200,3 +201,7 @@ class LocationCollection(object):
 
     def delete(self, uuid):
         return _del(HttpLocation, uuid=uuid)
+
+class AllowedUsersCollection(object):
+    collection_name = 'allowed_users'
+    item_name = 'allowed_user'

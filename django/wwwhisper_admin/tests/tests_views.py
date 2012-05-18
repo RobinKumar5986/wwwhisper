@@ -194,3 +194,18 @@ class LocationTest(HttpTestCase):
       self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'Location not found')
 
+
+class AllowAccessTest(HttpTestCase):
+   def test_grant_access(self):
+      # Create user.
+      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+      self.assertEqual(201, response.status_code)
+      user_id = json.loads(response.content)['id']
+
+      # Create location.
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      self.assertEqual(201, response.status_code)
+      location_url = json.loads(response.content)['self']
+
+      response = self.put(location_url + 'allow-access/', { 'userid' : user_id})
+      self.assertEqual(204, response.status_code)

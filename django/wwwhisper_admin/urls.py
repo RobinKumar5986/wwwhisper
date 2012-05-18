@@ -1,25 +1,27 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib.auth.models import User
 from views import Model, Permission
-from views import CollectionView, ItemView
-from wwwhisper_auth.acl import UserCollection, LocationCollection
+from views import CollectionView, ItemView, AllowAccessView
+#from wwwhisper_auth.acl import AllowedUsersCollection
+from wwwhisper_auth.acl import LocationsCollection, UsersCollection
 
 #TODO: clean urls!
-user_collection = UserCollection()
-location_collection = LocationCollection()
+users_collection = UsersCollection()
+locations_collection = LocationsCollection()
+#allowed_users_collection = AllowedUsersCollection()
 
 urlpatterns = patterns(
     'wwwhisper_admin.views',
     url(r'^model.json/$',
         Model.as_view()),
     url(r'^users/$',
-        CollectionView.as_view(collection=user_collection)),
+        CollectionView.as_view(collection=users_collection)),
     url(r'^users/(?P<uuid>[0-9a-z-]+)/$',
-        ItemView.as_view(collection=user_collection)),
+        ItemView.as_view(collection=users_collection)),
     url(r'^locations/$',
-        CollectionView.as_view(collection=location_collection)),
+        CollectionView.as_view(collection=locations_collection)),
     url(r'^locations/(?P<uuid>[0-9a-z-]+)/$',
-        ItemView.as_view(collection=location_collection)),
-    url(r'^permissions/$',
-        Permission.as_view())
+        ItemView.as_view(collection=locations_collection)),
+    url(r'^locations/(?P<location_uuid>[0-9a-z-]+)/allow-access/$',
+        AllowAccessView.as_view(locations_collection=locations_collection))
     )
