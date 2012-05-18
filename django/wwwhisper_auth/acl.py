@@ -14,6 +14,10 @@ import uuid
 class InvalidPath(ValueError):
     pass
 
+class CreationException(Exception):
+    pass;
+
+
 def _add(model_class, **kwargs):
     obj, created = model_class.objects.get_or_create(**kwargs)
     return created
@@ -120,3 +124,52 @@ def can_access(email, path):
             longest_match = probed_path
     return longest_match_len != -1 and \
         _find(HttpPermission, user__email=email, http_location=longest_match)
+
+def add_user(email):
+    if find_user(email):
+        return False
+    User.objects.create(username=uuid.uuid4(), email=email, is_active=True)
+    return True;
+
+def del_user(email):
+    return _del(User, email=email)
+
+def find_user(email):
+    return _find(User, email=email)
+
+# def find_user_with_uuid(uid):
+#     return _find(User, uid=uid)
+
+# TODO: capital letters in email are not accepted
+def is_email_valid(email):
+    """Validates email with regexp defined by BrowserId:
+    browserid/browserid/static/dialog/resources/validation.js
+    """
+    return re.match(
+        "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
+        email) != None
+
+class UserCollection:
+    collection_name = 'users'
+    item_name = 'user'
+
+    def create_item(self, email):
+        if not is_email_valid(email):
+            raise CreationException('Invalid email format.')
+        if find_user(email):
+            raise CreationException('User already exists.')
+        return User.objects.create(
+            username=str(uuid.uuid4()), email=email, is_active=True)
+
+    def all(self):
+        return User.objects.all()
+
+    def find(self, uuid):
+        item = User.objects.filter(username=uuid)
+        assert item.count() <= 1
+        if item.count() == 0:
+            return None
+        return item.get()
+
+    def delete(self, uuid):
+        return _del(User, username=uuid)

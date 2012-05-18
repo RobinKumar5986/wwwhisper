@@ -45,6 +45,14 @@ class UserTest(HttpTestCase):
 
       self.assertEqual(post_response.content, get_response.content)
 
+   def test_delete_user(self):
+      response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
+      self.assertEqual(201, response.status_code)
+
+      parsed_response_body = json.loads(response.content)
+      response = self.delete(parsed_response_body['self'])
+      self.assertEqual(204, response.status_code)
+
    def test_get_users_list(self):
       self.assertEqual(201, self.post('/admin/api/users/',
                                       {'email' : 'foo@bar.org'}).status_code)
@@ -62,6 +70,12 @@ class UserTest(HttpTestCase):
       self.assertEqual(3, len(users))
       self.assertItemsEqual(['foo@bar.org', 'baz@bar.org', 'boo@bar.org'],
                             [item['email'] for item in users])
+
+   def test_get_not_existing_user(self):
+      response = self.get(
+         '/admin/api/users/41be0192-0fcc-4a9c-935d-69243b75533c/')
+      self.assertEqual(404, response.status_code)
+      self.assertRegexpMatches(response.content, 'User not found')
 
    # TODO: make this a generic test for the RestView.
    def test_add_user_invalid_arg_name(self):
@@ -81,14 +95,6 @@ class UserTest(HttpTestCase):
       response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
       self.assertEqual(400, response.status_code)
       self.assertRegexpMatches(response.content, 'User already exists')
-
-   def test_delete_user(self):
-      response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
-      self.assertEqual(201, response.status_code)
-
-      parsed_response_body = json.loads(response.content)
-      response = self.delete(parsed_response_body['self'])
-      self.assertEqual(204, response.status_code)
 
    def test_delete_user_twice(self):
       response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})

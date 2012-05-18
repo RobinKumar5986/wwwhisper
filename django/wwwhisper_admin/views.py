@@ -2,7 +2,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from wwwhisper_auth.rest_view import RestView
-from wwwhisper_auth.models import CreationException
+from wwwhisper_auth.acl import CreationException
 
 import wwwhisper_auth.acl as acl
 import json
@@ -24,17 +24,17 @@ def error(message):
     logger.debug('Error %s' % (message))
     return HttpResponse(message, status=400)
 
+def urn_from_uuid(uuid):
+    return 'urn:uuid:' + uuid
+
 # TODO: can this warning be fatal initialization error?
-# TODO: remove duplicated copy
 def site_url():
     return getattr(settings, 'SITE_URL',
                    'WARNING: SITE_URL is not set')
 
-# TODO: remove duplicated copy
 def full_url(absolute_path):
     return site_url() + absolute_path
 
-# TODO: remove duplicated copy
 def urn_from_uuid(uuid):
     return 'urn:uuid:' + uuid
 
@@ -68,6 +68,15 @@ def user_dict(user):
         }
 
 
+def item_attributes(item, item_path):
+    urn = urn_from_uuid(item.uuid())
+    attributes_dict = {}
+    attributes_dict['self'] = full_url(item_path)
+    attributes_dict['id'] = urn
+    attributes_dict.update(item.attributes_dict())
+    return attributes_dict
+
+
 class CollectionView(RestView):
     collection = None
 
@@ -76,7 +85,8 @@ class CollectionView(RestView):
             created_item = self.collection.create_item(**kwargs)
         except CreationException, ex:
             return error(ex)
-        attributes_dict = created_item.attributes_dict()
+        attributes_dict = item_attributes(
+            created_item, self._item_path(request.path, created_item.uuid()))
         response = HttpResponse(json.dumps(attributes_dict),
                                 mimetype="application/json",
                                 status=201)
@@ -85,31 +95,36 @@ class CollectionView(RestView):
         return response
 
     def get(self, request):
+        items_list = [
+            item_attributes(item, self._item_path(request.path, item.uuid()))
+            for item in self.collection.all()
+            ]
         data = json.dumps({
                 'self' : full_url(request.path),
-                self.collection.collection_name: [
-                    item.attributes_dict() for item in self.collection.all()]
+                self.collection.collection_name: items_list
                 })
         return HttpResponse(data, mimetype="application/json")
 
+    def _item_path(self, collection_url, uuid):
+        return collection_url + uuid + "/"
+
 class ItemView(RestView):
-    model = None
+    collection = None
 
     def get(self, request, uuid):
-        query_set = self.model.objects.filter(username=uuid)
-        assert query_set.count() <= 1
-        if query_set.count() == 0:
-            return HttpResponseNotFound('User not found')
-        user_info = user_dict(query_set.get())
-        return HttpResponse(json.dumps(user_info),
+        item = self.collection.find(uuid)
+        if item is None:
+            return HttpResponseNotFound(
+                '%s not found' % self.collection.item_name.capitalize())
+        attributes_dict = item_attributes(item, request.path)
+        return HttpResponse(json.dumps(attributes_dict),
                             mimetype="application/json")
 
     def delete(self, request, uuid):
-        query_set = ModelUser.objects.filter(username=uuid)
-        assert query_set.count() <= 1
-        if query_set.count() == 0:
-            return HttpResponseNotFound('User not found')
-        query_set.delete()
+        deleted = self.collection.delete(uuid)
+        if not deleted:
+            return HttpResponseNotFound(
+                '%s not found' % self.collection.item_name.capitalize())
         return HttpResponseNoContent()
 
 class LocationCollection(RestView):
