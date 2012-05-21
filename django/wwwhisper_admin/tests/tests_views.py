@@ -259,16 +259,20 @@ class GrantAccessTest(HttpTestCase):
       response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
       location_url = get_resource_url(response)
 
-      # TODO: create two users
-      # Create a user.
-      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-      user_id = get_resource_id(response)
+      # Create two users.
+      response = self.post('/admin/api/users/', {'email' : 'user1@acme.com'})
+      user1_id = get_resource_id(response)
+      response = self.post('/admin/api/users/', {'email' : 'user2@acme.com'})
+      user2_id = get_resource_id(response)
 
-      self.put(location_url + 'grant-access/', { 'userid' : user_id})
+      self.put(location_url + 'grant-access/', { 'userid' : user1_id})
+      self.put(location_url + 'grant-access/', { 'userid' : user2_id})
 
       response = self.get(location_url)
       parsed_response_body = json.loads(response.content)
       allowed_users = parsed_response_body['allowedUsers']
-      self.assertEqual(1, len(allowed_users))
-      self.assertEquals('boss@acme.com', allowed_users[0]['email'])
-      self.assertEquals(user_id, allowed_users[0]['id'])
+      self.assertEqual(2, len(allowed_users))
+      self.assertItemsEqual(['user1@acme.com', 'user2@acme.com'],
+                            [item['email'] for item in allowed_users])
+      self.assertItemsEqual([user1_id, user2_id],
+                            [item['id'] for item in allowed_users])
