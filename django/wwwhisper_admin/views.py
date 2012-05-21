@@ -25,15 +25,15 @@ def error(message):
     return HttpResponse(message, status=400)
 
 # TODO: can this warning be fatal initialization error?
+# TODO: remove duplication
 def site_url():
     return getattr(settings, 'SITE_URL',
                    'WARNING: SITE_URL is not set')
 
+# TODO: remove duplication
+# TODO: should HttpRequest.build_absolute_uri(request.path) be used instead?
 def full_url(absolute_path):
     return site_url() + absolute_path
-
-def urn_from_uuid(uuid):
-    return 'urn:uuid:' + uuid
 
 def model2json():
     site_url = getattr(settings, 'SITE_URL',
@@ -52,15 +52,6 @@ class Model(RestView):
         data = model2json()
         return HttpResponse(data, mimetype="application/json")
 
-def item_attributes(item, item_path):
-    urn = urn_from_uuid(item.uuid)
-    attributes_dict = {}
-    attributes_dict['self'] = full_url(item_path)
-    attributes_dict['id'] = urn
-    attributes_dict.update(item.attributes_dict())
-    return attributes_dict
-
-
 class CollectionView(RestView):
     collection = None
 
@@ -69,8 +60,7 @@ class CollectionView(RestView):
             created_item = self.collection.create_item(**kwargs)
         except CreationException, ex:
             return error(ex)
-        attributes_dict = item_attributes(
-            created_item, self._item_path(request.path, created_item.uuid))
+        attributes_dict = created_item.attributes_dict()
         response = HttpResponse(json.dumps(attributes_dict),
                                 mimetype="application/json",
                                 status=201)
@@ -79,10 +69,7 @@ class CollectionView(RestView):
         return response
 
     def get(self, request):
-        items_list = [
-            item_attributes(item, self._item_path(request.path, item.uuid))
-            for item in self.collection.all()
-            ]
+        items_list = [item.attributes_dict() for item in self.collection.all()]
         data = json.dumps({
                 'self' : full_url(request.path),
                 self.collection.collection_name: items_list
@@ -100,8 +87,7 @@ class ItemView(RestView):
         if item is None:
             return HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())
-        attributes_dict = item_attributes(item, request.path)
-        return HttpResponse(json.dumps(attributes_dict),
+        return HttpResponse(json.dumps(item.attributes_dict()),
                             mimetype="application/json")
 
     def delete(self, request, uuid):
@@ -111,7 +97,7 @@ class ItemView(RestView):
                 '%s not found' % self.collection.item_name.capitalize())
         return HttpResponseNoContent()
 
-class AllowAccessView(RestView):
+class GrantAccessView(RestView):
     locations_collection = None
 
     def put(self, request, location_uuid, userid):
@@ -121,8 +107,7 @@ class AllowAccessView(RestView):
         if not location:
             return HttpResponseNotFound('Location not found')
         try:
-            if not location.grant_access(user_uuid):
-                return error('User already can access location.')
+            location.grant_access(user_uuid)
         except LookupError, ex:
             # User not found.
             return HttpResponseNotFound(ex)

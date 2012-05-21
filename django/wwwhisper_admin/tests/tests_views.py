@@ -10,6 +10,8 @@ def site_url():
 def uid_regexp():
    return '[0-9a-z-]{36}'
 
+FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
+
 class UserTest(HttpTestCase):
 
    def test_add_user(self):
@@ -65,7 +67,7 @@ class UserTest(HttpTestCase):
 
    def test_get_not_existing_user(self):
       response = self.get(
-         '/admin/api/users/41be0192-0fcc-4a9c-935d-69243b75533c/')
+         '/admin/api/users/%s/' % FAKE_UUID)
       self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'User not found')
 
@@ -195,17 +197,78 @@ class LocationTest(HttpTestCase):
       self.assertRegexpMatches(response.content, 'Location not found')
 
 
-class AllowAccessTest(HttpTestCase):
+# TODO: use these in the whole file.
+def get_resource_url(response):
+   return json.loads(response.content)['self']
+
+def get_resource_id(response):
+   return json.loads(response.content)['id']
+
+class GrantAccessTest(HttpTestCase):
+
    def test_grant_access(self):
-      # Create user.
-      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-      self.assertEqual(201, response.status_code)
-      user_id = json.loads(response.content)['id']
-
-      # Create location.
+      # Create a location.
       response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      self.assertEqual(201, response.status_code)
-      location_url = json.loads(response.content)['self']
+      location_url = get_resource_url(response)
 
-      response = self.put(location_url + 'allow-access/', { 'userid' : user_id})
+      # Create a user.
+      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+      user_id = get_resource_id(response)
+
+      response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
       self.assertEqual(204, response.status_code)
+
+   def test_grant_access_to_not_existing_location(self):
+      location_url = '/admin/api/locations/%s/' % FAKE_UUID
+      # Create a user.
+      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+      user_id = get_resource_id(response)
+
+      response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+      self.assertEqual(404, response.status_code)
+      self.assertRegexpMatches(response.content, 'Location not found')
+
+   def test_grant_access_for_not_existing_user(self):
+      # Create a location.
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      location_url = get_resource_url(response)
+      user_id = 'urn:uuid:' + FAKE_UUID
+
+      response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+      self.assertEqual(404, response.status_code)
+      self.assertRegexpMatches(response.content, 'User not found')
+
+   # PUT must be idempotent, granting access multiple times should
+   # always return success.
+   def test_grant_access_if_already_granted(self):
+      # Create a location.
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      location_url = get_resource_url(response)
+
+      # Create a user.
+      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+      user_id = get_resource_id(response)
+
+      response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+      self.assertEqual(204, response.status_code)
+      response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+      self.assertEqual(204, response.status_code)
+
+   def test_location_lists_allowed_users(self):
+      # Create a location.
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      location_url = get_resource_url(response)
+
+      # TODO: create two users
+      # Create a user.
+      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+      user_id = get_resource_id(response)
+
+      self.put(location_url + 'grant-access/', { 'userid' : user_id})
+
+      response = self.get(location_url)
+      parsed_response_body = json.loads(response.content)
+      allowed_users = parsed_response_body['allowedUsers']
+      self.assertEqual(1, len(allowed_users))
+      self.assertEquals('boss@acme.com', allowed_users[0]['email'])
+      self.assertEquals(user_id, allowed_users[0]['id'])

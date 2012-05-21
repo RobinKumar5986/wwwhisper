@@ -103,6 +103,7 @@ def revoke_access(email, location_path):
     return _del(HttpPermission, user__email=email, http_location=location_path)
 
 # TODO: should this work only for defined locations or check parent locations?
+# TODO: moved to models.py
 def allowed_emails(path):
     return [permission.user.email for permission in
             HttpPermission.objects.filter(http_location=path)]
