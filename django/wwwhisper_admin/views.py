@@ -82,16 +82,16 @@ class CollectionView(RestView):
 class ItemView(RestView):
     collection = None
 
-    def get(self, request, uuid):
-        item = self.collection.get(uuid)
+    def get(self, request, **kwargs):
+        item = self.collection.get(**kwargs)
         if item is None:
             return HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())
         return HttpResponse(json.dumps(item.attributes_dict()),
                             mimetype="application/json")
 
-    def delete(self, request, uuid):
-        deleted = self.collection.delete(uuid)
+    def delete(self, request, **kwargs):
+        deleted = self.collection.delete(**kwargs)
         if not deleted:
             return HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())

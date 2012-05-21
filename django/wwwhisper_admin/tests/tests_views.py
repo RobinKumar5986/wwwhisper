@@ -204,6 +204,10 @@ def get_resource_url(response):
 def get_resource_id(response):
    return json.loads(response.content)['id']
 
+def get_resource_uuid(response):
+   urn = get_resource_id(response)
+   return urn.replace('urn:uuid:', '')
+
 class GrantAccessTest(HttpTestCase):
 
    def test_grant_access(self):
@@ -276,3 +280,153 @@ class GrantAccessTest(HttpTestCase):
                             [item['email'] for item in allowed_users])
       self.assertItemsEqual([user1_id, user2_id],
                             [item['id'] for item in allowed_users])
+
+# class DenyAccessTest(HttpTestCase):
+
+#    def test_deny_access(self):
+#       # Create a location.
+#       response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+#       location_url = get_resource_url(response)
+
+#       # Create a user.
+#       response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+#       user_id = get_resource_id(response)
+
+#       response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+#       self.assertEqual(204, response.status_code)
+
+#       response = self.put(location_url + 'deny-access/', { 'userid' : user_id})
+#       self.assertEqual(204, response.status_code)
+
+
+class GrantAccess2Test(HttpTestCase):
+
+   def can_access(self, location_url, user_uuid):
+      response = self.get(location_url + 'allowed-users/' + user_uuid + '/')
+      self.assertTrue(response.status_code == 200
+                      or response.status_code == 404)
+      return response.status_code == 200
+
+   def test_grant_access(self):
+      # Create a location.
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      location_url = get_resource_url(response)
+
+      # Create a user.
+      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+      user_url = get_resource_url(response)
+      user_id = get_resource_id(response)
+      user_uuid = get_resource_uuid(response)
+
+      response = self.post(location_url + 'allowed-users/',
+                           {'userid' : user_id})
+      self.assertEqual(201, response.status_code)
+
+      parsed_response_body = json.loads(response.content)
+      self.assertEqual(location_url + 'allowed-users/' + user_uuid + '/',
+                       parsed_response_body['self'])
+      self.assertEqual(user_url, parsed_response_body['user']['self'])
+      self.assertEqual(user_id, parsed_response_body['user']['id'])
+      self.assertEqual('boss@acme.com', parsed_response_body['user']['email'])
+
+   def test_grant_access_creates_allowed_user_resource(self):
+      # Create a location.
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      location_url = get_resource_url(response)
+
+      # Create a user.
+      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+      user_url = get_resource_url(response)
+      user_id = get_resource_id(response)
+      user_uuid = get_resource_uuid(response)
+
+      self.assertFalse(self.can_access(location_url, user_uuid))
+
+      # Allow access.
+      response = self.post(location_url + 'allowed-users/',
+                           {'userid' : user_id})
+      self.assertEqual(201, response.status_code)
+
+      self.assertTrue(self.can_access(location_url, user_uuid))
+
+
+   def test_revoke_access(self):
+      # Create a location.
+      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      location_url = get_resource_url(response)
+
+      # Create a user.
+      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+      user_url = get_resource_url(response)
+      user_id = get_resource_id(response)
+      user_uuid = get_resource_uuid(response)
+
+      # Allow access.
+      response = self.post(location_url + 'allowed-users/',
+                           {'userid' : user_id})
+      self.assertTrue(self.can_access(location_url, user_uuid))
+
+      # Revoke access.
+      response = self.delete(location_url + 'allowed-users/' + user_uuid + '/')
+      self.assertEqual(204, response.status_code)
+      self.assertFalse(self.can_access(location_url, user_uuid))
+
+
+   # def test_grant_access_to_not_existing_location(self):
+   #    location_url = '/admin/api/locations/%s/' % FAKE_UUID
+   #    # Create a user.
+   #    response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+   #    user_id = get_resource_id(response)
+
+   #    response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+   #    self.assertEqual(404, response.status_code)
+   #    self.assertRegexpMatches(response.content, 'Location not found')
+
+   # def test_grant_access_for_not_existing_user(self):
+   #    # Create a location.
+   #    response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+   #    location_url = get_resource_url(response)
+   #    user_id = 'urn:uuid:' + FAKE_UUID
+
+   #    response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+   #    self.assertEqual(404, response.status_code)
+   #    self.assertRegexpMatches(response.content, 'User not found')
+
+   # # PUT must be idempotent, granting access multiple times should
+   # # always return success.
+   # def test_grant_access_if_already_granted(self):
+   #    # Create a location.
+   #    response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+   #    location_url = get_resource_url(response)
+
+   #    # Create a user.
+   #    response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
+   #    user_id = get_resource_id(response)
+
+   #    response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+   #    self.assertEqual(204, response.status_code)
+   #    response = self.put(location_url + 'grant-access/', { 'userid' : user_id})
+   #    self.assertEqual(204, response.status_code)
+
+   # def test_location_lists_allowed_users(self):
+   #    # Create a location.
+   #    response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+   #    location_url = get_resource_url(response)
+
+   #    # Create two users.
+   #    response = self.post('/admin/api/users/', {'email' : 'user1@acme.com'})
+   #    user1_id = get_resource_id(response)
+   #    response = self.post('/admin/api/users/', {'email' : 'user2@acme.com'})
+   #    user2_id = get_resource_id(response)
+
+   #    self.put(location_url + 'grant-access/', { 'userid' : user1_id})
+   #    self.put(location_url + 'grant-access/', { 'userid' : user2_id})
+
+   #    response = self.get(location_url)
+   #    parsed_response_body = json.loads(response.content)
+   #    allowed_users = parsed_response_body['allowedUsers']
+   #    self.assertEqual(2, len(allowed_users))
+   #    self.assertItemsEqual(['user1@acme.com', 'user2@acme.com'],
+   #                          [item['email'] for item in allowed_users])
+   #    self.assertItemsEqual([user1_id, user2_id],
+   #                          [item['id'] for item in allowed_users])
