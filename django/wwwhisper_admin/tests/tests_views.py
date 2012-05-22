@@ -207,8 +207,10 @@ class AccessControlTest(AdminViewTestCase):
       self.assertEqual(201, response.status_code)
 
       parsed_response_body = json.loads(response.content)
-      self.assertEqual(location_url + 'allowed-users/' + user_uuid + '/',
-                       parsed_response_body['self'])
+      resource_url = location_url + 'allowed-users/' + user_uuid + '/'
+      self.assertEqual(resource_url, response['Location'])
+      self.assertFalse(response.has_header('Content-Location'))
+      self.assertEqual(resource_url, parsed_response_body['self'])
       self.assertEqual(user_url, parsed_response_body['user']['self'])
       self.assertEqual(user_urn, parsed_response_body['user']['id'])
       self.assertEqual(TEST_USER_EMAIL, parsed_response_body['user']['email'])
@@ -268,7 +270,7 @@ class AccessControlTest(AdminViewTestCase):
       user_uuid = extract_uuid(self.add_user()['id'])
 
       response = self.put(location_url + 'allowed-users/' + user_uuid + '/')
-      self.assertEqual(400, response.status_code)
+      self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'Location not found')
 
    def test_grant_access_for_not_existing_user(self):
@@ -276,5 +278,47 @@ class AccessControlTest(AdminViewTestCase):
       user_uuid =  FAKE_UUID
 
       response = self.put(location_url + 'allowed-users/' + user_uuid + '/')
-      self.assertEqual(400, response.status_code)
+      self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'User not found')
+
+
+   # PUT should be indempontent, granting access for the second time
+   # should not return an error.
+   def test_grant_access_twice(self):
+      location_url = self.add_location()['self']
+
+      response = self.add_user()
+      user_url = response['self']
+      user_uuid = extract_uuid(response['id'])
+
+      response1 = self.put(location_url + 'allowed-users/' + user_uuid + "/")
+      self.assertEqual(201, response1.status_code)
+      self.assertTrue(response1.has_header('Location'))
+
+      response2 = self.put(location_url + 'allowed-users/' + user_uuid + "/")
+      self.assertEqual(200, response2.status_code)
+      self.assertFalse(response2.has_header('Location'))
+
+      self.assertEqual(response1.content, response2.content)
+
+   def test_revoke_access_twice(self):
+      location_url = self.add_location()['self']
+
+      response = self.add_user()
+      user_url = response['self']
+      user_uuid = extract_uuid(response['id'])
+
+      # Allow access.
+      self.put(location_url + 'allowed-users/' + user_uuid + "/")
+      self.assertTrue(self.can_access(location_url, user_uuid))
+
+      # Revoke access.
+      response = self.delete(location_url + 'allowed-users/' + user_uuid + "/")
+      self.assertEqual(204, response.status_code)
+
+      response = self.delete(location_url + 'allowed-users/' + user_uuid + "/")
+      self.assertEqual(404, response.status_code)
+      self.assertRegexpMatches(response.content,
+                               'User can not access location.')
+
+      self.assertFalse(self.can_access(location_url, user_uuid))

@@ -64,21 +64,30 @@ class HttpLocation(models.Model):
         user = _find(User, username=user_uuid)
         if user is None:
             raise LookupError('User not found')
-        # TODO: test what happens when created twice.
         obj, created = HttpPermission.objects.get_or_create(
             http_location_id=self.path, user_id=user.id)
-        return obj
-# TODO
-#        if not created:
-#            raise 
+        return (obj, created)
 
     def revoke_access(self, user_uuid):
         user = _find(User, username=user_uuid)
         if user is None:
-            raise LookupError('User not found')
+            raise LookupError('User not found.')
         if not _del(HttpPermission, http_location_id=self.path,
                     user_id=user.id):
             raise LookupError('User can not access location.')
+
+
+    def get_permission(self, user_uuid):
+        user = _find(User, username=user_uuid)
+        if user is None:
+            raise LookupError('User not found.')
+
+        item = HttpPermission.objects.filter(http_location_id=self.path,
+                                             user_id=user.id)
+        assert item.count() <= 1
+        if item.count() == 0:
+            raise LookupError('User can not access location.')
+        return item.get()
 
     def allowed_users(self):
         return [permission.user.attributes_dict() for permission in
@@ -93,7 +102,7 @@ class HttpLocation(models.Model):
     def get_absolute_url(self):
         return ('wwwhisper_location', (), {'uuid' : self.uuid})
 
-# TODO: rename to allowed_user
+# TODO: rename to allowed_user?
 class HttpPermission(models.Model):
     http_location = models.ForeignKey(HttpLocation)
     user = models.ForeignKey(User)
@@ -111,7 +120,6 @@ class HttpPermission(models.Model):
                 {'location_uuid' : self.http_location.uuid,
                  'user_uuid': self.user.uuid})
 
-#    def create_item(email)
 
 # TODO: remove this:
 class UserProfile(models.Model):

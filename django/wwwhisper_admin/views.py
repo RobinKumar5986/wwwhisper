@@ -58,7 +58,7 @@ class CollectionView(RestView):
     def post(self, request, **kwargs):
         try:
             created_item = self.collection.create_item(**kwargs)
-        except CreationException, ex:
+        except CreationException as ex:
             return error(ex)
         attributes_dict = created_item.attributes_dict()
         response = HttpResponse(json.dumps(attributes_dict),
@@ -97,11 +97,47 @@ class ItemView(RestView):
                 '%s not found' % self.collection.item_name.capitalize())
         return HttpResponseNoContent()
 
-class AllowedUsersView(ItemView):
-    def __init__(self, collection):
-        super(AllowedUsersView, self).__init__(collection=collection)
-        self.collection_view = CollectionView(collection=collection)
+class AllowedUsersView(RestView):
+    locations_collection = None
 
-    def put(self, request, **kwargs):
-        return self.collection_view.post(request, **kwargs)
+    def get(self, request, location_uuid, user_uuid):
+        location = self.locations_collection.get(location_uuid)
+        if location is None:
+            return HttpResponseNotFound('Location not found.')
+        try:
+            permission = location.get_permission(user_uuid)
+            return HttpResponse(json.dumps(permission.attributes_dict()),
+                                mimetype="application/json")
+        except LookupError, ex:
+            return HttpResponseNotFound(ex)
 
+    def delete(self, request, location_uuid, user_uuid):
+        location = self.locations_collection.get(location_uuid)
+        if not location:
+            return HttpResponseNotFound('Location not found.')
+        try:
+            location.revoke_access(user_uuid)
+            return HttpResponseNoContent()
+        except LookupError, ex:
+            return HttpResponseNotFound(ex)
+
+
+    def put(self, request, location_uuid, user_uuid):
+        location = self.locations_collection.get(location_uuid)
+        if not location:
+            return HttpResponseNotFound('Location not found.')
+        try:
+            (permission, created) = location.grant_access(user_uuid)
+            attributes_dict = permission.attributes_dict()
+            if created:
+                response =  HttpResponse(json.dumps(attributes_dict),
+                                         mimetype="application/json",
+                                         status=201)
+                response['Location'] = attributes_dict['self']
+            else:
+                response = HttpResponse(json.dumps(attributes_dict),
+                                        mimetype="application/json",
+                                        status=200)
+            return response
+        except LookupError, ex:
+            return HttpResponseNotFound(ex)
