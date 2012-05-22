@@ -5,6 +5,7 @@ import json
 
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
 TEST_USER_EMAIL = 'foo@bar.org'
+TEST_LOCATION = '/pub/kika/'
 
 def uid_regexp():
    return '[0-9a-z-]{36}'
@@ -30,6 +31,11 @@ class AdminViewTestCase(HttpTestCase):
       self.assertEqual(201, response.status_code)
       return json.loads(response.content)
 
+   def add_location(self):
+      response = self.post('/admin/api/locations/', {'path' : TEST_LOCATION})
+      self.assertEqual(201, response.status_code)
+      return json.loads(response.content)
+
 class UserTest(AdminViewTestCase):
 
    def test_add_user(self):
@@ -48,18 +54,16 @@ class UserTest(AdminViewTestCase):
       self.assertEqual(self_url, response['Content-Location'])
 
    def test_get_user(self):
-      parsed_post_response_body = self.add_user()
-      get_response = self.get(parsed_post_response_body['self'])
+      parsed_add_user_response_body = self.add_user()
+      get_response = self.get(parsed_add_user_response_body['self'])
       self.assertEqual(200, get_response.status_code)
       parsed_get_response_body = json.loads(get_response.content)
-      self.assertEqual(parsed_post_response_body, parsed_get_response_body)
+      self.assertEqual(parsed_add_user_response_body, parsed_get_response_body)
 
    def test_delete_user(self):
       user_url = self.add_user()['self']
-      response = self.delete(user_url)
-      self.assertEqual(204, response.status_code)
-      response = self.get(user_url)
-      self.assertEqual(404, response.status_code)
+      self.assertEqual(204, self.delete(user_url).status_code)
+      self.assertEqual(404, self.get(user_url).status_code)
 
    def test_get_users_list(self):
       self.assertEqual(201, self.post('/admin/api/users/',
@@ -97,7 +101,6 @@ class UserTest(AdminViewTestCase):
 
    def test_add_existing_user(self):
       self.add_user()
-
       response = self.post('/admin/api/users/', {'email' : TEST_USER_EMAIL})
       self.assertEqual(400, response.status_code)
       self.assertRegexpMatches(response.content, 'User already exists')
@@ -112,42 +115,35 @@ class UserTest(AdminViewTestCase):
       self.assertRegexpMatches(response.content, 'User not found')
 
 
-# TODO: should these tests be unified with equivalent UserTest?
-class LocationTest(HttpTestCase):
+class LocationTest(AdminViewTestCase):
 
    def test_add_location(self):
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      response = self.post('/admin/api/locations/', {'path' : TEST_LOCATION})
       self.assertEqual(201, response.status_code)
 
+      location_uuid = get_resource_uuid(response)
       parsed_response_body = json.loads(response.content)
-      self.assertEqual('/foo/bar', parsed_response_body['path'])
+
       self.assertRegexpMatches(parsed_response_body['id'],
                                '^urn:uuid:%s$' % uid_regexp())
-
-      self_url_regexp = '^%s/admin/api/locations/%s/$' \
-          % (site_url(), uid_regexp())
-      self.assertRegexpMatches(parsed_response_body['self'], self_url_regexp)
-      self.assertRegexpMatches(response['Location'], self_url_regexp)
-      self.assertRegexpMatches(response['Content-Location'], self_url_regexp)
+      self.assertEqual(TEST_LOCATION, parsed_response_body['path'])
+      self_url = '%s/admin/api/locations/%s/' % (site_url(), location_uuid)
+      self.assertEqual(self_url, parsed_response_body['self'])
+      self.assertEqual(self_url, response['Location'])
+      self.assertEqual(self_url, response['Content-Location'])
 
    def test_get_location(self):
-      post_response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      self.assertEqual(201, post_response.status_code)
-      parsed_post_response_body = json.loads(post_response.content)
-
-      get_response = self.get(parsed_post_response_body['self'])
+      parsed_add_location_response_body = self.add_location()
+      get_response = self.get(parsed_add_location_response_body['self'])
       self.assertEqual(200, get_response.status_code)
       parsed_get_response_body = json.loads(get_response.content)
-
-      self.assertEqual(post_response.content, get_response.content)
+      self.assertEqual(parsed_add_location_response_body,
+                       parsed_get_response_body)
 
    def test_delete_location(self):
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      self.assertEqual(201, response.status_code)
-
-      parsed_response_body = json.loads(response.content)
-      response = self.delete(parsed_response_body['self'])
-      self.assertEqual(204, response.status_code)
+      location_url = self.add_location()['self']
+      self.assertEqual(204, self.delete(location_url).status_code)
+      self.assertEqual(404, self.get(location_url).status_code)
 
    def test_get_locations_list(self):
       self.assertEqual(201, self.post('/admin/api/locations/',
@@ -159,8 +155,8 @@ class LocationTest(HttpTestCase):
       response = self.get('/admin/api/locations/')
       self.assertEqual(200, response.status_code)
       parsed_response_body = json.loads(response.content)
-      self.assertRegexpMatches(parsed_response_body['self'],
-                               '^%s/admin/api/locations/$' % site_url())
+      self.assertEquals('%s/admin/api/locations/' % site_url(),
+                        parsed_response_body['self'])
 
       locations = parsed_response_body['locations']
       self.assertEqual(3, len(locations))
@@ -168,12 +164,10 @@ class LocationTest(HttpTestCase):
                             [item['path'] for item in locations])
 
    def test_get_not_existing_location(self):
-      response = self.get(
-         '/admin/api/locations/41be0192-0fcc-4a9c-935d-69243b75533c/')
+      response = self.get('/admin/api/locations/%s/' % FAKE_UUID)
       self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'Location not found')
 
-   # TODO: make this a generic test for the RestView.
    def test_add_location_invalid_arg_name(self):
       response = self.post('/admin/api/locations/', {'peth' : '/foo/bar'})
       self.assertEqual(400, response.status_code)
@@ -186,22 +180,17 @@ class LocationTest(HttpTestCase):
                                'Invalid path: Path should be normalized')
 
    def test_add_existing_location(self):
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      self.assertEqual(201, response.status_code)
-
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
+      self.add_location()
+      response = self.post('/admin/api/locations/', {'path' : TEST_LOCATION})
       self.assertEqual(400, response.status_code)
       self.assertRegexpMatches(response.content, 'Location already exists')
 
    def test_delete_location_twice(self):
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      self.assertEqual(201, response.status_code)
-
-      parsed_response_body = json.loads(response.content)
-      response = self.delete(parsed_response_body['self'])
+      location_url = self.add_location()['self']
+      response = self.delete(location_url)
       self.assertEqual(204, response.status_code)
 
-      response = self.delete(parsed_response_body['self'])
+      response = self.delete(location_url)
       self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'Location not found')
 
