@@ -218,10 +218,9 @@ class AllowedUsersCollection(object):
     def __init__(self, locations_collection):
         self.locations_collection = locations_collection
 
-    def create_item(self, location_uuid, userid):
-        user_uuid = userid.replace('urn:uuid:', '')
+    def create_item(self, location_uuid, user_uuid):
         location = self.locations_collection.get(location_uuid)
-        if not location:
+        if location is None:
             raise CreationException('Location not found.')
         try:
             return location.grant_access(user_uuid)

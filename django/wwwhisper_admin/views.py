@@ -97,6 +97,14 @@ class ItemView(RestView):
                 '%s not found' % self.collection.item_name.capitalize())
         return HttpResponseNoContent()
 
+class AllowedUsersView(ItemView):
+    def __init__(self, collection):
+        super(AllowedUsersView, self).__init__(collection=collection)
+        self.collection_view = CollectionView(collection=collection)
+
+    def put(self, request, **kwargs):
+        return self.collection_view.post(request, **kwargs)
+
 class GrantAccessView(RestView):
     locations_collection = None
 
@@ -112,12 +120,4 @@ class GrantAccessView(RestView):
             # User not found.
             return HttpResponseNotFound(ex)
         return HttpResponseNoContent()
-
-class Permission(RestView):
-
-    def delete(self, request, email, path):
-        access_revoked = acl.revoke_access(email, path)
-        if not access_revoked:
-            return error('User can not access location.')
-        return success()
 

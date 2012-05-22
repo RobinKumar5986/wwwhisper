@@ -65,8 +65,12 @@ class HttpLocation(models.Model):
         if user is None:
             raise LookupError('User not found')
         # TODO: test what happens when created twice.
-        return HttpPermission.objects.create(
+        obj, created = HttpPermission.objects.get_or_create(
             http_location_id=self.path, user_id=user.id)
+        return obj
+# TODO
+#        if not created:
+#            raise 
 
     def revoke_access(self, user_uuid):
         user = _find(User, username=user_uuid)

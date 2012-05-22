@@ -22,11 +22,8 @@ class HttpTestCase(TestCase):
     def get(self, url):
         return self.client.get(url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
-    def put(self, url, args):
-        return self.client.put(url,
-                               json.dumps(args),
-                               'text/json',
-                               HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+    def put(self, url):
+        return self.client.put(url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
 
 
     def delete(self, url):
