@@ -4,6 +4,7 @@ from wwwhisper_auth.acl import InvalidPath
 import wwwhisper_auth.acl as acl
 
 TEST_USER_EMAIL = 'foo@bar.com'
+TEST_LOCATION = '/pub/kika'
 
 class UsersCollectionTest(TestCase):
     def setUp(self):
@@ -32,28 +33,72 @@ class UsersCollectionTest(TestCase):
                                 'User already exists',
                                 self.users_collection.create_item,
                                 TEST_USER_EMAIL)
+
     def test_delete_user_twice(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         self.assertTrue(self.users_collection.delete(user.uuid))
         self.assertFalse(self.users_collection.delete(user.uuid))
 
+    def test_get_all_users(self):
+        user1 = self.users_collection.create_item('foo@example.com')
+        user2 = self.users_collection.create_item('bar@example.com')
+        self.assertItemsEqual(['foo@example.com', 'bar@example.com'],
+                              [u.email for u in self.users_collection.all()])
+        self.users_collection.delete(user1.uuid)
+        self.assertItemsEqual(['bar@example.com'],
+                              [u.email for u in self.users_collection.all()])
+
+    def test_get_all_users_when_empty(self):
+        self.assertListEqual([], list(self.users_collection.all()))
+
+class LocationsCollectionTest(TestCase):
+    def setUp(self):
+        self.locations_collection = acl.LocationsCollection()
+
+    def test_create_location(self):
+        location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertTrue(TEST_LOCATION, location.path)
+
+    def test_get_location(self):
+        location1 = self.locations_collection.create_item(TEST_LOCATION)
+        location2 = self.locations_collection.get(location1.uuid)
+        self.assertIsNotNone(location2)
+        self.assertEqual(location1.path, location2.path)
+        self.assertEqual(location1.uuid, location2.uuid)
+
+    def test_delete_location(self):
+        location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertIsNotNone(self.locations_collection.get(location.uuid))
+        self.assertTrue(self.locations_collection.delete(location.uuid))
+        self.assertIsNone(self.locations_collection.get(location.uuid))
+
+    def test_create_location_twice(self):
+        self.locations_collection.create_item(TEST_LOCATION)
+        self.assertRaisesRegexp(acl.CreationException,
+                                'Location already exists',
+                                self.locations_collection.create_item,
+                                TEST_LOCATION)
+
+    def test_delete_location_twice(self):
+        location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertTrue(self.locations_collection.delete(location.uuid))
+        self.assertFalse(self.locations_collection.delete(location.uuid))
+
+    def test_get_all_locations(self):
+        location1 = self.locations_collection.create_item('/foo')
+        location2 = self.locations_collection.create_item('/foo/bar')
+        self.assertItemsEqual(['/foo/bar', '/foo'],
+                              [l.path for l
+                               in self.locations_collection.all()])
+        self.locations_collection.delete(location1.uuid)
+        self.assertItemsEqual(['/foo/bar'],
+                              [l.path for l
+                               in self.locations_collection.all()])
+
+    def test_get_all_locations_when_empty(self):
+        self.assertListEqual([], list(self.locations_collection.all()))
+
 class AclTest(TestCase):
-    def test_add_location(self):
-        self.assertFalse(acl.find_location('/foo/bar'))
-        self.assertTrue(acl.add_location('/foo/bar'))
-        self.assertTrue(acl.find_location('/foo/bar'))
-
-    def test_add_location_twice(self):
-        self.assertTrue(acl.add_location('/foo/bar'))
-        self.assertFalse(acl.add_location('/foo/bar'))
-
-    def test_del_location(self):
-        self.assertTrue(acl.add_location('/foo/bar'))
-        self.assertTrue(acl.del_location('/foo/bar'))
-        self.assertFalse(acl.find_location('/foo/bar'))
-
-    def test_del_missing_location(self):
-        self.assertFalse(acl.del_location('/foo/bar'))
 
     def test_get_locations(self):
         acl.add_location('/foo/bar')
@@ -64,17 +109,6 @@ class AclTest(TestCase):
 
     def test_get_locations_when_empty(self):
         self.assertEqual([], acl.locations())
-
-    def test_get_emails(self):
-        acl.add_user('foo@example.com')
-        acl.add_user('bar@example.com')
-        self.assertListEqual(['bar@example.com', 'foo@example.com'],
-                             sorted(acl.emails()))
-        acl.del_user('foo@example.com')
-        self.assertListEqual(['bar@example.com'], acl.emails())
-
-    def test_get_emails_when_empty(self):
-        self.assertEqual([], acl.emails())
 
 
     def test_is_email_valid(self):
