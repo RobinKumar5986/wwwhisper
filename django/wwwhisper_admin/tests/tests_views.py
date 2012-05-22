@@ -13,21 +13,13 @@ def uid_regexp():
 def site_url():
    return wwwhisper_admin.views.site_url()
 
-# TODO: use these in the whole file.
-def get_resource_url(response):
-   return json.loads(response.content)['self']
-
-def get_resource_urn(response):
-   return json.loads(response.content)['id']
-
-def get_resource_uuid(response):
-   urn = get_resource_urn(response)
+def extract_uuid(urn):
    return urn.replace('urn:uuid:', '')
 
 class AdminViewTestCase(HttpTestCase):
 
-   def add_user(self):
-      response = self.post('/admin/api/users/', {'email' : TEST_USER_EMAIL})
+   def add_user(self, user_name=TEST_USER_EMAIL):
+      response = self.post('/admin/api/users/', {'email' : user_name})
       self.assertEqual(201, response.status_code)
       return json.loads(response.content)
 
@@ -42,8 +34,8 @@ class UserTest(AdminViewTestCase):
       response = self.post('/admin/api/users/', {'email' : TEST_USER_EMAIL})
       self.assertEqual(201, response.status_code)
 
-      user_uuid = get_resource_uuid(response)
       parsed_response_body = json.loads(response.content)
+      user_uuid = extract_uuid(parsed_response_body['id'])
 
       self.assertRegexpMatches(parsed_response_body['id'],
                                '^urn:uuid:%s$' % uid_regexp())
@@ -121,8 +113,8 @@ class LocationTest(AdminViewTestCase):
       response = self.post('/admin/api/locations/', {'path' : TEST_LOCATION})
       self.assertEqual(201, response.status_code)
 
-      location_uuid = get_resource_uuid(response)
       parsed_response_body = json.loads(response.content)
+      location_uuid = extract_uuid(parsed_response_body['id'])
 
       self.assertRegexpMatches(parsed_response_body['id'],
                                '^urn:uuid:%s$' % uid_regexp())
@@ -195,7 +187,7 @@ class LocationTest(AdminViewTestCase):
       self.assertRegexpMatches(response.content, 'Location not found')
 
 
-class AccessControlTest(HttpTestCase):
+class AccessControlTest(AdminViewTestCase):
 
    def can_access(self, location_url, user_uuid):
       response = self.get(location_url + 'allowed-users/' + user_uuid + '/')
@@ -204,15 +196,12 @@ class AccessControlTest(HttpTestCase):
       return response.status_code == 200
 
    def test_grant_access(self):
-      # Create a location.
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      location_url = get_resource_url(response)
+      location_url = self.add_location()['self']
 
-      # Create a user.
-      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-      user_url = get_resource_url(response)
-      user_urn = get_resource_urn(response)
-      user_uuid = get_resource_uuid(response)
+      response = self.add_user()
+      user_url = response['self']
+      user_urn = response['id']
+      user_uuid = extract_uuid(user_urn)
 
       response = self.put(location_url + 'allowed-users/' + user_uuid + '/')
       self.assertEqual(201, response.status_code)
@@ -222,38 +211,26 @@ class AccessControlTest(HttpTestCase):
                        parsed_response_body['self'])
       self.assertEqual(user_url, parsed_response_body['user']['self'])
       self.assertEqual(user_urn, parsed_response_body['user']['id'])
-      self.assertEqual('boss@acme.com', parsed_response_body['user']['email'])
+      self.assertEqual(TEST_USER_EMAIL, parsed_response_body['user']['email'])
 
    def test_grant_access_creates_allowed_user_resource(self):
-      # Create a location.
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      location_url = get_resource_url(response)
+      location_url = self.add_location()['self']
 
-      # Create a user.
-      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-      user_url = get_resource_url(response)
-      user_urn = get_resource_urn(response)
-      user_uuid = get_resource_uuid(response)
+      response = self.add_user()
+      user_url = response['self']
+      user_uuid = extract_uuid(response['id'])
 
       self.assertFalse(self.can_access(location_url, user_uuid))
-
-      # Allow access.
-      response = self.put(location_url + 'allowed-users/' + user_uuid + "/")
-      self.assertEqual(201, response.status_code)
-
+      self.put(location_url + 'allowed-users/' + user_uuid + "/")
       self.assertTrue(self.can_access(location_url, user_uuid))
 
 
    def test_revoke_access(self):
-      # Create a location.
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      location_url = get_resource_url(response)
+      location_url = self.add_location()['self']
 
-      # Create a user.
-      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-      user_url = get_resource_url(response)
-      user_urn = get_resource_urn(response)
-      user_uuid = get_resource_uuid(response)
+      response = self.add_user()
+      user_url = response['self']
+      user_uuid = extract_uuid(response['id'])
 
       # Allow access.
       self.put(location_url + 'allowed-users/' + user_uuid + "/")
@@ -265,18 +242,14 @@ class AccessControlTest(HttpTestCase):
       self.assertFalse(self.can_access(location_url, user_uuid))
 
    def test_location_lists_allowed_users(self):
-      # Create a location.
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      location_url = get_resource_url(response)
+      location_url = self.add_location()['self']
 
       # Create two users.
-      response = self.post('/admin/api/users/', {'email' : 'user1@acme.com'})
-      user1_urn = get_resource_urn(response)
-      user1_uuid = get_resource_uuid(response)
+      user1_urn = self.add_user('user1@acme.com')['id']
+      user1_uuid = extract_uuid(user1_urn)
 
-      response = self.post('/admin/api/users/', {'email' : 'user2@acme.com'})
-      user2_urn = get_resource_urn(response)
-      user2_uuid = get_resource_uuid(response)
+      user2_urn = self.add_user('user2@acme.com')['id']
+      user2_uuid = extract_uuid(user2_urn)
 
       self.put(location_url + 'allowed-users/' + user1_uuid + "/")
       self.put(location_url + 'allowed-users/' + user2_uuid + "/")
@@ -292,18 +265,14 @@ class AccessControlTest(HttpTestCase):
 
    def test_grant_access_to_not_existing_location(self):
       location_url = '/admin/api/locations/%s/' % FAKE_UUID
-      # Create a user.
-      response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-      user_uuid = get_resource_uuid(response)
+      user_uuid = extract_uuid(self.add_user()['id'])
 
       response = self.put(location_url + 'allowed-users/' + user_uuid + '/')
       self.assertEqual(400, response.status_code)
       self.assertRegexpMatches(response.content, 'Location not found')
 
    def test_grant_access_for_not_existing_user(self):
-      # Create a location.
-      response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-      location_url = get_resource_url(response)
+      location_url = self.add_location()['self']
       user_uuid =  FAKE_UUID
 
       response = self.put(location_url + 'allowed-users/' + user_uuid + '/')
