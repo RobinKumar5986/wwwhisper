@@ -3,7 +3,41 @@ from wwwhisper_auth.acl import InvalidPath
 
 import wwwhisper_auth.acl as acl
 
-class Acl(TestCase):
+TEST_USER_EMAIL = 'foo@bar.com'
+
+class UsersCollectionTest(TestCase):
+    def setUp(self):
+        self.users_collection = acl.UsersCollection()
+
+    def test_create_user(self):
+        user = self.users_collection.create_item(TEST_USER_EMAIL)
+        self.assertTrue(TEST_USER_EMAIL, user.email)
+
+    def test_get_user(self):
+        user1 = self.users_collection.create_item(TEST_USER_EMAIL)
+        user2 = self.users_collection.get(user1.uuid)
+        self.assertIsNotNone(user2)
+        self.assertEqual(user1.email, user2.email)
+        self.assertEqual(user1.uuid, user2.uuid)
+
+    def test_delete_user(self):
+        user = self.users_collection.create_item(TEST_USER_EMAIL)
+        self.assertIsNotNone(self.users_collection.get(user.uuid))
+        self.assertTrue(self.users_collection.delete(user.uuid))
+        self.assertIsNone(self.users_collection.get(user.uuid))
+
+    def test_create_user_twice(self):
+        self.users_collection.create_item(TEST_USER_EMAIL)
+        self.assertRaisesRegexp(acl.CreationException,
+                                'User already exists',
+                                self.users_collection.create_item,
+                                TEST_USER_EMAIL)
+    def test_delete_user_twice(self):
+        user = self.users_collection.create_item(TEST_USER_EMAIL)
+        self.assertTrue(self.users_collection.delete(user.uuid))
+        self.assertFalse(self.users_collection.delete(user.uuid))
+
+class AclTest(TestCase):
     def test_add_location(self):
         self.assertFalse(acl.find_location('/foo/bar'))
         self.assertTrue(acl.add_location('/foo/bar'))
@@ -30,23 +64,6 @@ class Acl(TestCase):
 
     def test_get_locations_when_empty(self):
         self.assertEqual([], acl.locations())
-
-    def test_add_user(self):
-        self.assertFalse(acl.find_user('foo@example.com'))
-        self.assertTrue(acl.add_user('foo@example.com'))
-        self.assertTrue(acl.find_user('foo@example.com'))
-
-    def test_add_user_twice(self):
-        self.assertTrue(acl.add_user('foo@example.com'))
-        self.assertFalse(acl.add_user('foo@example.com'))
-
-    def test_del_user(self):
-        self.assertTrue(acl.add_user('foo@example.com'))
-        self.assertTrue(acl.del_user('foo@example.com'))
-        self.assertFalse(acl.find_user('foo@example.com'))
-
-    def test_del_missing_user(self):
-        self.assertFalse(acl.del_user('foo@example.com'))
 
     def test_get_emails(self):
         acl.add_user('foo@example.com')
