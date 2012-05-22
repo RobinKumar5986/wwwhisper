@@ -1,7 +1,7 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib.auth.models import User
 from views import Model
-from views import CollectionView, ItemView, GrantAccessView, AllowedUsersView
+from views import CollectionView, ItemView, AllowedUsersView
 from wwwhisper_auth.acl import LocationsCollection, UsersCollection
 from wwwhisper_auth.acl import  AllowedUsersCollection
 
@@ -23,11 +23,6 @@ urlpatterns = patterns(
     url(r'^locations/(?P<uuid>[0-9a-z-]+)/$',
         ItemView.as_view(collection=locations_collection),
         name='wwwhisper_location'),
-    url(r'^locations/(?P<location_uuid>[0-9a-z-]+)/grant-access/$',
-        GrantAccessView.as_view(locations_collection=locations_collection)),
-
-    url(r'^locations/(?P<location_uuid>[0-9a-z-]+)/allowed-users/$',
-        CollectionView.as_view(collection=allowed_users_collection)),
     url(r'^locations/(?P<location_uuid>[0-9a-z-]+)/allowed-users/' +
         '(?P<user_uuid>[0-9a-z-]+)/$',
         AllowedUsersView.as_view(collection=allowed_users_collection),

@@ -1,51 +1,65 @@
 from wwwhisper_auth.tests import HttpTestCase
 
-#import wwwhisper_service.urls
 import wwwhisper_admin.views
 import json
 
-def site_url():
-   return wwwhisper_admin.views.site_url()
+FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
+TEST_USER_EMAIL = 'foo@bar.org'
 
 def uid_regexp():
    return '[0-9a-z-]{36}'
 
-FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
+def site_url():
+   return wwwhisper_admin.views.site_url()
 
-class UserTest(HttpTestCase):
+# TODO: use these in the whole file.
+def get_resource_url(response):
+   return json.loads(response.content)['self']
+
+def get_resource_urn(response):
+   return json.loads(response.content)['id']
+
+def get_resource_uuid(response):
+   urn = get_resource_urn(response)
+   return urn.replace('urn:uuid:', '')
+
+class AdminViewTestCase(HttpTestCase):
+
+   def add_user(self):
+      response = self.post('/admin/api/users/', {'email' : TEST_USER_EMAIL})
+      self.assertEqual(201, response.status_code)
+      return json.loads(response.content)
+
+class UserTest(AdminViewTestCase):
 
    def test_add_user(self):
-      response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
+      response = self.post('/admin/api/users/', {'email' : TEST_USER_EMAIL})
       self.assertEqual(201, response.status_code)
 
+      user_uuid = get_resource_uuid(response)
       parsed_response_body = json.loads(response.content)
-      self.assertEqual('foo@bar.org', parsed_response_body['email'])
+
       self.assertRegexpMatches(parsed_response_body['id'],
                                '^urn:uuid:%s$' % uid_regexp())
-
-      self_url_regexp = '^%s/admin/api/users/%s/$' % (site_url(), uid_regexp())
-      self.assertRegexpMatches(parsed_response_body['self'], self_url_regexp)
-      self.assertRegexpMatches(response['Location'], self_url_regexp)
-      self.assertRegexpMatches(response['Content-Location'], self_url_regexp)
+      self.assertEqual(TEST_USER_EMAIL, parsed_response_body['email'])
+      self_url = '%s/admin/api/users/%s/' % (site_url(), user_uuid)
+      self.assertEqual(self_url, parsed_response_body['self'])
+      self.assertEqual(self_url, response['Location'])
+      self.assertEqual(self_url, response['Content-Location'])
 
    def test_get_user(self):
-      post_response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
-      self.assertEqual(201, post_response.status_code)
-      parsed_post_response_body = json.loads(post_response.content)
-
+      parsed_post_response_body = self.add_user()
       get_response = self.get(parsed_post_response_body['self'])
       self.assertEqual(200, get_response.status_code)
       parsed_get_response_body = json.loads(get_response.content)
-
-      self.assertEqual(post_response.content, get_response.content)
+      self.assertEqual(parsed_post_response_body, parsed_get_response_body)
 
    def test_delete_user(self):
-      response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
-      self.assertEqual(201, response.status_code)
-
-      parsed_response_body = json.loads(response.content)
-      response = self.delete(parsed_response_body['self'])
+      user_url = self.add_user()['self']
+      response = self.delete(user_url)
       self.assertEqual(204, response.status_code)
+      response = self.get(user_url)
+      self.assertEqual(404, response.status_code)
 
    def test_get_users_list(self):
       self.assertEqual(201, self.post('/admin/api/users/',
@@ -57,8 +71,8 @@ class UserTest(HttpTestCase):
       response = self.get('/admin/api/users/')
       self.assertEqual(200, response.status_code)
       parsed_response_body = json.loads(response.content)
-      self.assertRegexpMatches(parsed_response_body['self'],
-                               '^%s/admin/api/users/$' % site_url())
+      self.assertEqual('%s/admin/api/users/' % site_url(),
+                       parsed_response_body['self'])
 
       users = parsed_response_body['users']
       self.assertEqual(3, len(users))
@@ -66,8 +80,7 @@ class UserTest(HttpTestCase):
                             [item['email'] for item in users])
 
    def test_get_not_existing_user(self):
-      response = self.get(
-         '/admin/api/users/%s/' % FAKE_UUID)
+      response = self.get('/admin/api/users/%s/' % FAKE_UUID)
       self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'User not found')
 
@@ -83,22 +96,18 @@ class UserTest(HttpTestCase):
       self.assertRegexpMatches(response.content, 'Invalid email format')
 
    def test_add_existing_user(self):
-      response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
-      self.assertEqual(201, response.status_code)
+      self.add_user()
 
-      response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
+      response = self.post('/admin/api/users/', {'email' : TEST_USER_EMAIL})
       self.assertEqual(400, response.status_code)
       self.assertRegexpMatches(response.content, 'User already exists')
 
    def test_delete_user_twice(self):
-      response = self.post('/admin/api/users/', {'email' : 'foo@bar.org'})
-      self.assertEqual(201, response.status_code)
-
-      parsed_response_body = json.loads(response.content)
-      response = self.delete(parsed_response_body['self'])
+      user_url = self.add_user()['self']
+      response = self.delete(user_url)
       self.assertEqual(204, response.status_code)
 
-      response = self.delete(parsed_response_body['self'])
+      response = self.delete(user_url)
       self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'User not found')
 
@@ -197,109 +206,7 @@ class LocationTest(HttpTestCase):
       self.assertRegexpMatches(response.content, 'Location not found')
 
 
-# TODO: use these in the whole file.
-def get_resource_url(response):
-   return json.loads(response.content)['self']
-
-def get_resource_urn(response):
-   return json.loads(response.content)['id']
-
-def get_resource_uuid(response):
-   urn = get_resource_urn(response)
-   return urn.replace('urn:uuid:', '')
-
-# class GrantAccessTest(HttpTestCase):
-
-#    def test_grant_access(self):
-#       # Create a location.
-#       response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-#       location_url = get_resource_url(response)
-
-#       # Create a user.
-#       response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-#       user_urn = get_resource_urn(response)
-
-#       response = self.put(location_url + 'grant-access/', {'userid' : user_id})
-#       self.assertEqual(204, response.status_code)
-
-#    def test_grant_access_to_not_existing_location(self):
-#       location_url = '/admin/api/locations/%s/' % FAKE_UUID
-#       # Create a user.
-#       response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-#       user_id = get_resource_urn(response)
-
-#       response = self.put(location_url + 'grant-access/', {'userid' : user_id})
-#       self.assertEqual(404, response.status_code)
-#       self.assertRegexpMatches(response.content, 'Location not found')
-
-#    def test_grant_access_for_not_existing_user(self):
-#       # Create a location.
-#       response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-#       location_url = get_resource_url(response)
-#       user_id = 'urn:uuid:' + FAKE_UUID
-
-#       response = self.put(location_url + 'grant-access/', {'userid' : user_id})
-#       self.assertEqual(404, response.status_code)
-#       self.assertRegexpMatches(response.content, 'User not found')
-
-#    # PUT must be idempotent, granting access multiple times should
-#    # always return success.
-#    def test_grant_access_if_already_granted(self):
-#       # Create a location.
-#       response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-#       location_url = get_resource_url(response)
-
-#       # Create a user.
-#       response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-#       user_id = get_resource_urn(response)
-
-#       response = self.put(location_url + 'grant-access/', {'userid' : user_id})
-#       self.assertEqual(204, response.status_code)
-#       response = self.put(location_url + 'grant-access/', {'userid' : user_id})
-#       self.assertEqual(204, response.status_code)
-
-#    def test_location_lists_allowed_users(self):
-#       # Create a location.
-#       response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-#       location_url = get_resource_url(response)
-
-#       # Create two users.
-#       response = self.post('/admin/api/users/', {'email' : 'user1@acme.com'})
-#       user1_id = get_resource_urn(response)
-#       response = self.post('/admin/api/users/', {'email' : 'user2@acme.com'})
-#       user2_id = get_resource_urn(response)
-
-#       self.put(location_url + 'grant-access/', {'userid' : user1_id})
-#       self.put(location_url + 'grant-access/', {'userid' : user2_id})
-
-#       response = self.get(location_url)
-#       parsed_response_body = json.loads(response.content)
-#       allowed_users = parsed_response_body['allowedUsers']
-#       self.assertEqual(2, len(allowed_users))
-#       self.assertItemsEqual(['user1@acme.com', 'user2@acme.com'],
-#                             [item['email'] for item in allowed_users])
-#       self.assertItemsEqual([user1_id, user2_id],
-#                             [item['id'] for item in allowed_users])
-
-# class DenyAccessTest(HttpTestCase):
-
-#    def test_deny_access(self):
-#       # Create a location.
-#       response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-#       location_url = get_resource_url(response)
-
-#       # Create a user.
-#       response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-#       user_id = get_resource_urn(response)
-
-#       response = self.put(location_url + 'grant-access/', {'userid' : user_id})
-#       self.assertEqual(204, response.status_code)
-
-#       response = self.put(location_url + 'deny-access/', {'userid' : user_id})
-#       self.assertEqual(204, response.status_code)
-
-
-class GrantAccess2Test(HttpTestCase):
+class AccessControlTest(HttpTestCase):
 
    def can_access(self, location_url, user_uuid):
       response = self.get(location_url + 'allowed-users/' + user_uuid + '/')
@@ -413,20 +320,3 @@ class GrantAccess2Test(HttpTestCase):
       response = self.put(location_url + 'allowed-users/' + user_uuid + '/')
       self.assertEqual(400, response.status_code)
       self.assertRegexpMatches(response.content, 'User not found')
-
-
-   # TODO: implement this
-   # def test_grant_access_if_already_granted(self):
-   #    # Create a location.
-   #    response = self.post('/admin/api/locations/', {'path' : '/foo/bar'})
-   #    location_url = get_resource_url(response)
-
-   #    # Create a user.
-   #    response = self.post('/admin/api/users/', {'email' : 'boss@acme.com'})
-   #    user_uuid = get_resource_uuid(response)
-
-   #    response = self.put(location_url + 'allowed-users/' + user_uuid + "/")
-   #    self.assertEqual(201, response.status_code)
-   #    response = self.put(location_url + 'allowed-users/' + user_uuid + "/")
-   #    self.assertEqual(200, response.status_code)
-

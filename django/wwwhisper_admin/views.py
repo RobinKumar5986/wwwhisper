@@ -105,19 +105,3 @@ class AllowedUsersView(ItemView):
     def put(self, request, **kwargs):
         return self.collection_view.post(request, **kwargs)
 
-class GrantAccessView(RestView):
-    locations_collection = None
-
-    def put(self, request, location_uuid, userid):
-        # TODO: check if urn is correct.
-        user_uuid = userid.replace('urn:uuid:', '')
-        location = self.locations_collection.get(location_uuid)
-        if not location:
-            return HttpResponseNotFound('Location not found')
-        try:
-            location.grant_access(user_uuid)
-        except LookupError, ex:
-            # User not found.
-            return HttpResponseNotFound(ex)
-        return HttpResponseNoContent()
-
