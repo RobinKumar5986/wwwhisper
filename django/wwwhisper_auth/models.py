@@ -46,8 +46,13 @@ def _find(model_class, **kwargs):
         return None
     return item.get()
 
+class ValidatedModel(models.Model):
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super(ValidatedModel, self).save(*args, **kwargs)
+
 # TODO: just location?
-class HttpLocation(models.Model):
+class HttpLocation(ValidatedModel):
     path = models.CharField(max_length=2000, null=False, primary_key=True)
     uuid = models.CharField(max_length=36, null=False, db_index=True,
                             editable=False)
@@ -71,7 +76,6 @@ class HttpLocation(models.Model):
         except HttpPermission.DoesNotExist:
             obj = HttpPermission.objects.create(
                 http_location_id=self.path, user_id=user.id)
-            obj.full_clean()
             obj.save()
             return (obj, True)
 
@@ -110,7 +114,7 @@ class HttpLocation(models.Model):
         return ('wwwhisper_location', (), {'uuid' : self.uuid})
 
 # TODO: rename to allowed_user?
-class HttpPermission(models.Model):
+class HttpPermission(ValidatedModel):
     http_location = models.ForeignKey(HttpLocation)
     user = models.ForeignKey(User)
 

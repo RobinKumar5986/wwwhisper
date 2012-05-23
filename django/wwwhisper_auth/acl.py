@@ -198,7 +198,7 @@ class LocationsCollection(object):
             raise CreationException('Invalid path: ' + str(ex))
         if find_location(encoded_path):
             raise CreationException('Location already exists.')
-        location = HttpLocation.objects.create(path=path)
+        location = HttpLocation.objects.create(path=encoded_path)
         location.save()
         return location
 
