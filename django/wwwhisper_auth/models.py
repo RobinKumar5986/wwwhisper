@@ -64,9 +64,16 @@ class HttpLocation(models.Model):
         user = _find(User, username=user_uuid)
         if user is None:
             raise LookupError('User not found')
-        obj, created = HttpPermission.objects.get_or_create(
-            http_location_id=self.path, user_id=user.id)
-        return (obj, created)
+        try:
+            obj = HttpPermission.objects.get(
+                http_location_id=self.path, user_id=user.id)
+            return (obj, False)
+        except HttpPermission.DoesNotExist:
+            obj = HttpPermission.objects.create(
+                http_location_id=self.path, user_id=user.id)
+            obj.full_clean()
+            obj.save()
+            return (obj, True)
 
     def revoke_access(self, user_uuid):
         user = _find(User, username=user_uuid)

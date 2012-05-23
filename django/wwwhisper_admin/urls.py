@@ -23,7 +23,6 @@ urlpatterns = patterns(
         name='wwwhisper_location'),
     url(r'^locations/(?P<location_uuid>[0-9a-z-]+)/allowed-users/' +
         '(?P<user_uuid>[0-9a-z-]+)/$',
-        AllowedUsersView.as_view(
-            locations_collection=locations_collection),
+        AllowedUsersView.as_view(locations_collection=locations_collection),
         name='wwwhisper_allowed_user'),
     )

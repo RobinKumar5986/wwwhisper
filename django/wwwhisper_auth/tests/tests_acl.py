@@ -1,3 +1,4 @@
+from django.forms import ValidationError
 from django.test import TestCase
 from wwwhisper_auth.acl import InvalidPath
 
@@ -6,10 +7,12 @@ import wwwhisper_auth.acl as acl
 TEST_USER_EMAIL = 'foo@bar.com'
 TEST_LOCATION = '/pub/kika'
 
-class UsersCollectionTest(TestCase):
+class CollectionTestCase(TestCase):
     def setUp(self):
         self.users_collection = acl.UsersCollection()
+        self.locations_collection = acl.LocationsCollection()
 
+class UsersCollectionTest(CollectionTestCase):
     def test_create_user(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         self.assertTrue(TEST_USER_EMAIL, user.email)
@@ -51,10 +54,8 @@ class UsersCollectionTest(TestCase):
     def test_get_all_users_when_empty(self):
         self.assertListEqual([], list(self.users_collection.all()))
 
-class LocationsCollectionTest(TestCase):
-    def setUp(self):
-        self.locations_collection = acl.LocationsCollection()
 
+class LocationsCollectionTest(CollectionTestCase):
     def test_create_location(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
         self.assertTrue(TEST_LOCATION, location.path)
@@ -98,18 +99,25 @@ class LocationsCollectionTest(TestCase):
     def test_get_all_locations_when_empty(self):
         self.assertListEqual([], list(self.locations_collection.all()))
 
+    def test_grant_access(self):
+        user = self.users_collection.create_item(TEST_USER_EMAIL)
+        location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertFalse(acl.can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        (perm, created) = location.grant_access(user.uuid)
+        self.assertTrue(created)
+        self.assertIsNotNone(perm)
+        self.assertTrue(acl.can_access(TEST_USER_EMAIL, TEST_LOCATION))
+
+    def test_grant_access_to_deleted_location(self):
+        user = self.users_collection.create_item(TEST_USER_EMAIL)
+        location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertTrue(self.locations_collection.delete(location.uuid))
+        self.assertRaises(ValidationError,
+                          location.grant_access,
+                          user.uuid)
+
+
 class AclTest(TestCase):
-
-    def test_get_locations(self):
-        acl.add_location('/foo/bar')
-        acl.add_location('/baz/bar')
-        self.assertListEqual(['/baz/bar', '/foo/bar'], sorted(acl.locations()))
-        acl.del_location('/foo/bar')
-        self.assertListEqual(['/baz/bar'], acl.locations())
-
-    def test_get_locations_when_empty(self):
-        self.assertEqual([], acl.locations())
-
 
     def test_is_email_valid(self):
         """Test strings taken from BrowserId tests."""
@@ -124,19 +132,6 @@ class AclTest(TestCase):
         self.assertFalse(acl.is_email_valid('z@y.z@y.z'))
         self.assertFalse(acl.is_email_valid(''))
 
-
-    def test_grant_access(self):
-        acl.add_user('foo@example.com')
-        acl.add_location('/foo/bar')
-        self.assertFalse(acl.can_access('foo@example.com', '/foo/bar'))
-        self.assertTrue(acl.grant_access('foo@example.com', '/foo/bar'))
-        self.assertTrue(acl.can_access('foo@example.com', '/foo/bar'))
-
-    def test_grant_access_to_non_existing_location(self):
-        acl.add_user('foo@example.com')
-        self.assertFalse(acl.find_location('/foo/bar'))
-        self.assertRaises(LookupError, acl.grant_access,
-                          'foo@example.com', '/foo/bar')
 
     def test_grant_access_for_non_existing_user(self):
         acl.add_location('/foo/bar')

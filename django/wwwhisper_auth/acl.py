@@ -168,8 +168,9 @@ class UsersCollection(object):
             raise CreationException('Invalid email format.')
         if find_user(email):
             raise CreationException('User already exists.')
-        return User.objects.create(
+        user = User.objects.create(
             username=str(uuid.uuid4()), email=email)
+        return user
 
     def all(self):
         return User.objects.all()
@@ -181,6 +182,7 @@ class UsersCollection(object):
             return None
         return item.get()
 
+    # should this rather be .get().delete()
     def delete(self, uuid):
         return _del(User, username=uuid)
 
@@ -196,7 +198,9 @@ class LocationsCollection(object):
             raise CreationException('Invalid path: ' + str(ex))
         if find_location(encoded_path):
             raise CreationException('Location already exists.')
-        return HttpLocation.objects.create(path=path)
+        location = HttpLocation.objects.create(path=path)
+        location.save()
+        return location
 
     def all(self):
         return HttpLocation.objects.all()
