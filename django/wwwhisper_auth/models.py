@@ -33,8 +33,7 @@ User.uuid = property(lambda(self): self.username)
 User.attributes_dict = lambda(self): \
     _add_common_attributes(self, {'email': self.email})
 
-# TODO: just location?
-class HttpLocation(ValidatedModel):
+class Location(ValidatedModel):
     path = models.CharField(max_length=2000, null=False, primary_key=True)
     uuid = models.CharField(max_length=36, null=False, db_index=True,
                             editable=False)
@@ -43,11 +42,11 @@ class HttpLocation(ValidatedModel):
         if user is None:
             raise LookupError('User not found')
         permission = _find(
-            HttpPermission, http_location_id=self.path, user_id=user.id)
+            Permission, http_location_id=self.path, user_id=user.id)
         created = False
         if permission is None:
             created = True
-            permission = HttpPermission.objects.create(
+            permission = Permission.objects.create(
                 http_location_id=self.path, user_id=user.id)
             permission.save()
         return (permission, created)
@@ -62,14 +61,14 @@ class HttpLocation(ValidatedModel):
         if user is None:
             raise LookupError('User not found.')
         permission = _find(
-            HttpPermission, http_location_id=self.path, user_id=user.id)
+            Permission, http_location_id=self.path, user_id=user.id)
         if permission is None:
             raise LookupError('User can not access location.')
         return permission
 
     def allowed_users(self):
         return [permission.user.attributes_dict() for permission in
-                HttpPermission.objects.filter(http_location=self.path)]
+                Permission.objects.filter(http_location=self.path)]
 
     def attributes_dict(self):
         return _add_common_attributes(self, {
@@ -84,14 +83,13 @@ class HttpLocation(ValidatedModel):
     def save(self, *args, **kwargs):
         if not self.uuid:
             self.uuid = str(uuid.uuid4())
-        return super(HttpLocation, self).save(*args, **kwargs)
+        return super(Location, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return "%s" % (self.path)
 
-# TODO: rename to allowed_user or just permission?
-class HttpPermission(ValidatedModel):
-    http_location = models.ForeignKey(HttpLocation)
+class Permission(ValidatedModel):
+    http_location = models.ForeignKey(Location)
     user = models.ForeignKey(User)
 
     def attributes_dict(self):
@@ -140,7 +138,7 @@ class UsersCollection(Collection):
 class LocationsCollection(Collection):
     collection_name = 'locations'
     item_name = 'location'
-    model_class = HttpLocation
+    model_class = Location
     uuid_column_name = 'uuid'
 
     def create_item(self, path):
@@ -148,9 +146,9 @@ class LocationsCollection(Collection):
             encoded_path = _encode_path(path)
         except InvalidPath, ex:
             raise CreationException(ex)
-        if _find(HttpLocation, path=path) is not None:
+        if _find(Location, path=path) is not None:
             raise CreationException('Location already exists.')
-        location = HttpLocation.objects.create(path=encoded_path)
+        location = Location.objects.create(path=encoded_path)
         location.save()
         return location
 
@@ -161,7 +159,7 @@ def can_access(email, path):
     longest_match = ''
     longest_match_len = -1
 
-    for location in HttpLocation.objects.all():
+    for location in Location.objects.all():
         probed_path = location.path
         probed_path_len = len(probed_path)
         stripped_probed_path = probed_path.rstrip('/')
@@ -173,7 +171,7 @@ def can_access(email, path):
             longest_match_len = probed_path_len
             longest_match = probed_path
     return longest_match_len != -1 \
-        and  _find(HttpPermission,
+        and  _find(Permission,
                    user__email=email,
                    http_location=longest_match) is not None
 
