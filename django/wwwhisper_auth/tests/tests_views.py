@@ -18,6 +18,9 @@ class FakeAssertionVeryfingBackend(ModelBackend):
 class AuthTestCase(TestCase):
     def setUp(self):
         self.client = Client()
+        self.locations_collection = models.LocationsCollection()
+        self.users_collection = models.UsersCollection()
+
         settings.AUTHENTICATION_BACKENDS = (
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
 
@@ -37,15 +40,15 @@ class Auth(AuthTestCase):
         self.assertEqual(403, response.status_code)
 
     def test_is_authorized_for_not_authorized_user(self):
-        self.assertTrue(models.add_user('foo@example.com'))
+        self.users_collection.create_item('foo@example.com')
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.client.get('/auth/api/is_authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
 
     def test_is_authorized_for_authorized_user(self):
-        self.assertTrue(models.add_user('foo@example.com'))
-        self.assertTrue(models.add_location('/foo/'))
-        self.assertTrue(models.grant_access('foo@example.com', '/foo/'))
+        user = self.users_collection.create_item('foo@example.com')
+        location = self.locations_collection.create_item('/foo/')
+        location.grant_access(user.uuid)
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.client.get('/auth/api/is_authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
@@ -62,7 +65,7 @@ class Login(AuthTestCase):
         self.assertEqual(400, response.status_code)
 
     def test_login_succeeds_if_known_user(self):
-        models.add_user('foo@example.com')
+        self.users_collection.create_item('foo@example.com')
         response = self.post('/auth/api/login/',
                                   {'assertion' : 'foo@example.com'})
         self.assertEqual(200, response.status_code)
@@ -70,7 +73,7 @@ class Login(AuthTestCase):
 
 class Logout(AuthTestCase):
     def test_authentication_requested_after_logout(self):
-        models.add_user('foo@example.com')
+        user = self.users_collection.create_item('foo@example.com')
         self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
 
         response = self.client.get('/auth/api/is_authorized/?path=/bar/')

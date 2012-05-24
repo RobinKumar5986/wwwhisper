@@ -10,46 +10,11 @@ import string
 import urllib
 import uuid
 
+class InvalidPath(ValueError):
+    pass
 
-# TODO: can this warning be fatal initialization error?
-def site_url():
-    return getattr(settings, 'SITE_URL',
-                   'WARNING: SITE_URL is not set')
-
-def full_url(absolute_path):
-    return site_url() + absolute_path
-
-def urn_from_uuid(uuid):
-    return 'urn:uuid:' + uuid
-
-# TODO: make it a member?
-def add_common_attributes(item, attributes_dict):
-    attributes_dict['self'] = full_url(item.get_absolute_url())
-    if hasattr(item, 'uuid'):
-        attributes_dict['id'] = urn_from_uuid(item.uuid)
-    return attributes_dict
-
-# TODO: remove duplication.
-def _add(model_class, **kwargs):
-    obj, created = model_class.objects.get_or_create(**kwargs)
-    return created
-
-def _del(model_class, **kwargs):
-    object_to_del = model_class.objects.filter(**kwargs)
-    assert object_to_del.count() <= 1
-    if object_to_del.count() == 0:
-        return False
-    object_to_del.delete()
-    return True
-
-# TODO: remove duplication.
-def _find(model_class, **kwargs):
-    item = model_class.objects.filter(**kwargs)
-    count = item.count()
-    assert count <= 1
-    if count == 0:
-        return None
-    return item.get()
+class CreationException(Exception):
+    pass;
 
 class ValidatedModel(models.Model):
     def save(self, *args, **kwargs):
@@ -141,6 +106,59 @@ class HttpPermission(ValidatedModel):
                  'user_uuid': self.user.uuid})
 
 
+class Collection(object):
+    def all(self):
+        return self.model_class.objects.all()
+
+    def get(self, uuid):
+        filter_args = {self.uuid_column_name: uuid}
+        item = self.model_class.objects.filter(**filter_args)
+        assert item.count() <= 1
+        if item.count() == 0:
+            return None
+        return item.get()
+
+    def delete(self, uuid):
+        item = self.get(uuid)
+        if item is None:
+            return False
+        item.delete()
+        return True
+
+class UsersCollection(Collection):
+    collection_name = 'users'
+    item_name = 'user'
+    model_class = User
+    uuid_column_name = 'username'
+
+    def create_item(self, email):
+        if not is_email_valid(email):
+            raise CreationException('Invalid email format.')
+        if find_user(email):
+            raise CreationException('User already exists.')
+        user = User.objects.create(
+            username=str(uuid.uuid4()), email=email, is_active=True)
+        return user
+
+
+class LocationsCollection(Collection):
+    collection_name = 'locations'
+    item_name = 'location'
+    model_class = HttpLocation
+    uuid_column_name = 'uuid'
+
+    def create_item(self, path):
+        try:
+            encoded_path = encode_path(path)
+        except InvalidPath, ex:
+            raise CreationException(ex)
+        if find_location(encoded_path):
+            raise CreationException('Location already exists.')
+        location = HttpLocation.objects.create(path=encoded_path)
+        location.save()
+        return location
+
+
 # TODO: remove this:
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
@@ -168,13 +186,26 @@ post_save.connect(create_user_extras, sender=User)
 
 # models.
 
-class InvalidPath(ValueError):
-    pass
 
-class CreationException(Exception):
-    pass;
+# TODO: can this warning be fatal initialization error?
+def site_url():
+    return getattr(settings, 'SITE_URL',
+                   'WARNING: SITE_URL is not set')
 
+def full_url(absolute_path):
+    return site_url() + absolute_path
 
+def urn_from_uuid(uuid):
+    return 'urn:uuid:' + uuid
+
+# TODO: make it a member?
+def add_common_attributes(item, attributes_dict):
+    attributes_dict['self'] = full_url(item.get_absolute_url())
+    if hasattr(item, 'uuid'):
+        attributes_dict['id'] = urn_from_uuid(item.uuid)
+    return attributes_dict
+
+# TODO: remove duplication.
 def _add(model_class, **kwargs):
     obj, created = model_class.objects.get_or_create(**kwargs)
     return created
@@ -187,7 +218,7 @@ def _del(model_class, **kwargs):
     object_to_del.delete()
     return True
 
-def _find2(model_class, **kwargs):
+def _find(model_class, **kwargs):
     item = model_class.objects.filter(**kwargs)
     count = item.count()
     assert count <= 1
@@ -195,20 +226,11 @@ def _find2(model_class, **kwargs):
         return None
     return item.get()
 
-def _all(model_class, field):
-    return [obj.__dict__[field] for obj in model_class.objects.all()]
-
-def add_location(path):
-    return _add(HttpLocation, path=path)
-
-def del_location(path):
-    return _del(HttpLocation, path=path)
-
 def find_location(path):
     return _find(HttpLocation, path=path)
 
-def locations():
-    return _all(HttpLocation, 'path')
+def locations_paths():
+    return [location.path for location in HttpLocation.objects.all()]
 
 def encode_path(path):
     parsed_url = urlparse(path)
@@ -246,18 +268,10 @@ def encode_path(path):
         raise InvalidPath('Invalid path encoding %s' % str(er))
     return urllib.quote(encoded_path, '/~')
 
-def grant_access(email, location_path):
-    if not find_location(location_path):
-        raise LookupError('Location does not exist')
-    add_user(email)
-    user_id = User.objects.get(email=email).id
-    return _add(HttpPermission, http_location_id=location_path, user_id=user_id)
 
+def find_user(email):
+    return _find(User, email=email)
 
-def revoke_access(email, location_path):
-    if not find_location(location_path):
-        raise LookupError('Location does not exist')
-    return _del(HttpPermission, user__email=email, http_location=location_path)
 
 # TODO: should this work only for defined locations or check parent locations?
 # TODO: moved to models.py
@@ -271,7 +285,7 @@ def can_access(email, path):
     longest_match = ''
     longest_match_len = -1
 
-    for probed_path in locations():
+    for probed_path in locations_paths():
         probed_path_len = len(probed_path)
         stripped_probed_path = probed_path.rstrip('/')
         stripped_probed_path_len = len(stripped_probed_path)
@@ -284,18 +298,6 @@ def can_access(email, path):
     return longest_match_len != -1 and \
         _find(HttpPermission, user__email=email, http_location=longest_match)
 
-def add_user(email):
-    if find_user(email):
-        return False
-    User.objects.create(username=uuid.uuid4(), email=email, is_active=True)
-    return True;
-
-def del_user(email):
-    return _del(User, email=email)
-
-def find_user(email):
-    return _find(User, email=email)
-
 # def find_user_with_uuid(uid):
 #     return _find(User, uid=uid)
 
@@ -307,59 +309,3 @@ def is_email_valid(email):
     return re.match(
         "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
         email) != None
-
-class UsersCollection(object):
-    collection_name = 'users'
-    item_name = 'user'
-
-    def create_item(self, email):
-        if not is_email_valid(email):
-            raise CreationException('Invalid email format.')
-        if find_user(email):
-            raise CreationException('User already exists.')
-        user = User.objects.create(
-            username=str(uuid.uuid4()), email=email)
-        return user
-
-    def all(self):
-        return User.objects.all()
-
-    def get(self, uuid):
-        item = User.objects.filter(username=uuid)
-        assert item.count() <= 1
-        if item.count() == 0:
-            return None
-        return item.get()
-
-    # should this rather be .get().delete()
-    def delete(self, uuid):
-        return _del(User, username=uuid)
-
-
-class LocationsCollection(object):
-    collection_name = 'locations'
-    item_name = 'location'
-
-    def create_item(self, path):
-        try:
-            encoded_path = encode_path(path)
-        except InvalidPath, ex:
-            raise CreationException(ex)
-        if find_location(encoded_path):
-            raise CreationException('Location already exists.')
-        location = HttpLocation.objects.create(path=encoded_path)
-        location.save()
-        return location
-
-    def all(self):
-        return HttpLocation.objects.all()
-
-    def get(self, uuid):
-        item = HttpLocation.objects.filter(uuid=uuid)
-        assert item.count() <= 1
-        if item.count() == 0:
-            return None
-        return item.get()
-
-    def delete(self, uuid):
-        return _del(HttpLocation, uuid=uuid)
