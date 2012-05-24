@@ -1,3 +1,4 @@
+var wwwhisper = wwwhisper || {};
 (function () {
   'use strict';
   var csrfToken, locations, users, view, refresh;
@@ -11,7 +12,7 @@
     locationInfo : null,
     allowedUser : null,
     addLocation : null,
-    user : null,
+    user : null
   };
 
   function inArray(value, array) {
@@ -98,7 +99,7 @@
       error: function(jqXHR) {
         $('body').html(jqXHR.responseText);
       }
-    })
+    });
   }
 
   // TODO: Remove this one.
@@ -384,10 +385,9 @@
     showUsers();
 
     showLocationInfo(selectLocationId);
-  }
+  };
 
-
-  $(document).ready(function() {
+  function initialize() {
     view.locationPath = $('#location-list-item').clone(true);
     view.locationInfo = $('#location-info-list-item').clone(true);
     view.allowedUser = $('#allowed-user-list-item').clone(true);
@@ -398,7 +398,9 @@
     getCsrfToken(function() {
       getLocations();
       getUsers();
-    })
-  });
+    });
+  }
 
+  wwwhisper.initialize = initialize;
+  wwwhisper.inArray = inArray;
 }());
