@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models.signals import post_save
 from urlparse import urlparse
 
 import posixpath
@@ -132,14 +131,13 @@ class UsersCollection(Collection):
     uuid_column_name = 'username'
 
     def create_item(self, email):
-        if not is_email_valid(email):
+        if not _is_email_valid(email):
             raise CreationException('Invalid email format.')
-        if find_user(email):
+        if _find(User, email=email):
             raise CreationException('User already exists.')
         user = User.objects.create(
             username=str(uuid.uuid4()), email=email, is_active=True)
         return user
-
 
 class LocationsCollection(Collection):
     collection_name = 'locations'
@@ -149,26 +147,14 @@ class LocationsCollection(Collection):
 
     def create_item(self, path):
         try:
-            encoded_path = encode_path(path)
+            encoded_path = _encode_path(path)
         except InvalidPath, ex:
             raise CreationException(ex)
-        if find_location(encoded_path):
+        if _find(HttpLocation, path=path):
             raise CreationException('Location already exists.')
         location = HttpLocation.objects.create(path=encoded_path)
         location.save()
         return location
-
-
-# TODO: remove this:
-class UserProfile(models.Model):
-    user = models.OneToOneField(User)
-#    uuid = models.CharField(max_length=36, null=False, primary_key=True,
-#                            editable=False)
-
-    def save(self, *args, **kwargs):
-#        if not self.uuid:
-#            self.uuid = uuid.uuid4()
-        return super(UserProfile, self).save(*args, **kwargs)
 
 
 User.uuid = property(lambda(self): self.username)
@@ -176,15 +162,6 @@ User.uuid = property(lambda(self): self.username)
 # TODO: get_attributes_dict for symmetry with get_absolute_url?
 User.attributes_dict = lambda(self): \
     add_common_attributes(self, {'email': self.email})
-
-def create_user_extras(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
-
-post_save.connect(create_user_extras, sender=User)
-
-
-# models.
 
 
 # TODO: can this warning be fatal initialization error?
@@ -226,13 +203,19 @@ def _find(model_class, **kwargs):
         return None
     return item.get()
 
-def find_location(path):
-    return _find(HttpLocation, path=path)
-
 def locations_paths():
     return [location.path for location in HttpLocation.objects.all()]
 
-def encode_path(path):
+# TODO: capital letters in email are not accepted
+def _is_email_valid(email):
+    """Validates email with regexp defined by BrowserId:
+    browserid/browserid/static/dialog/resources/validation.js
+    """
+    return re.match(
+        "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
+        email) != None
+
+def _encode_path(path):
     parsed_url = urlparse(path)
     not_expected = []
     if parsed_url.scheme != '':
@@ -269,16 +252,6 @@ def encode_path(path):
     return urllib.quote(encoded_path, '/~')
 
 
-def find_user(email):
-    return _find(User, email=email)
-
-
-# TODO: should this work only for defined locations or check parent locations?
-# TODO: moved to models.py
-def allowed_emails(path):
-    return [permission.user.email for permission in
-            HttpPermission.objects.filter(http_location=path)]
-
 # TODO: How to handle trailing '/'? Maybe remove it prior to adding path to db?
 def can_access(email, path):
     path_len = len(path)
@@ -297,15 +270,3 @@ def can_access(email, path):
             longest_match = probed_path
     return longest_match_len != -1 and \
         _find(HttpPermission, user__email=email, http_location=longest_match)
-
-# def find_user_with_uuid(uid):
-#     return _find(User, uid=uid)
-
-# TODO: capital letters in email are not accepted
-def is_email_valid(email):
-    """Validates email with regexp defined by BrowserId:
-    browserid/browserid/static/dialog/resources/validation.js
-    """
-    return re.match(
-        "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
-        email) != None
