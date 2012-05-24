@@ -2,9 +2,8 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from wwwhisper_auth.rest_view import RestView
-from wwwhisper_auth.acl import CreationException
+from wwwhisper_auth.models import CreationException
 
-import wwwhisper_auth.acl as acl
 import json
 import logging
 import uuid
@@ -34,23 +33,6 @@ def site_url():
 # TODO: should HttpRequest.build_absolute_uri(request.path) be used instead?
 def full_url(absolute_path):
     return site_url() + absolute_path
-
-def model2json():
-    site_url = getattr(settings, 'SITE_URL',
-                       'WARNING: SITE_URL is not set')
-    return json.dumps({
-            'locationsRoot': site_url,
-            'locations': [{
-                    'path': path,
-                    'allowedUsers': acl.allowed_emails(path)
-                    } for path in acl.locations()],
-            #'users': acl.emails()
-            })
-
-class Model(RestView):
-    def get(self, request):
-        data = model2json()
-        return HttpResponse(data, mimetype="application/json")
 
 class CollectionView(RestView):
     collection = None

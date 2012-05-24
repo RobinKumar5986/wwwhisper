@@ -169,7 +169,7 @@ class LocationTest(AdminViewTestCase):
       response = self.post('/admin/api/locations/', {'path' : '/foo/../bar'})
       self.assertEqual(400, response.status_code)
       self.assertRegexpMatches(response.content,
-                               'Invalid path: Path should be normalized')
+                               'Path should be normalized')
 
    def test_add_existing_location(self):
       self.add_location()

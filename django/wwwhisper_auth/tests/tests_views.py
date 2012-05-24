@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 
 import json
-import wwwhisper_auth.acl as acl
+import wwwhisper_auth.models as models
 
 
 class FakeAssertionVeryfingBackend(ModelBackend):
@@ -37,15 +37,15 @@ class Auth(AuthTestCase):
         self.assertEqual(403, response.status_code)
 
     def test_is_authorized_for_not_authorized_user(self):
-        self.assertTrue(acl.add_user('foo@example.com'))
+        self.assertTrue(models.add_user('foo@example.com'))
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.client.get('/auth/api/is_authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
 
     def test_is_authorized_for_authorized_user(self):
-        self.assertTrue(acl.add_user('foo@example.com'))
-        self.assertTrue(acl.add_location('/foo/'))
-        self.assertTrue(acl.grant_access('foo@example.com', '/foo/'))
+        self.assertTrue(models.add_user('foo@example.com'))
+        self.assertTrue(models.add_location('/foo/'))
+        self.assertTrue(models.grant_access('foo@example.com', '/foo/'))
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.client.get('/auth/api/is_authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
@@ -62,7 +62,7 @@ class Login(AuthTestCase):
         self.assertEqual(400, response.status_code)
 
     def test_login_succeeds_if_known_user(self):
-        acl.add_user('foo@example.com')
+        models.add_user('foo@example.com')
         response = self.post('/auth/api/login/',
                                   {'assertion' : 'foo@example.com'})
         self.assertEqual(200, response.status_code)
@@ -70,7 +70,7 @@ class Login(AuthTestCase):
 
 class Logout(AuthTestCase):
     def test_authentication_requested_after_logout(self):
-        acl.add_user('foo@example.com')
+        models.add_user('foo@example.com')
         self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
 
         response = self.client.get('/auth/api/is_authorized/?path=/bar/')

@@ -1,9 +1,9 @@
 (function () {
   'use strict';
-  var csrfToken, model, users, view, refresh;
+  var csrfToken, locations, users, view, refresh;
 
   csrfToken = null;
-  model = null;
+  locations = null;
   users = null;
 
   view = {
@@ -32,13 +32,43 @@
     });
   }
 
+  function allowedUsersEmails(location) {
+    return $.map(location.allowedUsers, function(item) {
+      return item.email;
+    });
+  }
+
   function allLocationsPaths() {
-    return extractLocationsPaths(model.locations);
+    return extractLocationsPaths(locations);
+  }
+
+  function canAccess(userMail, location) {
+    return inArray(userMail, allowedUsersEmails(location));
+  }
+
+  // TODO: should this be user no userMail?
+  function removeAllowedUser(userMail, location) {
+    location.allowedUsers = $.grep(location.allowedUsers, function(user) {
+      return user.email !== userMail;
+    });
+  }
+
+  // TODO: fix inconsistent (userMail vs. email)
+  function findUser(userMail) {
+    var filteredUsers;
+    filteredUsers = $.grep(users, function(user) {
+      return user.email === userMail;
+    });
+    if (filteredUsers.length === 0) {
+      return null;
+    }
+    // TODO: assert array has only one element.
+    return filteredUsers[0];
   }
 
   function accessibleLocationsPaths(userMail) {
-    var accessibleLocations = $.grep(model.locations, function(location) {
-      return inArray(userMail, location.allowedUsers);
+    var accessibleLocations = $.grep(locations, function(location) {
+      return canAccess(userMail, location);
     });
     return extractLocationsPaths(accessibleLocations);
   }
@@ -55,51 +85,37 @@
     return $('#location-list').find('.active').index();
   }
 
-  // TODO: this no longer works, because addLocation call returns result.
-  function mockAjaxCalls() {
-    return model !== null && model.mockMode;
-  }
-
   // TODO: remove duplication.
   function getCsrfToken(successCallback) {
-    if (!mockAjaxCalls()) {
-      $.ajax({
-        url: '/auth/api/csrftoken/',
-        type: 'GET',
-        dataType: 'json',
-        success: function(result) {
-          csrfToken = result.csrfToken;
-          successCallback();
-        },
-        error: function(jqXHR) {
-          $('body').html(jqXHR.responseText);
-        }
-      })
-    } else {
-      csrfToken = "mockCsrfToken";
-      successCallback();
-    }
+    $.ajax({
+      url: '/auth/api/csrftoken/',
+      type: 'GET',
+      dataType: 'json',
+      success: function(result) {
+        csrfToken = result.csrfToken;
+        successCallback();
+      },
+      error: function(jqXHR) {
+        $('body').html(jqXHR.responseText);
+      }
+    })
   }
 
   // TODO: Remove this one.
   function ajax(method, resource, params, successCallback) {
-    if (!mockAjaxCalls()) {
-      $.ajax({
-        url: 'api/' + resource,
-        type: method,
-        data: JSON.stringify(params),
-        //dataType: method === 'GET' ?  'json' : 'text',
-        dataType: 'json',
-        headers: {'X-CSRFToken' : csrfToken},
-        success: successCallback,
-        error: function(jqXHR) {
-          // TODO: nice messages for user input related failures.
-          $('body').html(jqXHR.responseText);
-        }
-      });
-    } else {
-      successCallback();
-    }
+    $.ajax({
+      url: 'api/' + resource,
+      type: method,
+      data: JSON.stringify(params),
+      //dataType: method === 'GET' ?  'json' : 'text',
+      dataType: 'json',
+      headers: {'X-CSRFToken' : csrfToken},
+      success: successCallback,
+      error: function(jqXHR) {
+        // TODO: nice messages for user input related failures.
+        $('body').html(jqXHR.responseText);
+      }
+    });
   }
 
   function ajaxWithUrl(method, resource, params, successCallback) {
@@ -108,30 +124,26 @@
       jsonData = JSON.stringify(params);
     }
 
-    if (!mockAjaxCalls()) {
-      $.ajax({
-        url: resource,
-        type: method,
-        data: jsonData,
-        //dataType: method === 'GET' ?  'json' : 'text',
-        dataType: 'json',
-        headers: {'X-CSRFToken' : csrfToken},
-        success: successCallback,
-        error: function(jqXHR) {
-          // TODO: nice messages for user input related failures.
-          $('body').html(jqXHR.responseText);
-        }
-      });
-    } else {
-      successCallback();
-    }
+    $.ajax({
+      url: resource,
+      type: method,
+      data: jsonData,
+      //dataType: method === 'GET' ?  'json' : 'text',
+      dataType: 'json',
+      headers: {'X-CSRFToken' : csrfToken},
+      success: successCallback,
+      error: function(jqXHR) {
+        // TODO: nice messages for user input related failures.
+        $('body').html(jqXHR.responseText);
+      }
+    });
   }
 
-  function getModel() {
-    ajax('GET', 'model.json/', {}, function(result) {
+  function getLocations() {
+    ajax('GET', 'locations/', {}, function(result) {
       // TODO: parse json here.
-      model = result;
-      $('.locations-root').text(model.locationsRoot);
+      locations = result.locations;
+      $('.locations-root').text(location.host);
       refresh();
     });
   }
@@ -149,16 +161,16 @@
          function(result) {
            users.push(result);
            refresh();
-           onSuccessCallback();
+           onSuccessCallback(result);
          });
   }
 
   function removeUser(user) {
     ajaxWithUrl('DELETE', user.self, null,
          function() {
-           $.each(model.locations, function(locationId, locationValue) {
-             if (inArray(user.email, locationValue.allowedUsers)) {
-               removeFromArray(userMail, locationValue.allowedUsers);
+           $.each(locations, function(locationId, locationValue) {
+             if (canAccess(user.email, locationValue)) {
+               removeAllowedUser(user.email, locationValue);
              }
            });
            removeFromArray(user, users);
@@ -166,40 +178,46 @@
          });
   }
 
+  function urn2uuid(urn) {
+    return urn.replace('urn:uuid:', '');
+  }
+
   function allowAccessByUser(userMailArg, locationId) {
-    var userMail, location, grantPermissionCallback;
+    var userMail, userWithMail, location, grantPermissionCallback;
     userMail = $.trim(userMailArg);
-    location = model.locations[locationId];
-    if (userMail.length === 0
-        || inArray(userMail, model.locations[locationId].allowedUsers)) {
+    location = locations[locationId];
+    if (userMail.length === 0 || canAccess(userMail, location)) {
       return;
     }
-    grantPermissionCallback = function() {
-      ajax('PUT', 'permissions/', {email: userMail,
-                                  path: location.path},
-           function() {
-             location.allowedUsers.push(userMail);
-             refresh();
-             $('#' + locationInfoId(locationId) + ' ' + '.add-allowed-user')
-               .focus();
-           });
+    grantPermissionCallback = function(user) {
+      ajaxWithUrl('PUT',
+                  location.self + 'allowed-users/' + urn2uuid(user.id) + '/',
+                  null,
+                  function() {
+                    location.allowedUsers.push(user);
+                    refresh();
+                    $('#' + locationInfoId(locationId)
+                      + ' ' + '.add-allowed-user').focus();
+                  });
     };
 
-    if (!inArray(userMail, model.users)) {
-      addUser(userMail, grantPermissionCallback);
+    userWithMail = findUser(userMail);
+    if (userWithMail !== null) {
+      grantPermissionCallback(userWithMail);
     } else {
-      grantPermissionCallback();
+      addUser(userMail, grantPermissionCallback);
     }
   }
 
   // TODO: Fix assymetry (locationId above, location here).
-  function revokeAccessByUser( userMail, location) {
-    ajax('DELETE', 'permissions/', {email: userMail,
-                                   path: location.path},
-           function() {
-             removeFromArray(userMail, location.allowedUsers);
-             refresh();
-           });
+  function revokeAccessByUser(user, location) {
+    ajaxWithUrl('DELETE',
+                location.self + 'allowed-users/' + urn2uuid(user.id) + '/',
+                null,
+                function() {
+                  removeAllowedUser(user.email, location);
+                  refresh();
+                });
   }
 
   function addLocation(locationPathArg) {
@@ -208,21 +226,19 @@
         || inArray(locationPath, allLocationsPaths())) {
       return;
     }
-    ajax('PUT', 'locations/', {path: locationPath},
-         function(escapedPath) {
-           model.locations.push({
-             'path': escapedPath,
-             'allowedUsers': []
-           });
+    ajax('POST', 'locations/', {path: locationPath},
+         function(newLocation) {
+           // TODO: parse json.
+           locations.push(newLocation);
            refresh();
            $('#add-location-input').focus();
          });
   }
 
   function removeLocation(locationId) {
-    ajax('DELETE', 'locations/', {path: model.locations[locationId].path},
+    ajaxWithUrl('DELETE', locations[locationId].self, null,
          function() {
-           model.locations.splice(locationId, 1);
+           locations.splice(locationId, 1);
            var selectLocationId = findSelectLocationId();
            if (selectLocationId === locationId) {
              refresh(0);
@@ -240,9 +256,9 @@
   }
 
   function highlightAccessibleLocations(userMail) {
-    $.each(model.locations, function(locationId, locationValue) {
+    $.each(locations, function(locationId, locationValue) {
       var id = '#' + locationPathId(locationId);
-      if (inArray(userMail, locationValue.allowedUsers)) {
+      if (canAccess(userMail, locationValue)) {
         $(id + ' a').addClass('accessible');
       } else {
         $(id + ' a').addClass('not-accessible');
@@ -266,7 +282,7 @@
       }
       locationsString = $.map(locations, function(locationPath) {
         delimiter = (locationPath[0] !== '/') ? '/' : '';
-        return 'https://' + model.locationsRoot + delimiter + locationPath;
+        return 'https://' + location.host + delimiter + locationPath;
       }).join('\n');
 
       body = 'I have shared ' + website + ' with you.\n'
@@ -286,17 +302,18 @@
       .change(function() {
         allowAccessByUser($(this).val(), locationId);
       })
-      .typeahead({
-        'source': model.users
-      })
+    // TODO: fix of remove.
+    // .typeahead({
+    //   'source': model.users
+    // })
       .end();
 
     allowedUserList = locationInfo.find('.allowed-user-list');
-    $.each(allowedUsers, function(userIdx, userMail) {
+    $.each(allowedUsers, function(userIdx, user) {
       view.allowedUser.clone(true)
-        .find('.user-mail').text(userMail).end()
+        .find('.user-mail').text(user.email).end()
         .find('.remove-user').click(function() {
-          revokeAccessByUser(userMail, model.locations[locationId]);
+          revokeAccessByUser(user, locations[locationId]);
         }).end()
         .appendTo(allowedUserList);
     });
@@ -312,17 +329,18 @@
           removeUser(userListItem);
         }).end()
         .find('.highlight').hover(function() {
-          highlightAccessibleLocations(userMail);
+          highlightAccessibleLocations(userListItem.email);
         }, highlighLocationsOff).end()
         .find('.notify').click(function() {
-          showNotifyDialog([userMail], accessibleLocationsPaths(userMail));
+          showNotifyDialog([userListItem.email],
+                           accessibleLocationsPaths(userListItem.email));
         }).end()
         .appendTo('#user-list');
     });
   }
 
   function showLocations() {
-    $.each(model.locations, function(locationId, locationValue) {
+    $.each(locations, function(locationId, locationValue) {
       view.locationPath.clone(true)
         .attr('id', locationPathId(locationId))
         .find('.url').attr('href', '#' + locationInfoId(locationId)).end()
@@ -339,9 +357,11 @@
       createLocationInfo(locationId, locationValue.allowedUsers);
     });
     view.addLocation.clone(true)
-      .find('#add-location-input').typeahead({
-        'source': allLocationsPaths()
-      })
+      .find('#add-location-input')
+    // TODO: fix or remove.
+    // .typeahead({
+    //   'source': allLocationsPaths()
+    // })
       .change(function() {
         addLocation($(this).val());
       }).end()
@@ -376,7 +396,7 @@
     view.user = $('.user-list-item').clone(true);
 
     getCsrfToken(function() {
-      getModel();
+      getLocations();
       getUsers();
     })
   });

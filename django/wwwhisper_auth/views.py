@@ -10,7 +10,7 @@ from wwwhisper_auth.rest_view import RestView
 import django.contrib.auth as contrib_auth
 import json
 import logging
-import wwwhisper_auth.acl as acl
+import wwwhisper_auth.models as models
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class Auth(View):
 
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)
-            if acl.can_access(user.email, path):
+            if models.can_access(user.email, path):
                 logger.debug('%s: access granted.' % (debug_msg))
                 return HttpResponse('Access granted.', status=200)
             else:
