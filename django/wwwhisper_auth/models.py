@@ -6,8 +6,12 @@ from urlparse import urlparse
 import posixpath
 import re
 import string
+import sys
 import urllib
 import uuid
+
+# This attribute is required, exception is thrown when not set.
+SITE_URL = getattr(settings, 'SITE_URL')
 
 class InvalidPath(ValueError):
     pass
@@ -24,78 +28,74 @@ class ValidatedModel(models.Model):
         # Do not create a DB table for ValidatedModel.
         abstract = True
 
+User.uuid = property(lambda(self): self.username)
+# TODO: get_attributes_dict for symmetry with get_absolute_url?
+User.attributes_dict = lambda(self): \
+    _add_common_attributes(self, {'email': self.email})
+
 # TODO: just location?
 class HttpLocation(ValidatedModel):
     path = models.CharField(max_length=2000, null=False, primary_key=True)
     uuid = models.CharField(max_length=36, null=False, db_index=True,
                             editable=False)
-    def __unicode__(self):
-        return "%s" % (self.path)
-
-    def attributes_dict(self):
-        return add_common_attributes(self, {
-                'path': self.path,
-                'allowedUsers': self.allowed_users(),
-                })
-
     def grant_access(self, user_uuid):
         user = _find(User, username=user_uuid)
         if user is None:
             raise LookupError('User not found')
-        try:
-            obj = HttpPermission.objects.get(
+        permission = _find(
+            HttpPermission, http_location_id=self.path, user_id=user.id)
+        created = False
+        if permission is None:
+            created = True
+            permission = HttpPermission.objects.create(
                 http_location_id=self.path, user_id=user.id)
-            return (obj, False)
-        except HttpPermission.DoesNotExist:
-            obj = HttpPermission.objects.create(
-                http_location_id=self.path, user_id=user.id)
-            obj.save()
-            return (obj, True)
+            permission.save()
+        return (permission, created)
 
     def revoke_access(self, user_uuid):
-        user = _find(User, username=user_uuid)
-        if user is None:
-            raise LookupError('User not found.')
-        if not _del(HttpPermission, http_location_id=self.path,
-                    user_id=user.id):
-            raise LookupError('User can not access location.')
+        permission = self.get_permission(user_uuid)
+        permission.delete()
 
 
     def get_permission(self, user_uuid):
         user = _find(User, username=user_uuid)
         if user is None:
             raise LookupError('User not found.')
-
-        item = HttpPermission.objects.filter(http_location_id=self.path,
-                                             user_id=user.id)
-        assert item.count() <= 1
-        if item.count() == 0:
+        permission = _find(
+            HttpPermission, http_location_id=self.path, user_id=user.id)
+        if permission is None:
             raise LookupError('User can not access location.')
-        return item.get()
+        return permission
 
     def allowed_users(self):
         return [permission.user.attributes_dict() for permission in
                 HttpPermission.objects.filter(http_location=self.path)]
+
+    def attributes_dict(self):
+        return _add_common_attributes(self, {
+                'path': self.path,
+                'allowedUsers': self.allowed_users(),
+                })
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('wwwhisper_location', (), {'uuid' : self.uuid})
 
     def save(self, *args, **kwargs):
         if not self.uuid:
             self.uuid = str(uuid.uuid4())
         return super(HttpLocation, self).save(*args, **kwargs)
 
-    @models.permalink
-    def get_absolute_url(self):
-        return ('wwwhisper_location', (), {'uuid' : self.uuid})
+    def __unicode__(self):
+        return "%s" % (self.path)
 
-# TODO: rename to allowed_user?
+# TODO: rename to allowed_user or just permission?
 class HttpPermission(ValidatedModel):
     http_location = models.ForeignKey(HttpLocation)
     user = models.ForeignKey(User)
 
-    def __unicode__(self):
-        return "%s, %s" % (self.http_location, self.user.email)
-
     def attributes_dict(self):
-        return add_common_attributes(
+        return _add_common_attributes(
             self, {'user': self.user.attributes_dict()})
 
     @models.permalink
@@ -104,6 +104,8 @@ class HttpPermission(ValidatedModel):
                 {'location_uuid' : self.http_location.uuid,
                  'user_uuid': self.user.uuid})
 
+    def __unicode__(self):
+        return "%s, %s" % (self.http_location, self.user.email)
 
 class Collection(object):
     def all(self):
@@ -111,11 +113,7 @@ class Collection(object):
 
     def get(self, uuid):
         filter_args = {self.uuid_column_name: uuid}
-        item = self.model_class.objects.filter(**filter_args)
-        assert item.count() <= 1
-        if item.count() == 0:
-            return None
-        return item.get()
+        return _find(self.model_class, **filter_args)
 
     def delete(self, uuid):
         item = self.get(uuid)
@@ -133,7 +131,7 @@ class UsersCollection(Collection):
     def create_item(self, email):
         if not _is_email_valid(email):
             raise CreationException('Invalid email format.')
-        if _find(User, email=email):
+        if _find(User, email=email) is not None:
             raise CreationException('User already exists.')
         user = User.objects.create(
             username=str(uuid.uuid4()), email=email, is_active=True)
@@ -150,50 +148,47 @@ class LocationsCollection(Collection):
             encoded_path = _encode_path(path)
         except InvalidPath, ex:
             raise CreationException(ex)
-        if _find(HttpLocation, path=path):
+        if _find(HttpLocation, path=path) is not None:
             raise CreationException('Location already exists.')
         location = HttpLocation.objects.create(path=encoded_path)
         location.save()
         return location
 
 
-User.uuid = property(lambda(self): self.username)
+# TODO: How to handle trailing '/'? Maybe remove it prior to adding path to db?
+def can_access(email, path):
+    path_len = len(path)
+    longest_match = ''
+    longest_match_len = -1
 
-# TODO: get_attributes_dict for symmetry with get_absolute_url?
-User.attributes_dict = lambda(self): \
-    add_common_attributes(self, {'email': self.email})
+    for location in HttpLocation.objects.all():
+        probed_path = location.path
+        probed_path_len = len(probed_path)
+        stripped_probed_path = probed_path.rstrip('/')
+        stripped_probed_path_len = len(stripped_probed_path)
+        if (path.startswith(stripped_probed_path) and
+            probed_path_len > longest_match_len and
+            (stripped_probed_path_len == path_len
+             or path[stripped_probed_path_len] == '/')):
+            longest_match_len = probed_path_len
+            longest_match = probed_path
+    return longest_match_len != -1 \
+        and  _find(HttpPermission,
+                   user__email=email,
+                   http_location=longest_match) is not None
 
+def _full_url(absolute_path):
+    return SITE_URL + absolute_path
 
-# TODO: can this warning be fatal initialization error?
-def site_url():
-    return getattr(settings, 'SITE_URL',
-                   'WARNING: SITE_URL is not set')
-
-def full_url(absolute_path):
-    return site_url() + absolute_path
-
-def urn_from_uuid(uuid):
+def _urn_from_uuid(uuid):
     return 'urn:uuid:' + uuid
 
 # TODO: make it a member?
-def add_common_attributes(item, attributes_dict):
-    attributes_dict['self'] = full_url(item.get_absolute_url())
+def _add_common_attributes(item, attributes_dict):
+    attributes_dict['self'] = _full_url(item.get_absolute_url())
     if hasattr(item, 'uuid'):
-        attributes_dict['id'] = urn_from_uuid(item.uuid)
+        attributes_dict['id'] = _urn_from_uuid(item.uuid)
     return attributes_dict
-
-# TODO: remove duplication.
-def _add(model_class, **kwargs):
-    obj, created = model_class.objects.get_or_create(**kwargs)
-    return created
-
-def _del(model_class, **kwargs):
-    object_to_del = model_class.objects.filter(**kwargs)
-    assert object_to_del.count() <= 1
-    if object_to_del.count() == 0:
-        return False
-    object_to_del.delete()
-    return True
 
 def _find(model_class, **kwargs):
     item = model_class.objects.filter(**kwargs)
@@ -202,9 +197,6 @@ def _find(model_class, **kwargs):
     if count == 0:
         return None
     return item.get()
-
-def locations_paths():
-    return [location.path for location in HttpLocation.objects.all()]
 
 # TODO: capital letters in email are not accepted
 def _is_email_valid(email):
@@ -243,7 +235,7 @@ def _encode_path(path):
     if (normalized_path != stripped_path and
         normalized_path + '/' != stripped_path):
         raise InvalidPath(
-            "Path should be normalized (without /../ or /./ or //)")
+            'Path should be normalized (without /../ or /./ or //)')
     #TODO: test if this makes sense:
     try:
         encoded_path = stripped_path.encode('utf-8', 'strict')
@@ -251,22 +243,3 @@ def _encode_path(path):
         raise InvalidPath('Invalid path encoding %s' % str(er))
     return urllib.quote(encoded_path, '/~')
 
-
-# TODO: How to handle trailing '/'? Maybe remove it prior to adding path to db?
-def can_access(email, path):
-    path_len = len(path)
-    longest_match = ''
-    longest_match_len = -1
-
-    for probed_path in locations_paths():
-        probed_path_len = len(probed_path)
-        stripped_probed_path = probed_path.rstrip('/')
-        stripped_probed_path_len = len(stripped_probed_path)
-        if (path.startswith(stripped_probed_path) and
-            probed_path_len > longest_match_len and
-            (stripped_probed_path_len == path_len
-             or path[stripped_probed_path_len] == '/')):
-            longest_match_len = probed_path_len
-            longest_match = probed_path
-    return longest_match_len != -1 and \
-        _find(HttpPermission, user__email=email, http_location=longest_match)
