@@ -91,7 +91,11 @@
     },
 
     locationInfoId: function(location) {
-      return 'resouce-info-' + wwwhisper.urn2uuid(location.id);
+      return 'resource-info-' + wwwhisper.urn2uuid(location.id);
+    },
+
+    addAllowedUserInputId: function(location) {
+      return 'add-allowed-user-input-' + wwwhisper.urn2uuid(location.id);
     },
 
     getCsrfToken: function(successCallback) {
@@ -159,8 +163,6 @@
           function() {
             location.allowedUsers.push(user);
             wwwhisper.ui.refresh();
-            $('#' + wwwhisper.locationInfoId(location)
-              + ' ' + '.add-allowed-user').focus();
           });
       };
 
@@ -194,7 +196,6 @@
                             // TODO: parse json.
                             locations.push(newLocation);
                             wwwhisper.ui.refresh();
-                            $('#add-location-input').focus();
                           });
     },
 
@@ -227,6 +228,10 @@
       return findOnly(locations, function(location) {
         return location.id === urn;
       });
+    },
+
+    _focusedElement: function() {
+      return $(document.activeElement);
     },
 
     _showUsers: function() {
@@ -293,6 +298,7 @@
         .attr('id', wwwhisper.locationInfoId(location))
         .attr('location-urn', location.id)
         .find('.add-allowed-user')
+        .attr('id', wwwhisper.addAllowedUserInputId(location))
         .change(function() {
           wwwhisper.allowAccessByUser($(this).val(), location);
         })
@@ -355,7 +361,9 @@
 
 
     refresh: function() {
-      var selectLocation = wwwhisper.ui._findSelectLocation();
+      var focusedElementId, selectLocation;
+      selectLocation = wwwhisper.ui._findSelectLocation();
+      focusedElementId = wwwhisper.ui._focusedElement().attr('id');
 
       // TODO: run this only after locations are loaded.
       if (selectLocation === null && locations !== null
@@ -372,6 +380,9 @@
 
       if (selectLocation !== null) {
         wwwhisper.ui._showLocationInfo(selectLocation);
+      }
+      if (focusedElementId) {
+        $('#' + focusedElementId).focus();
       }
     },
 
