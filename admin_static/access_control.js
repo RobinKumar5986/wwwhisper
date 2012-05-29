@@ -14,6 +14,23 @@
     user : null
   };
 
+  // TODO: expose for test.
+  function each(iterable, callback) {
+    $.each(iterable, function(_id, value) {
+      callback(value);
+    });
+  };
+
+  function findOnly(array, filterCallback) {
+    var result;
+    result = $.grep(array, filterCallback);
+    if (result.length === 0) {
+      return null;
+    }
+    // TODO: assert array has only one element.
+    return result[0];
+  };
+
   wwwhisper = {
     inArray: function(value, array) {
       return ($.inArray(value, array) >= 0);
@@ -57,15 +74,9 @@
 
     // TODO: fix inconsistent (userMail vs. email)
     findUser: function(userMail) {
-      var filteredUsers;
-      filteredUsers = $.grep(users, function(user) {
+      return findOnly(users, function(user) {
         return user.email === userMail;
       });
-      if (filteredUsers.length === 0) {
-        return null;
-      }
-      // TODO: assert array has only one element.
-      return filteredUsers[0];
     },
 
     accessibleLocationsPaths: function(userMail) {
@@ -75,16 +86,12 @@
       return wwwhisper.extractLocationsPaths(accessibleLocations);
     },
 
-    locationPathId: function(locationId) {
-      return 'location' + locationId.toString();
+    locationPathId: function(location) {
+      return 'location-' + wwwhisper.urn2uuid(location.id);
     },
 
-    locationInfoId: function(locationId) {
-      return 'resouce-info' + locationId.toString();
-    },
-
-    findSelectLocationId: function() {
-      return $('#location-list').find('.active').index();
+    locationInfoId: function(location) {
+      return 'resouce-info-' + wwwhisper.urn2uuid(location.id);
     },
 
     getCsrfToken: function(successCallback) {
@@ -124,9 +131,9 @@
       wwwhisper.stub.ajax(
         'DELETE', user.self, null,
         function() {
-          $.each(locations, function(locationId, locationValue) {
-            if (wwwhisper.canAccess(user.email, locationValue)) {
-              wwwhisper.removeAllowedUser(user.email, locationValue);
+          each(locations, function(location) {
+            if (wwwhisper.canAccess(user.email, location)) {
+              wwwhisper.removeAllowedUser(user.email, location);
             }
           });
           wwwhisper.removeFromArray(user, users);
@@ -138,10 +145,9 @@
       return urn.replace('urn:uuid:', '');
     },
 
-    allowAccessByUser: function(userMailArg, locationId) {
+    allowAccessByUser: function(userMailArg, location) {
       var userMail, userWithMail, location, grantPermissionCallback;
       userMail = $.trim(userMailArg);
-      location = locations[locationId];
       if (userMail.length === 0 || wwwhisper.canAccess(userMail, location)) {
         return;
       }
@@ -153,7 +159,7 @@
           function() {
             location.allowedUsers.push(user);
             wwwhisper.ui.refresh();
-            $('#' + wwwhisper.locationInfoId(locationId)
+            $('#' + wwwhisper.locationInfoId(location)
               + ' ' + '.add-allowed-user').focus();
           });
       };
@@ -166,7 +172,6 @@
       }
     },
 
-    // TODO: Fix assymetry (locationId above, location here).
     revokeAccessByUser: function(user, location) {
       wwwhisper.stub.ajax(
         'DELETE',
@@ -193,20 +198,12 @@
                           });
     },
 
-    removeLocation: function(locationId) {
+    removeLocation: function(location) {
       wwwhisper.stub.ajax(
-        'DELETE',
-        locations[locationId].self, null,
+        'DELETE', location.self, null,
         function() {
           locations.splice(locationId, 1);
-          var selectLocationId = wwwhisper.findSelectLocationId();
-          if (selectLocationId === locationId) {
-            wwwhisper.ui.refresh(0);
-          } else if (selectLocationId > locationId) {
-            wwwhisper.ui.refresh(selectLocationId - 1);
-          } else {
-            wwwhisper.ui.refresh(selectLocationId);
-          }
+          refresh();
         });
     },
 
@@ -220,6 +217,18 @@
   };
 
   wwwhisper.ui = {
+    _findSelectLocation: function() {
+      var activeElement, urn;
+      activeElement = $('#location-list').find('.active');
+      if (activeElement.length === 0) {
+        return null;
+      }
+      urn = activeElement.attr('location-urn');
+      return findOnly(locations, function(location) {
+        return location.id === urn;
+      });
+    },
+
     _showUsers: function() {
       var user;
       $.each(users, function(userIdx, userListItem) {
@@ -241,23 +250,24 @@
     },
 
     _showLocations: function() {
-      $.each(locations, function(locationId, locationValue) {
+      each(locations, function(location) {
         view.locationPath.clone(true)
-          .attr('id', wwwhisper.locationPathId(locationId))
+          .attr('id', wwwhisper.locationPathId(location))
+          .attr('location-urn', location.id)
           .find('.url').attr(
-            'href', '#' + wwwhisper.locationInfoId(locationId)).end()
-          .find('.path').text(locationValue.path).end()
+            'href', '#' + wwwhisper.locationInfoId(location)).end()
+          .find('.path').text(location.path).end()
           .find('.remove-location').click(function(event) {
             // Do not show removed location info.
             event.preventDefault();
-            wwwhisper.removeLocation(locationId);
+            wwwhisper.removeLocation(location);
           }).end()
           .find('.notify').click(function() {
             wwwhisper.ui._showNotifyDialog(
-              locationValue.allowedUsers, [locationValue.path]);
+              location.allowedUsers, [location.path]);
           }).end()
           .appendTo('#location-list');
-        wwwhisper.ui._createLocationInfo(locationId, locationValue.allowedUsers);
+        wwwhisper.ui._createLocationInfo(location);
       });
 
       view.addLocation.clone(true)
@@ -272,18 +282,19 @@
         .appendTo('#location-list');
     },
 
-    _showLocationInfo: function(locationId) {
-      $('#' + wwwhisper.locationPathId(locationId)).addClass('active');
-      $('#' + wwwhisper.locationInfoId(locationId)).addClass('active');
+    _showLocationInfo: function(location) {
+      $('#' + wwwhisper.locationPathId(location)).addClass('active');
+      $('#' + wwwhisper.locationInfoId(location)).addClass('active');
     },
 
-    _createLocationInfo: function(locationId, allowedUsers) {
+    _createLocationInfo: function(location) {
       var locationInfo, allowedUserList;
       locationInfo = view.locationInfo.clone(true)
-        .attr('id', wwwhisper.locationInfoId(locationId))
+        .attr('id', wwwhisper.locationInfoId(location))
+        .attr('location-urn', location.id)
         .find('.add-allowed-user')
         .change(function() {
-          wwwhisper.allowAccessByUser($(this).val(), locationId);
+          wwwhisper.allowAccessByUser($(this).val(), location);
         })
       // TODO: fix of remove.
       // .typeahead({
@@ -292,11 +303,11 @@
         .end();
 
       allowedUserList = locationInfo.find('.allowed-user-list');
-      $.each(allowedUsers, function(userIdx, user) {
+      each(location.allowedUsers, function(user) {
         view.allowedUser.clone(true)
           .find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
-            wwwhisper.revokeAccessByUser(user, locations[locationId]);
+            wwwhisper.revokeAccessByUser(user, location);
           }).end()
           .appendTo(allowedUserList);
       });
@@ -304,9 +315,9 @@
     },
 
     _highlightAccessibleLocations: function(userMail) {
-      $.each(locations, function(locationId, locationValue) {
-        var id = '#' + wwwhisper.locationPathId(locationId);
-        if (wwwhisper.canAccess(userMail, locationValue)) {
+      each(locations, function(location) {
+        var id = '#' + wwwhisper.locationPathId(location);
+        if (wwwhisper.canAccess(userMail, location)) {
           $(id + ' a').addClass('accessible');
         } else {
           $(id + ' a').addClass('not-accessible');
@@ -343,12 +354,13 @@
     },
 
 
-    refresh: function(selectLocationId) {
-      if (typeof selectLocationId === 'undefined') {
-        selectLocationId = wwwhisper.findSelectLocationId();
-      }
-      if (selectLocationId === -1) {
-        selectLocationId = 0;
+    refresh: function() {
+      var selectLocation = wwwhisper.ui._findSelectLocation();
+
+      // TODO: run this only after locations are loaded.
+      if (selectLocation === null && locations !== null
+          && locations.length > 0) {
+        selectLocation = locations[0];
       }
 
       $('#location-list').empty();
@@ -358,7 +370,9 @@
       wwwhisper.ui._showLocations();
       wwwhisper.ui._showUsers();
 
-      wwwhisper.ui._showLocationInfo(selectLocationId);
+      if (selectLocation !== null) {
+        wwwhisper.ui._showLocationInfo(selectLocation);
+      }
     },
 
     initialize: function() {

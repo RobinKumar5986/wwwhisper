@@ -9,8 +9,7 @@
   };
 
   wwwhisper.ui = {
-    refresh: function() {
-    }
+    refresh: function() {}
   };
 
   test("inArray", function() {
