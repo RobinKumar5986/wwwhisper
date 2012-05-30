@@ -163,6 +163,7 @@
         });
     },
 
+    // TODO: allow->grant
     allowAccessByUser: function(email, location) {
       var cleanedEmail, user, location, grantPermissionCallback;
       cleanedEmail = $.trim(email);

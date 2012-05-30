@@ -174,10 +174,13 @@
     };
     wwwhisper.users.push(user);
     wwwhisper.locations.push(location);
-
     mock_stub.expectAjaxCall(
       'PUT', location.self + 'allowed-users/17/', null, user);
+
+    ok(!wwwhisper.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
+    ok(wwwhisper.canAccess(user, location));
+
     deepEqual(wwwhisper.locations[0].allowedUsers, [user]);
     mock_stub.verify();
   });
@@ -196,14 +199,16 @@
       allowedUsers: [],
     };
     wwwhisper.locations.push(location);
-
     // User should first be added.
     mock_stub.expectAjaxCall(
       'POST', 'api/users/', {email: 'foo@example.com'}, user);
     mock_stub.expectAjaxCall(
       'PUT', location.self + 'allowed-users/17/', null, user);
 
+    ok(!wwwhisper.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
+    ok(wwwhisper.canAccess(user, location));
+
     deepEqual(wwwhisper.locations[0].allowedUsers, [user]);
     deepEqual(wwwhisper.users, [user]);
     mock_stub.verify();
@@ -225,7 +230,38 @@
     wwwhisper.users.push(user);
     wwwhisper.locations.push(location);
 
+    ok(wwwhisper.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
+    ok(wwwhisper.canAccess(user, location));
+
+    mock_stub.verify();
+  });
+
+
+  test('revokeAccess', function() {
+    var location, user;
+    user = {
+      id: '17',
+      email: 'foo@example.com',
+      self: 'example.com/users/17/',
+    };
+    location = {
+      id: '13',
+      path: '/bar',
+      self: 'example.com/locations/13/',
+      allowedUsers: [user],
+    };
+    wwwhisper.users.push(user);
+    wwwhisper.locations.push(location);
+
+    mock_stub.expectAjaxCall(
+      'DELETE', location.self + 'allowed-users/17/', null, null);
+
+    ok(wwwhisper.canAccess(user, location));
+    wwwhisper.revokeAccessByUser(user, location);
+    ok(!wwwhisper.canAccess(user, location));
+
+    deepEqual(wwwhisper.locations[0].allowedUsers, []);
     mock_stub.verify();
   });
 
