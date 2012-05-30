@@ -141,11 +141,11 @@
         });
     },
 
-    addUser: function(userMail, nextCallback) {
-      wwwhisper.stub.ajax('POST', 'api/users/', {email: userMail},
-                          function(result) {
-                            wwwhisper.users.push(result);
-                            nextCallback(result);
+    addUser: function(emailArg, nextCallback) {
+      wwwhisper.stub.ajax('POST', 'api/users/', {email: emailArg},
+                          function(user) {
+                            wwwhisper.users.push(user);
+                            nextCallback(user);
                           });
     },
 
@@ -178,7 +178,8 @@
       grantPermissionCallback = function(userArg) {
         wwwhisper.stub.ajax(
           'PUT',
-          location.self + 'allowed-users/' + wwwhisper.urn2uuid(user.id) + '/',
+          location.self + 'allowed-users/'
+            + wwwhisper.urn2uuid(userArg.id) + '/',
           null,
           function() {
             location.allowedUsers.push(userArg);

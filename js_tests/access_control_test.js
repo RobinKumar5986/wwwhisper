@@ -24,11 +24,11 @@
     },
 
     verify: function() {
-      if (this.expectedCalls.length !== 0) {
-        ok(false, 'Expected ajax call not invoked: '
-           + this.expectedCalls[0].method
-           + ' ' + this.expectedCalls[0].resource);
-      }
+      ok(this.expectedCalls.length == 0, 'All expected ajax calls invoked.')
+    },
+
+    reset: function() {
+      this.expectedCalls = [];
     }
   };
 
@@ -39,7 +39,6 @@
   };
 
   QUnit.testStart = function() {
-    mock_stub.verify();
     // Reset wwwhisper object state.
     // TODO: Maybe make wwwhisper() a function that return initialized object?
     wwwhisper.locations = [];
@@ -83,11 +82,11 @@
   test('extractLocationsPaths', function() {
     var result = wwwhisper.extractLocationsPaths([
       {
-        id: 12,
+        id: '12',
         path: '/foo',
       },
       {
-        id: 13,
+        id: '13',
         path: '/foo/bar',
       },
       {
@@ -101,38 +100,41 @@
 
   test('addLocation', function() {
     deepEqual(wwwhisper.locations, []);
-    var newLocation = {id: 13, path: '/foo', allowedUsers: []};
+    var newLocation = {id: '13', path: '/foo', allowedUsers: []};
     mock_stub.expectAjaxCall('POST', 'api/locations/', {path: '/foo'},
                              newLocation);
     wwwhisper.addLocation('/foo');
     deepEqual(wwwhisper.locations, [newLocation]);
+    mock_stub.verify();
   });
 
   test('addLocation not invoked when location already exists', function() {
     deepEqual(wwwhisper.locations, []);
     // Only single ajax call is expected.
     mock_stub.expectAjaxCall('POST', 'api/locations/', {path: '/foo'},
-                             { id: 13, path: '/foo', allowedUsers: []});
+                             { id: '13', path: '/foo', allowedUsers: []});
     wwwhisper.addLocation('/foo');
     wwwhisper.addLocation('/foo');
+    mock_stub.verify();
   });
 
   test('removeLocation', function() {
     wwwhisper.locations = [{
-      id: 13,
+      id: '13',
       path: '/foo',
-      self: 'example.com/locations/13',
+      self: 'example.com/locations/13/',
       allowedUsers: [],
     }]
     mock_stub.expectAjaxCall('DELETE', wwwhisper.locations[0].self, null, null);
     wwwhisper.removeLocation(wwwhisper.locations[0]);
     deepEqual(wwwhisper.locations, []);
+    mock_stub.verify();
   });
 
   test('addUser', function() {
     var nextCallbackInvoked = false;
     deepEqual(wwwhisper.users, []);
-    var newUser = {id: 13, email: 'foo@example.com'};
+    var newUser = {id: '13', email: 'foo@example.com'};
     mock_stub.expectAjaxCall('POST', 'api/users/', {email: 'foo@example.com'},
                              newUser);
     wwwhisper.addUser('foo@example.com',
@@ -142,17 +144,89 @@
                       });
     ok(nextCallbackInvoked);
     deepEqual(wwwhisper.users, [newUser]);
+    mock_stub.verify();
   });
 
   test('removeUser', function() {
     wwwhisper.users = [{
-      id: 13,
+      id: '13',
       email: 'foo@example.com',
-      self: 'example.com/users/13',
+      self: 'example.com/users/13/',
     }]
     mock_stub.expectAjaxCall('DELETE', wwwhisper.users[0].self, null, null);
     wwwhisper.removeUser(wwwhisper.users[0]);
     deepEqual(wwwhisper.users, []);
+    mock_stub.verify();
+  });
+
+  test('allowAccess when user exists', function() {
+    var location, user;
+    user = {
+      id: '17',
+      email: 'foo@example.com',
+      self: 'example.com/users/17/',
+    };
+    location = {
+      id: '13',
+      path: '/bar',
+      self: 'example.com/locations/13/',
+      allowedUsers: [],
+    };
+    wwwhisper.users.push(user);
+    wwwhisper.locations.push(location);
+
+    mock_stub.expectAjaxCall(
+      'PUT', location.self + 'allowed-users/17/', null, user);
+    wwwhisper.allowAccessByUser(user.email, location);
+    deepEqual(wwwhisper.locations[0].allowedUsers, [user]);
+    mock_stub.verify();
+  });
+
+  test('allowAccess when user does not exist', function() {
+    var location, user;
+    user = {
+      id: '17',
+      email: 'foo@example.com',
+      self: 'example.com/users/17/',
+    };
+    location = {
+      id: '13',
+      path: '/bar',
+      self: 'example.com/locations/13/',
+      allowedUsers: [],
+    };
+    wwwhisper.locations.push(location);
+
+    // User should first be added.
+    mock_stub.expectAjaxCall(
+      'POST', 'api/users/', {email: 'foo@example.com'}, user);
+    mock_stub.expectAjaxCall(
+      'PUT', location.self + 'allowed-users/17/', null, user);
+
+    wwwhisper.allowAccessByUser(user.email, location);
+    deepEqual(wwwhisper.locations[0].allowedUsers, [user]);
+    deepEqual(wwwhisper.users, [user]);
+    mock_stub.verify();
+  });
+
+  test('allowAccess when user already can access location', function() {
+    var location, user;
+    user = {
+      id: '17',
+      email: 'foo@example.com',
+      self: 'example.com/users/17/',
+    };
+    location = {
+      id: '13',
+      path: '/bar',
+      self: 'example.com/locations/13/',
+      allowedUsers: [user],
+    };
+    wwwhisper.users.push(user);
+    wwwhisper.locations.push(location);
+
+    wwwhisper.allowAccessByUser(user.email, location);
+    mock_stub.verify();
   });
 
 }());
