@@ -1,9 +1,18 @@
 (function() {
-  wwwhisper.stub = {
+  mock_stub = {
+    expectedCalls: [],
+
     ajax: function(method, resource, params, successCallback) {
-      ok(false, 'Unexpected ajax call.');
-    }
+      if (this.expectedCalls.length === 0) {
+        ok(false, 'Unexpected ajax call ' + method + ' ' + resource);
+      }
+    },
+
+    expectAjaxCall: function(method, resource, params, result) {
+    },
   };
+
+  wwwhisper.stub = mock_stub;
 
   wwwhisper.ui = {
     refresh: function() {}

@@ -1,10 +1,6 @@
 (function () {
   'use strict';
-  var csrfToken, locations, users, wwwhisper;
-
-  csrfToken = null;
-  locations = null;
-  users = null;
+  var wwwhisper;
 
   // TODO: expose for test.
   function each(iterable, callback) {
@@ -24,6 +20,10 @@
   };
 
   wwwhisper = {
+    csrfToken: null,
+    locations: null,
+    users: null,
+
     inArray: function(value, array) {
       return ($.inArray(value, array) >= 0);
     },
@@ -47,34 +47,34 @@
     },
 
     allLocationsPaths: function() {
-      return wwwhisper.extractLocationsPaths(locations);
+      return wwwhisper.extractLocationsPaths(wwwhisper.locations);
     },
 
-    allowedUsersEmails: function(location) {
-      return $.map(location.allowedUsers, function(item) {
-        return item.email;
+    allowedUsersIds: function(location) {
+      return $.map(location.allowedUsers, function(user) {
+        return user.id;
       });
     },
 
     canAccess: function(user, location) {
       return wwwhisper.inArray(
-        user.email, wwwhisper.allowedUsersEmails(location));
+        user.id, wwwhisper.allowedUsersIds(location));
     },
 
     removeAllowedUser: function(user, location) {
       location.allowedUsers = $.grep(location.allowedUsers, function(u) {
-        return u.email !== user.email;
+        return u.id !== user.id;
       });
     },
 
     findUser: function(email) {
-      return findOnly(users, function(user) {
+      return findOnly(wwwhisper.users, function(user) {
         return user.email === email;
       });
     },
 
     accessibleLocations: function(user) {
-      return $.grep(locations, function(location) {
+      return $.grep(wwwhisper.locations, function(location) {
         return wwwhisper.canAccess(user, location);
       });
     },
@@ -86,7 +86,7 @@
     getCsrfToken: function(nextCallback) {
       wwwhisper.stub.ajax('GET', '/auth/api/csrftoken/', {},
                           function(result) {
-                            csrfToken = result.csrfToken;
+                            wwwhisper.csrfToken = result.csrfToken;
                             nextCallback();
                           });
     },
@@ -94,7 +94,7 @@
     getLocations: function(nextCallback) {
       wwwhisper.stub.ajax('GET', 'api/locations/', {}, function(result) {
         // TODO: parse json here.
-        locations = result.locations;
+        wwwhisper.locations = result.locations;
         nextCallback();
       });
     },
@@ -102,7 +102,7 @@
     getUsers: function(nextCallback) {
       wwwhisper.stub.ajax('GET', 'api/users/', {}, function(result) {
         // TODO: parse json here.
-        users = result.users;
+        wwwhisper.users = result.users;
         nextCallback();
       });
     },
@@ -121,7 +121,7 @@
     addUser: function(userMail, onSuccessCallback) {
       wwwhisper.stub.ajax('POST', 'api/users/', {email: userMail},
                           function(result) {
-                            users.push(result);
+                            wwwhisper.users.push(result);
                             wwwhisper.ui.refresh();
                             onSuccessCallback();
                           });
@@ -131,12 +131,12 @@
       wwwhisper.stub.ajax(
         'DELETE', user.self, null,
         function() {
-          each(locations, function(location) {
+          each(wwwhisper.locations, function(location) {
             if (wwwhisper.canAccess(user, location)) {
               wwwhisper.removeAllowedUser(user, location);
             }
           });
-          wwwhisper.removeFromArray(user, users);
+          wwwhisper.removeFromArray(user, wwwhisper.users);
           wwwhisper.ui.refresh();
         });
     },
@@ -191,7 +191,7 @@
       wwwhisper.stub.ajax('POST', 'api/locations/', {path: locationPath},
                           function(newLocation) {
                             // TODO: parse json.
-                            locations.push(newLocation);
+                            wwwhisper.locations.push(newLocation);
                             wwwhisper.ui.refresh();
                           });
     },
@@ -200,7 +200,7 @@
       wwwhisper.stub.ajax(
         'DELETE', location.self, null,
         function() {
-          wwwhisper.removeFromArray(location, locations);
+          wwwhisper.removeFromArray(location, wwwhisper.locations);
           wwwhisper.ui.refresh();
         });
     },
@@ -242,14 +242,14 @@
         return null;
       }
       urn = activeElement.attr('location-urn');
-      return findOnly(locations, function(location) {
+      return findOnly(wwwhisper.locations, function(location) {
         return location.id === urn;
       });
     },
 
     _showUsers: function() {
       var userView;
-      each(users, function(user) {
+      each(wwwhisper.users, function(user) {
         userView = wwwhisper.ui.view.user.clone(true);
         userView.find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
@@ -270,7 +270,7 @@
     },
 
     _showLocations: function() {
-      each(locations, function(location) {
+      each(wwwhisper.locations, function(location) {
         wwwhisper.ui.view.locationPath.clone(true)
           .attr('id', wwwhisper.ui._locationPathId(location))
           .attr('location-urn', location.id)
@@ -336,7 +336,7 @@
     },
 
     _highlightAccessibleLocations: function(user) {
-      each(locations, function(location) {
+      each(wwwhisper.locations, function(location) {
         var id = '#' + wwwhisper.ui._locationPathId(location);
         if (wwwhisper.canAccess(user, location)) {
           $(id + ' a').addClass('accessible');
@@ -380,10 +380,8 @@
       selectLocation = wwwhisper.ui._findSelectLocation();
       focusedElementId = wwwhisper.ui._focusedElement().attr('id');
 
-      // TODO: run this only after locations are loaded.
-      if (selectLocation === null && locations !== null
-          && locations.length > 0) {
-        selectLocation = locations[0];
+      if (selectLocation === null && wwwhisper.locations.length > 0) {
+        selectLocation = wwwhisper.locations[0];
       }
 
       $('#location-list').empty();
@@ -426,7 +424,7 @@
         data: jsonData,
         //dataType: method === 'GET' ?  'json' : 'text',
         dataType: 'json',
-        headers: {'X-CSRFToken' : csrfToken},
+        headers: {'X-CSRFToken' : wwwhisper.csrfToken},
         success: successCallback,
         error: function(jqXHR) {
           // TODO: nice messages for user input related failures.
