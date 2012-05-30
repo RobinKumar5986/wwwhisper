@@ -82,28 +82,39 @@
       return 'add-allowed-user-input-' + wwwhisper.urn2uuid(location.id);
     },
 
-    getCsrfToken: function(successCallback) {
+    getCsrfToken: function(nextCallback) {
       wwwhisper.stub.ajax('GET', '/auth/api/csrftoken/', {},
                           function(result) {
                             csrfToken = result.csrfToken;
-                            successCallback();
+                            nextCallback();
                           });
     },
 
-    getLocations: function() {
+    getLocations: function(nextCallback) {
       wwwhisper.stub.ajax('GET', 'api/locations/', {}, function(result) {
         // TODO: parse json here.
         locations = result.locations;
-        wwwhisper.ui.refresh();
+        nextCallback();
       });
     },
 
-    getUsers: function() {
+    getUsers: function(nextCallback) {
       wwwhisper.stub.ajax('GET', 'api/users/', {}, function(result) {
         // TODO: parse json here.
         users = result.users;
-        wwwhisper.ui.refresh();
+        nextCallback();
       });
+    },
+
+    buildCallbacksChain: function(callbacks) {
+      if (callbacks.length === 1) {
+        return callbacks[0];
+      }
+      return function() {
+        callbacks[0](
+          wwwhisper.buildCallbacksChain(callbacks.slice(1, callbacks.length))
+        );
+      }
     },
 
     addUser: function(userMail, onSuccessCallback) {
@@ -194,11 +205,11 @@
 
     initialize: function() {
       wwwhisper.ui.initialize();
-      wwwhisper.getCsrfToken(function() {
-        wwwhisper.getLocations();
-        wwwhisper.getUsers();
-      });
-    }
+      wwwhisper.buildCallbacksChain([wwwhisper.getCsrfToken,
+                                     wwwhisper.getLocations,
+                                     wwwhisper.getUsers,
+                                     wwwhisper.ui.refresh])();
+    },
   };
 
   wwwhisper.ui = {
