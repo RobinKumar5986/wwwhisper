@@ -46,38 +46,36 @@
       });
     },
 
+    allLocationsPaths: function() {
+      return wwwhisper.extractLocationsPaths(locations);
+    },
+
     allowedUsersEmails: function(location) {
       return $.map(location.allowedUsers, function(item) {
         return item.email;
       });
     },
 
-    allLocationsPaths: function() {
-      return wwwhisper.extractLocationsPaths(locations);
-    },
-
-    canAccess: function(userMail, location) {
+    canAccess: function(user, location) {
       return wwwhisper.inArray(
-        userMail, wwwhisper.allowedUsersEmails(location));
+        user.email, wwwhisper.allowedUsersEmails(location));
     },
 
-    // TODO: should this be user no userMail?
-    removeAllowedUser: function(userMail, location) {
-      location.allowedUsers = $.grep(location.allowedUsers, function(user) {
-        return user.email !== userMail;
+    removeAllowedUser: function(user, location) {
+      location.allowedUsers = $.grep(location.allowedUsers, function(u) {
+        return u.email !== user.email;
       });
     },
 
-    // TODO: fix inconsistent (userMail vs. email)
-    findUser: function(userMail) {
+    findUser: function(email) {
       return findOnly(users, function(user) {
-        return user.email === userMail;
+        return user.email === email;
       });
     },
 
     accessibleLocations: function(user) {
       return $.grep(locations, function(location) {
-        return wwwhisper.canAccess(user.email, location);
+        return wwwhisper.canAccess(user, location);
       });
     },
 
@@ -125,7 +123,7 @@
                           function(result) {
                             users.push(result);
                             wwwhisper.ui.refresh();
-                            onSuccessCallback(result);
+                            onSuccessCallback();
                           });
     },
 
@@ -134,8 +132,8 @@
         'DELETE', user.self, null,
         function() {
           each(locations, function(location) {
-            if (wwwhisper.canAccess(user.email, location)) {
-              wwwhisper.removeAllowedUser(user.email, location);
+            if (wwwhisper.canAccess(user, location)) {
+              wwwhisper.removeAllowedUser(user, location);
             }
           });
           wwwhisper.removeFromArray(user, users);
@@ -143,13 +141,19 @@
         });
     },
 
-    allowAccessByUser: function(userMailArg, location) {
-      var userMail, userWithMail, location, grantPermissionCallback;
-      userMail = $.trim(userMailArg);
-      if (userMail.length === 0 || wwwhisper.canAccess(userMail, location)) {
+    allowAccessByUser: function(email, location) {
+      var cleanedEmail, user, location, grantPermissionCallback;
+      cleanedEmail = $.trim(email);
+      if (cleanedEmail.length === 0) {
         return;
       }
-      grantPermissionCallback = function(user) {
+      user = wwwhisper.findUser(cleanedEmail);
+      if (user !== null && wwwhisper.canAccess(user, location)) {
+        // User already can access location.
+        return;
+      }
+
+      grantPermissionCallback = function() {
         wwwhisper.stub.ajax(
           'PUT',
           location.self + 'allowed-users/' + wwwhisper.urn2uuid(user.id) + '/',
@@ -160,11 +164,10 @@
           });
       };
 
-      userWithMail = wwwhisper.findUser(userMail);
-      if (userWithMail !== null) {
-        grantPermissionCallback(userWithMail);
+      if (user !== null) {
+        grantPermissionCallback();
       } else {
-        wwwhisper.addUser(userMail, grantPermissionCallback);
+        wwwhisper.addUser(cleanedEmail, grantPermissionCallback);
       }
     },
 
@@ -174,7 +177,7 @@
         location.self + 'allowed-users/' + wwwhisper.urn2uuid(user.id) + '/',
         null,
         function() {
-          wwwhisper.removeAllowedUser(user.email, location);
+          wwwhisper.removeAllowedUser(user, location);
           wwwhisper.ui.refresh();
         });
     },
@@ -253,7 +256,7 @@
             wwwhisper.removeUser(user);
           }).end()
           .find('.highlight').hover(function() {
-            wwwhisper.ui._highlightAccessibleLocations(user.email);
+            wwwhisper.ui._highlightAccessibleLocations(user);
           }, wwwhisper.ui._highlighLocationsOff).end()
           .find('.notify').click(function() {
             wwwhisper.ui._showNotifyDialog(
@@ -332,10 +335,10 @@
       locationInfo.appendTo('#location-info-list');
     },
 
-    _highlightAccessibleLocations: function(userMail) {
+    _highlightAccessibleLocations: function(user) {
       each(locations, function(location) {
         var id = '#' + wwwhisper.ui._locationPathId(location);
-        if (wwwhisper.canAccess(userMail, location)) {
+        if (wwwhisper.canAccess(user, location)) {
           $(id + ' a').addClass('accessible');
         } else {
           $(id + ' a').addClass('not-accessible');
