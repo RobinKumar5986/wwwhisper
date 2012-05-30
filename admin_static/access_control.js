@@ -1,18 +1,10 @@
 (function () {
   'use strict';
-  var csrfToken, locations, users, view, wwwhisper;
+  var csrfToken, locations, users, wwwhisper;
 
   csrfToken = null;
   locations = null;
   users = null;
-
-  view = {
-    locationPath : null,
-    locationInfo : null,
-    allowedUser : null,
-    addLocation : null,
-    user : null
-  };
 
   // TODO: expose for test.
   function each(iterable, callback) {
@@ -84,14 +76,6 @@
         return wwwhisper.canAccess(userMail, location);
       });
       return wwwhisper.extractLocationsPaths(accessibleLocations);
-    },
-
-    locationPathId: function(location) {
-      return 'location-' + wwwhisper.urn2uuid(location.id);
-    },
-
-    locationInfoId: function(location) {
-      return 'resource-info-' + wwwhisper.urn2uuid(location.id);
     },
 
     addAllowedUserInputId: function(location) {
@@ -203,8 +187,8 @@
       wwwhisper.stub.ajax(
         'DELETE', location.self, null,
         function() {
-          locations.splice(locationId, 1);
-          refresh();
+          wwwhisper.removeFromArray(location, locations);
+          wwwhisper.ui.refresh();
         });
     },
 
@@ -218,6 +202,26 @@
   };
 
   wwwhisper.ui = {
+    view: {
+      locationPath : null,
+      locationInfo : null,
+      allowedUser : null,
+      addLocation : null,
+      user : null
+    },
+
+    _focusedElement: function() {
+      return $(document.activeElement);
+    },
+
+    _locationPathId: function(location) {
+      return 'location-' + wwwhisper.urn2uuid(location.id);
+    },
+
+    _locationInfoId: function(location) {
+      return 'resource-info-' + wwwhisper.urn2uuid(location.id);
+    },
+
     _findSelectLocation: function() {
       var activeElement, urn;
       activeElement = $('#location-list').find('.active');
@@ -230,14 +234,10 @@
       });
     },
 
-    _focusedElement: function() {
-      return $(document.activeElement);
-    },
-
     _showUsers: function() {
       var user;
-      $.each(users, function(userIdx, userListItem) {
-        user = view.user.clone(true);
+      each(users, function(userListItem) {
+        user = wwwhisper.ui.view.user.clone(true);
         user.find('.user-mail').text(userListItem.email).end()
           .find('.remove-user').click(function() {
             wwwhisper.removeUser(userListItem);
@@ -256,11 +256,11 @@
 
     _showLocations: function() {
       each(locations, function(location) {
-        view.locationPath.clone(true)
-          .attr('id', wwwhisper.locationPathId(location))
+        wwwhisper.ui.view.locationPath.clone(true)
+          .attr('id', wwwhisper.ui._locationPathId(location))
           .attr('location-urn', location.id)
           .find('.url').attr(
-            'href', '#' + wwwhisper.locationInfoId(location)).end()
+            'href', '#' + wwwhisper.ui._locationInfoId(location)).end()
           .find('.path').text(location.path).end()
           .find('.remove-location').click(function(event) {
             // Do not show removed location info.
@@ -275,7 +275,7 @@
         wwwhisper.ui._createLocationInfo(location);
       });
 
-      view.addLocation.clone(true)
+      wwwhisper.ui.view.addLocation.clone(true)
         .find('#add-location-input')
       // TODO: fix or remove.
       // .typeahead({
@@ -288,14 +288,14 @@
     },
 
     _showLocationInfo: function(location) {
-      $('#' + wwwhisper.locationPathId(location)).addClass('active');
-      $('#' + wwwhisper.locationInfoId(location)).addClass('active');
+      $('#' + wwwhisper.ui._locationPathId(location)).addClass('active');
+      $('#' + wwwhisper.ui._locationInfoId(location)).addClass('active');
     },
 
     _createLocationInfo: function(location) {
       var locationInfo, allowedUserList;
-      locationInfo = view.locationInfo.clone(true)
-        .attr('id', wwwhisper.locationInfoId(location))
+      locationInfo = wwwhisper.ui.view.locationInfo.clone(true)
+        .attr('id', wwwhisper.ui._locationInfoId(location))
         .attr('location-urn', location.id)
         .find('.add-allowed-user')
         .attr('id', wwwhisper.addAllowedUserInputId(location))
@@ -310,7 +310,7 @@
 
       allowedUserList = locationInfo.find('.allowed-user-list');
       each(location.allowedUsers, function(user) {
-        view.allowedUser.clone(true)
+        wwwhisper.ui.view.allowedUser.clone(true)
           .find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
             wwwhisper.revokeAccessByUser(user, location);
@@ -322,7 +322,7 @@
 
     _highlightAccessibleLocations: function(userMail) {
       each(locations, function(location) {
-        var id = '#' + wwwhisper.locationPathId(location);
+        var id = '#' + wwwhisper.ui._locationPathId(location);
         if (wwwhisper.canAccess(userMail, location)) {
           $(id + ' a').addClass('accessible');
         } else {
@@ -387,12 +387,13 @@
     },
 
     initialize: function() {
-      view.locationPath = $('#location-list-item').clone(true);
-      view.locationInfo = $('#location-info-list-item').clone(true);
-      view.allowedUser = $('#allowed-user-list-item').clone(true);
-      view.locationInfo.find('#allowed-user-list-item').remove();
-      view.addLocation = $('#add-location').clone(true);
-      view.user = $('.user-list-item').clone(true);
+      wwwhisper.ui.view.locationPath = $('#location-list-item').clone(true);
+      wwwhisper.ui.view.locationInfo =
+        $('#location-info-list-item').clone(true);
+      wwwhisper.ui.view.allowedUser = $('#allowed-user-list-item').clone(true);
+      wwwhisper.ui.view.locationInfo.find('#allowed-user-list-item').remove();
+      wwwhisper.ui.view.addLocation = $('#add-location').clone(true);
+      wwwhisper.ui.view.user = $('.user-list-item').clone(true);
       $('.locations-root').text(location.host);
     }
   };
