@@ -36,6 +36,10 @@
       array.splice(idx, 1);
     },
 
+    urn2uuid: function(urn) {
+      return urn.replace('urn:uuid:', '');
+    },
+
     extractLocationsPaths: function(locations) {
       return $.map(locations, function(item) {
         return item.path;
@@ -71,11 +75,10 @@
       });
     },
 
-    accessibleLocationsPaths: function(userMail) {
-      var accessibleLocations = $.grep(locations, function(location) {
-        return wwwhisper.canAccess(userMail, location);
+    accessibleLocations: function(user) {
+      return $.grep(locations, function(location) {
+        return wwwhisper.canAccess(user.email, location);
       });
-      return wwwhisper.extractLocationsPaths(accessibleLocations);
     },
 
     addAllowedUserInputId: function(location) {
@@ -138,10 +141,6 @@
           wwwhisper.removeFromArray(user, users);
           wwwhisper.ui.refresh();
         });
-    },
-
-    urn2uuid: function(urn) {
-      return urn.replace('urn:uuid:', '');
     },
 
     allowAccessByUser: function(userMailArg, location) {
@@ -246,20 +245,22 @@
     },
 
     _showUsers: function() {
-      var user;
-      each(users, function(userListItem) {
-        user = wwwhisper.ui.view.user.clone(true);
-        user.find('.user-mail').text(userListItem.email).end()
+      var userView;
+      each(users, function(user) {
+        userView = wwwhisper.ui.view.user.clone(true);
+        userView.find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
-            wwwhisper.removeUser(userListItem);
+            wwwhisper.removeUser(user);
           }).end()
           .find('.highlight').hover(function() {
-            wwwhisper.ui._highlightAccessibleLocations(userListItem.email);
+            wwwhisper.ui._highlightAccessibleLocations(user.email);
           }, wwwhisper.ui._highlighLocationsOff).end()
           .find('.notify').click(function() {
             wwwhisper.ui._showNotifyDialog(
-              [userListItem.email],
-              wwwhisper.accessibleLocationsPaths(userListItem.email));
+              [user.email],
+              wwwhisper.extractLocationsPaths(
+                wwwhisper.accessibleLocations(user))
+            );
           }).end()
           .appendTo('#user-list');
       });
