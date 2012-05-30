@@ -21,8 +21,8 @@
 
   wwwhisper = {
     csrfToken: null,
-    locations: null,
-    users: null,
+    locations: [],
+    users: [],
 
     inArray: function(value, array) {
       return ($.inArray(value, array) >= 0);
@@ -118,12 +118,34 @@
       }
     },
 
-    addUser: function(userMail, onSuccessCallback) {
+    addLocation: function(locationPathArg) {
+      var locationPath = $.trim(locationPathArg);
+      if (locationPath.length === 0
+          || wwwhisper.inArray(locationPath, wwwhisper.allLocationsPaths())) {
+        return;
+      }
+      wwwhisper.stub.ajax('POST', 'api/locations/', {path: locationPath},
+                          function(newLocation) {
+                            // TODO: parse json.
+                            wwwhisper.locations.push(newLocation);
+                            wwwhisper.ui.refresh();
+                          });
+    },
+
+    removeLocation: function(location) {
+      wwwhisper.stub.ajax(
+        'DELETE', location.self, null,
+        function() {
+          wwwhisper.removeFromArray(location, wwwhisper.locations);
+          wwwhisper.ui.refresh();
+        });
+    },
+
+    addUser: function(userMail, nextCallback) {
       wwwhisper.stub.ajax('POST', 'api/users/', {email: userMail},
                           function(result) {
                             wwwhisper.users.push(result);
-                            wwwhisper.ui.refresh();
-                            onSuccessCallback();
+                            nextCallback(result);
                           });
     },
 
@@ -153,19 +175,19 @@
         return;
       }
 
-      grantPermissionCallback = function() {
+      grantPermissionCallback = function(userArg) {
         wwwhisper.stub.ajax(
           'PUT',
           location.self + 'allowed-users/' + wwwhisper.urn2uuid(user.id) + '/',
           null,
           function() {
-            location.allowedUsers.push(user);
+            location.allowedUsers.push(userArg);
             wwwhisper.ui.refresh();
           });
       };
 
       if (user !== null) {
-        grantPermissionCallback();
+        grantPermissionCallback(user);
       } else {
         wwwhisper.addUser(cleanedEmail, grantPermissionCallback);
       }
@@ -178,29 +200,6 @@
         null,
         function() {
           wwwhisper.removeAllowedUser(user, location);
-          wwwhisper.ui.refresh();
-        });
-    },
-
-    addLocation: function(locationPathArg) {
-      var locationPath = $.trim(locationPathArg);
-      if (locationPath.length === 0
-          || wwwhisper.inArray(locationPath, wwwhisper.allLocationsPaths())) {
-        return;
-      }
-      wwwhisper.stub.ajax('POST', 'api/locations/', {path: locationPath},
-                          function(newLocation) {
-                            // TODO: parse json.
-                            wwwhisper.locations.push(newLocation);
-                            wwwhisper.ui.refresh();
-                          });
-    },
-
-    removeLocation: function(location) {
-      wwwhisper.stub.ajax(
-        'DELETE', location.self, null,
-        function() {
-          wwwhisper.removeFromArray(location, wwwhisper.locations);
           wwwhisper.ui.refresh();
         });
     },
