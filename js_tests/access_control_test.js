@@ -508,4 +508,24 @@
     mock_stub.verify();
   });
 
+  test('buildCallbacksChain', function() {
+    var callbackA, callbackB, callbackC, cnt;
+    cnt = 0;
+    callbackA = function(nextCallback) {
+      deepEqual(cnt, 0);
+      cnt += 1;
+      nextCallback();
+    };
+    callbackB = function(nextCallback) {
+      deepEqual(cnt, 1);
+      cnt += 1;
+      nextCallback()
+    };
+    callbackC = function() {
+      deepEqual(cnt, 2);
+      cnt += 1;
+    };
+    wwwhisper.buildCallbacksChain([callbackA, callbackB, callbackC])();
+    deepEqual(cnt, 3);
+  });
 }());
