@@ -325,6 +325,30 @@
     mock_stub.verify();
   });
 
+  test('getUsers', function() {
+    var ajaxCallResult, callbackCalled;
+    ajaxCallResult = {
+      users: [
+        {
+          email: 'foo@example.com',
+          id: '1'
+        },
+        {
+          email: 'bar@example.com',
+          id: '2'
+        }
+      ]
+    };
+    callbackCalled = false;
+    mock_stub.expectAjaxCall('GET', 'api/users/', null, ajaxCallResult);
+    wwwhisper.getUsers(function() {
+      callbackCalled = true;
+    });
+    deepEqual(wwwhisper.users, ajaxCallResult.users);
+    ok(callbackCalled);
+    mock_stub.verify();
+  });
+
   test('addUser', function() {
     var nextCallbackInvoked = false;
     deepEqual(wwwhisper.users, []);
