@@ -63,7 +63,7 @@
       });
     },
 
-    findUser: function(email) {
+    findUserWithEmail: function(email) {
       return utils.findOnly(wwwhisper.users, function(user) {
         return user.email === email;
       });
@@ -165,7 +165,7 @@
       if (cleanedEmail.length === 0) {
         return;
       }
-      user = wwwhisper.findUser(cleanedEmail);
+      user = wwwhisper.findUserWithEmail(cleanedEmail);
       if (user !== null && wwwhisper.canAccess(user, location)) {
         // User already can access location.
         return;

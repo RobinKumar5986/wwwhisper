@@ -188,7 +188,7 @@
   });
 
   test('removeAllowedUser', function() {
-    var location, user;
+    var location, userA, userB;
     userA = {
       email: 'foo@example.com',
       id: 'userA'
@@ -210,6 +210,22 @@
     wwwhisper.removeAllowedUser(userB, location);
     ok(wwwhisper.canAccess(userA, location));
     ok(!wwwhisper.canAccess(userB, location));
+  });
+
+  test('findUserWithEmail', function() {
+    var userA, userB;
+    userA = {
+      email: 'foo@example.com',
+      id: 'userA'
+    },
+    userB = {
+      email: 'bar@example.com',
+      id: 'userB'
+    };
+    wwwhisper.users.push(userA);
+    wwwhisper.users.push(userB);
+    deepEqual(wwwhisper.findUserWithEmail('bar@example.com'), userB);
+    deepEqual(wwwhisper.findUserWithEmail('baz@example.com'), null);
   });
 
   module('Ajax calls');
