@@ -76,7 +76,7 @@
     },
 
     getCsrfToken: function(nextCallback) {
-      wwwhisper.stub.ajax('GET', '/auth/api/csrftoken/', {},
+      wwwhisper.stub.ajax('GET', '/auth/api/csrftoken/', null,
                           function(result) {
                             wwwhisper.stub.csrfToken = result.csrfToken;
                             nextCallback();
@@ -84,7 +84,7 @@
     },
 
     getLocations: function(nextCallback) {
-      wwwhisper.stub.ajax('GET', 'api/locations/', {}, function(result) {
+      wwwhisper.stub.ajax('GET', 'api/locations/', null, function(result) {
         // TODO: parse json here.
         wwwhisper.locations = result.locations;
         nextCallback();
@@ -92,7 +92,7 @@
     },
 
     getUsers: function(nextCallback) {
-      wwwhisper.stub.ajax('GET', 'api/users/', {}, function(result) {
+      wwwhisper.stub.ajax('GET', 'api/users/', null, function(result) {
         // TODO: parse json here.
         wwwhisper.users = result.users;
         nextCallback();

@@ -192,7 +192,7 @@
     userA = {
       email: 'foo@example.com',
       id: 'userA'
-    },
+    };
     userB = {
       email: 'bar@example.com',
       id: 'userB'
@@ -228,7 +228,69 @@
     deepEqual(wwwhisper.findUserWithEmail('baz@example.com'), null);
   });
 
+  test('accessibleLocations', function() {
+    var locationA, locationB, userA, userB, userC;
+    userA = {
+      email: 'foo@example.com',
+      id: 'userA'
+    };
+    userB = {
+      email: 'bar@example.com',
+      id: 'userB'
+    };
+    userC = {
+      email: 'baz@example.com',
+      id: 'userC'
+    };
+    wwwhisper.users = [userA, userB, userC];
+
+    locationA = {
+      id: '12',
+      path: '/foo',
+      allowedUsers: [
+        userA,
+        userB
+      ]
+    };
+    locationB = {
+      id: '13',
+      path: '/foo/bar',
+      allowedUsers: [
+        userB
+      ]
+    };
+    wwwhisper.locations = [locationA, locationB];
+
+    deepEqual(wwwhisper.accessibleLocations(userA), [locationA]);
+    deepEqual(wwwhisper.accessibleLocations(userB), [locationA, locationB]);
+    deepEqual(wwwhisper.accessibleLocations(userC), []);
+  });
+
   module('Ajax calls');
+
+  test('getLocations', function() {
+    var ajaxCallResult, callbackCalled;
+    ajaxCallResult = {
+      locations: [
+        {
+          path: '/foo',
+          id: '1'
+        },
+        {
+          path: '/bar',
+          id: '2'
+        }
+      ]
+    };
+    callbackCalled = false;
+    mock_stub.expectAjaxCall('GET', 'api/locations/', null, ajaxCallResult);
+    wwwhisper.getLocations(function() {
+      callbackCalled = true;
+    });
+    deepEqual(wwwhisper.locations, ajaxCallResult.locations);
+    ok(callbackCalled);
+    mock_stub.verify();
+  });
 
   test('addLocation', function() {
     deepEqual(wwwhisper.locations, []);
