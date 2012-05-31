@@ -45,17 +45,17 @@
       return $.map(location.allowedUsers, function(user) {
         return user.id;
       });
-    },
-
-    canAccess: function(user, location) {
-      return utils.inArray(
-        user.id, utils.allowedUsersIds(location));
-    },
+    }
   };
 
   wwwhisper = {
     locations: [],
     users: [],
+
+    canAccess: function(user, location) {
+      return utils.inArray(
+        user.id, utils.allowedUsersIds(location));
+    },
 
     removeAllowedUser: function(user, location) {
       location.allowedUsers = $.grep(location.allowedUsers, function(u) {
@@ -71,7 +71,7 @@
 
     accessibleLocations: function(user) {
       return $.grep(wwwhisper.locations, function(location) {
-        return utils.canAccess(user, location);
+        return wwwhisper.canAccess(user, location);
       });
     },
 
@@ -149,7 +149,7 @@
         'DELETE', user.self, null,
         function() {
           utils.each(wwwhisper.locations, function(location) {
-            if (utils.canAccess(user, location)) {
+            if (wwwhisper.canAccess(user, location)) {
               wwwhisper.removeAllowedUser(user, location);
             }
           });
@@ -166,7 +166,7 @@
         return;
       }
       user = wwwhisper.findUser(cleanedEmail);
-      if (user !== null && utils.canAccess(user, location)) {
+      if (user !== null && wwwhisper.canAccess(user, location)) {
         // User already can access location.
         return;
       }
@@ -338,7 +338,7 @@
     _highlightAccessibleLocations: function(user) {
       utils.each(wwwhisper.locations, function(location) {
         var id = '#' + wwwhisper.ui._locationPathId(location);
-        if (utils.canAccess(user, location)) {
+        if (wwwhisper.canAccess(user, location)) {
           $(id + ' a').addClass('accessible');
         } else {
           $(id + ' a').addClass('not-accessible');

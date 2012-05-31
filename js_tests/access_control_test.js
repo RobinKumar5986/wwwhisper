@@ -143,8 +143,10 @@
       }), []);
   });
 
+  module('locations and users');
+
   test('canAccess', function() {
-    ok(wwwhisper.utils.canAccess(
+    ok(wwwhisper.canAccess(
       {
         id: 'userA',
         email: 'foo@example.com'
@@ -163,7 +165,8 @@
           }
         ]
       }));
-    ok(!wwwhisper.utils.canAccess(
+
+    ok(!wwwhisper.canAccess(
       {
         id: 'userC',
         email: 'foo@example.com'
@@ -182,6 +185,31 @@
           }
         ]
       }));
+  });
+
+  test('removeAllowedUser', function() {
+    var location, user;
+    userA = {
+      email: 'foo@example.com',
+      id: 'userA'
+    },
+    userB = {
+      email: 'bar@example.com',
+      id: 'userB'
+    };
+    location = {
+      id: '12',
+      path: '/foo',
+      allowedUsers: [
+        userA,
+        userB,
+      ]
+    };
+    ok(wwwhisper.canAccess(userA, location));
+    ok(wwwhisper.canAccess(userB, location));
+    wwwhisper.removeAllowedUser(userB, location);
+    ok(wwwhisper.canAccess(userA, location));
+    ok(!wwwhisper.canAccess(userB, location));
   });
 
   module('Ajax calls');
@@ -264,9 +292,9 @@
     wwwhisper.locations.push(location);
     mock_stub.expectAjaxCall('DELETE', wwwhisper.users[0].self, null, null);
 
-    ok(wwwhisper.utils.canAccess(user, location));
+    ok(wwwhisper.canAccess(user, location));
     wwwhisper.removeUser(wwwhisper.users[0]);
-    ok(!wwwhisper.utils.canAccess(user, location));
+    ok(!wwwhisper.canAccess(user, location));
 
     deepEqual(location.allowedUsers, []);
     mock_stub.verify();
@@ -290,9 +318,9 @@
     mock_stub.expectAjaxCall(
       'PUT', location.self + 'allowed-users/17/', null, user);
 
-    ok(!wwwhisper.utils.canAccess(user, location));
+    ok(!wwwhisper.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
-    ok(wwwhisper.utils.canAccess(user, location));
+    ok(wwwhisper.canAccess(user, location));
 
     deepEqual(wwwhisper.locations[0].allowedUsers, [user]);
     mock_stub.verify();
@@ -318,9 +346,9 @@
     mock_stub.expectAjaxCall(
       'PUT', location.self + 'allowed-users/17/', null, user);
 
-    ok(!wwwhisper.utils.canAccess(user, location));
+    ok(!wwwhisper.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
-    ok(wwwhisper.utils.canAccess(user, location));
+    ok(wwwhisper.canAccess(user, location));
 
     deepEqual(wwwhisper.locations[0].allowedUsers, [user]);
     deepEqual(wwwhisper.users, [user]);
@@ -343,9 +371,9 @@
     wwwhisper.users.push(user);
     wwwhisper.locations.push(location);
 
-    ok(wwwhisper.utils.canAccess(user, location));
+    ok(wwwhisper.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
-    ok(wwwhisper.utils.canAccess(user, location));
+    ok(wwwhisper.canAccess(user, location));
 
     mock_stub.verify();
   });
@@ -370,9 +398,9 @@
     mock_stub.expectAjaxCall(
       'DELETE', location.self + 'allowed-users/17/', null, null);
 
-    ok(wwwhisper.utils.canAccess(user, location));
+    ok(wwwhisper.canAccess(user, location));
     wwwhisper.revokeAccessByUser(user, location);
-    ok(!wwwhisper.utils.canAccess(user, location));
+    ok(!wwwhisper.canAccess(user, location));
 
     deepEqual(wwwhisper.locations[0].allowedUsers, []);
     mock_stub.verify();
