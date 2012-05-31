@@ -159,6 +159,31 @@
     mock_stub.verify();
   });
 
+  test('removeUser removes from location.allowedUsers list.', function() {
+    var location, user;
+    user = {
+      id: '13',
+      email: 'foo@example.com',
+      self: 'example.com/users/13/',
+    };
+    location = {
+      id: '17',
+      path: '/bar',
+      self: 'example.com/locations/13/',
+      allowedUsers: [user],
+    };
+    wwwhisper.users.push(user);
+    wwwhisper.locations.push(location);
+    mock_stub.expectAjaxCall('DELETE', wwwhisper.users[0].self, null, null);
+
+    ok(wwwhisper.canAccess(user, location));
+    wwwhisper.removeUser(wwwhisper.users[0]);
+    ok(!wwwhisper.canAccess(user, location));
+
+    deepEqual(location.allowedUsers, []);
+    mock_stub.verify();
+  });
+
   test('allowAccess when user exists', function() {
     var location, user;
     user = {
