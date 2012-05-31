@@ -228,6 +228,22 @@
     deepEqual(wwwhisper.findUserWithEmail('baz@example.com'), null);
   });
 
+  test('findLocationWithId', function() {
+    var locationA, locationB;
+    locationA = {
+      path: '/foo',
+      id: 'locationA'
+    },
+    locationB = {
+      path: '/foo/bar',
+      id: 'locationB'
+    };
+    wwwhisper.locations.push(locationA);
+    wwwhisper.locations.push(locationB);
+    deepEqual(wwwhisper.findLocationWithId('locationB'), locationB);
+    deepEqual(wwwhisper.findLocationWithId('locationC'), null);
+  });
+
   test('accessibleLocations', function() {
     var locationA, locationB, userA, userB, userC;
     userA = {

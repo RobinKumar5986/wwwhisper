@@ -69,6 +69,12 @@
       });
     },
 
+    findLocationWithId: function(id) {
+      return utils.findOnly(wwwhisper.locations, function(location) {
+        return location.id === id;
+      });
+    },
+
     accessibleLocations: function(user) {
       return $.grep(wwwhisper.locations, function(location) {
         return wwwhisper.canAccess(user, location);
