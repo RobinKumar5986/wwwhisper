@@ -1,28 +1,23 @@
 (function () {
   'use strict';
-  var wwwhisper;
+  var utils, wwwhisper;
 
-  // TODO: expose for test.
-  function each(iterable, callback) {
-    $.each(iterable, function(_id, value) {
-      callback(value);
-    });
-  };
+  utils = {
+    each: function(iterable, callback) {
+      $.each(iterable, function(_id, value) {
+        callback(value);
+      });
+    },
 
-  function findOnly(array, filterCallback) {
-    var result;
-    result = $.grep(array, filterCallback);
-    if (result.length === 0) {
-      return null;
-    }
-    // TODO: assert array has only one element.
-    return result[0];
-  };
-
-  wwwhisper = {
-    csrfToken: null,
-    locations: [],
-    users: [],
+    findOnly: function(array, filterCallback) {
+      var result;
+      result = $.grep(array, filterCallback);
+      if (result.length === 0) {
+        return null;
+      }
+      // TODO: assert array has only one element.
+      return result[0];
+    },
 
     inArray: function(value, array) {
       return ($.inArray(value, array) >= 0);
@@ -46,10 +41,6 @@
       });
     },
 
-    allLocationsPaths: function() {
-      return wwwhisper.extractLocationsPaths(wwwhisper.locations);
-    },
-
     allowedUsersIds: function(location) {
       return $.map(location.allowedUsers, function(user) {
         return user.id;
@@ -57,9 +48,14 @@
     },
 
     canAccess: function(user, location) {
-      return wwwhisper.inArray(
-        user.id, wwwhisper.allowedUsersIds(location));
+      return utils.inArray(
+        user.id, utils.allowedUsersIds(location));
     },
+  };
+
+  wwwhisper = {
+    locations: [],
+    users: [],
 
     removeAllowedUser: function(user, location) {
       location.allowedUsers = $.grep(location.allowedUsers, function(u) {
@@ -68,25 +64,21 @@
     },
 
     findUser: function(email) {
-      return findOnly(wwwhisper.users, function(user) {
+      return utils.findOnly(wwwhisper.users, function(user) {
         return user.email === email;
       });
     },
 
     accessibleLocations: function(user) {
       return $.grep(wwwhisper.locations, function(location) {
-        return wwwhisper.canAccess(user, location);
+        return utils.canAccess(user, location);
       });
-    },
-
-    addAllowedUserInputId: function(location) {
-      return 'add-allowed-user-input-' + wwwhisper.urn2uuid(location.id);
     },
 
     getCsrfToken: function(nextCallback) {
       wwwhisper.stub.ajax('GET', '/auth/api/csrftoken/', {},
                           function(result) {
-                            wwwhisper.csrfToken = result.csrfToken;
+                            wwwhisper.stub.csrfToken = result.csrfToken;
                             nextCallback();
                           });
     },
@@ -120,8 +112,11 @@
 
     addLocation: function(locationPathArg) {
       var locationPath = $.trim(locationPathArg);
-      if (locationPath.length === 0
-          || wwwhisper.inArray(locationPath, wwwhisper.allLocationsPaths())) {
+      if (locationPath.length === 0 || utils.inArray(
+        locationPath, utils.extractLocationsPaths(wwwhisper.locations))) {
+        // TODO: Should existence check be done by client? Path is
+        // encoded anyway on the server site, so this check is not
+        // 100% accurate.
         return;
       }
       wwwhisper.stub.ajax('POST', 'api/locations/', {path: locationPath},
@@ -136,7 +131,7 @@
       wwwhisper.stub.ajax(
         'DELETE', location.self, null,
         function() {
-          wwwhisper.removeFromArray(location, wwwhisper.locations);
+          utils.removeFromArray(location, wwwhisper.locations);
           wwwhisper.ui.refresh();
         });
     },
@@ -153,12 +148,12 @@
       wwwhisper.stub.ajax(
         'DELETE', user.self, null,
         function() {
-          each(wwwhisper.locations, function(location) {
-            if (wwwhisper.canAccess(user, location)) {
+          utils.each(wwwhisper.locations, function(location) {
+            if (utils.canAccess(user, location)) {
               wwwhisper.removeAllowedUser(user, location);
             }
           });
-          wwwhisper.removeFromArray(user, wwwhisper.users);
+          utils.removeFromArray(user, wwwhisper.users);
           wwwhisper.ui.refresh();
         });
     },
@@ -171,7 +166,7 @@
         return;
       }
       user = wwwhisper.findUser(cleanedEmail);
-      if (user !== null && wwwhisper.canAccess(user, location)) {
+      if (user !== null && utils.canAccess(user, location)) {
         // User already can access location.
         return;
       }
@@ -180,7 +175,7 @@
         wwwhisper.stub.ajax(
           'PUT',
           location.self + 'allowed-users/'
-            + wwwhisper.urn2uuid(userArg.id) + '/',
+            + utils.urn2uuid(userArg.id) + '/',
           null,
           function() {
             location.allowedUsers.push(userArg);
@@ -198,7 +193,7 @@
     revokeAccessByUser: function(user, location) {
       wwwhisper.stub.ajax(
         'DELETE',
-        location.self + 'allowed-users/' + wwwhisper.urn2uuid(user.id) + '/',
+        location.self + 'allowed-users/' + utils.urn2uuid(user.id) + '/',
         null,
         function() {
           wwwhisper.removeAllowedUser(user, location);
@@ -229,11 +224,15 @@
     },
 
     _locationPathId: function(location) {
-      return 'location-' + wwwhisper.urn2uuid(location.id);
+      return 'location-' + utils.urn2uuid(location.id);
     },
 
     _locationInfoId: function(location) {
-      return 'resource-info-' + wwwhisper.urn2uuid(location.id);
+      return 'resource-info-' + utils.urn2uuid(location.id);
+    },
+
+    _addAllowedUserInputId: function(location) {
+      return 'add-allowed-user-input-' + utils.urn2uuid(location.id);
     },
 
     _findSelectLocation: function() {
@@ -243,14 +242,14 @@
         return null;
       }
       urn = activeElement.attr('location-urn');
-      return findOnly(wwwhisper.locations, function(location) {
+      return utils.findOnly(wwwhisper.locations, function(location) {
         return location.id === urn;
       });
     },
 
     _showUsers: function() {
       var userView;
-      each(wwwhisper.users, function(user) {
+      utils.each(wwwhisper.users, function(user) {
         userView = wwwhisper.ui.view.user.clone(true);
         userView.find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
@@ -262,7 +261,7 @@
           .find('.notify').click(function() {
             wwwhisper.ui._showNotifyDialog(
               [user.email],
-              wwwhisper.extractLocationsPaths(
+              utils.extractLocationsPaths(
                 wwwhisper.accessibleLocations(user))
             );
           }).end()
@@ -271,7 +270,7 @@
     },
 
     _showLocations: function() {
-      each(wwwhisper.locations, function(location) {
+      utils.each(wwwhisper.locations, function(location) {
         wwwhisper.ui.view.locationPath.clone(true)
           .attr('id', wwwhisper.ui._locationPathId(location))
           .attr('location-urn', location.id)
@@ -295,7 +294,7 @@
         .find('#add-location-input')
       // TODO: fix or remove.
       // .typeahead({
-      //   'source': allLocationsPaths()
+      //   'source': utils.allLocationsPaths()
       // })
         .change(function() {
           wwwhisper.addLocation($(this).val());
@@ -314,7 +313,7 @@
         .attr('id', wwwhisper.ui._locationInfoId(location))
         .attr('location-urn', location.id)
         .find('.add-allowed-user')
-        .attr('id', wwwhisper.addAllowedUserInputId(location))
+        .attr('id', wwwhisper.ui._addAllowedUserInputId(location))
         .change(function() {
           wwwhisper.allowAccessByUser($(this).val(), location);
         })
@@ -325,7 +324,7 @@
         .end();
 
       allowedUserList = locationInfo.find('.allowed-user-list');
-      each(location.allowedUsers, function(user) {
+      utils.each(location.allowedUsers, function(user) {
         wwwhisper.ui.view.allowedUser.clone(true)
           .find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
@@ -337,9 +336,9 @@
     },
 
     _highlightAccessibleLocations: function(user) {
-      each(wwwhisper.locations, function(location) {
+      utils.each(wwwhisper.locations, function(location) {
         var id = '#' + wwwhisper.ui._locationPathId(location);
-        if (wwwhisper.canAccess(user, location)) {
+        if (utils.canAccess(user, location)) {
           $(id + ' a').addClass('accessible');
         } else {
           $(id + ' a').addClass('not-accessible');
@@ -413,6 +412,8 @@
   };
 
   wwwhisper.stub = {
+    csrfToken: null,
+
     ajax: function(method, resource, params, successCallback) {
       var jsonData = null;
       if (params !== null) {
@@ -425,7 +426,7 @@
         data: jsonData,
         //dataType: method === 'GET' ?  'json' : 'text',
         dataType: 'json',
-        headers: {'X-CSRFToken' : wwwhisper.csrfToken},
+        headers: {'X-CSRFToken' : wwwhisper.stub.csrfToken},
         success: successCallback,
         error: function(jqXHR) {
           // TODO: nice messages for user input related failures.
@@ -435,5 +436,10 @@
     }
   };
 
-  window.wwwhisper = wwwhisper;
+  if (window.ExposeForTests) {
+    wwwhisper.utils = utils;
+    window.wwwhisper = wwwhisper;
+  } else {
+    wwwhisper.initialize();
+  }
 }());

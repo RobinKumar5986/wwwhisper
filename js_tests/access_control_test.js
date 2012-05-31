@@ -1,4 +1,6 @@
 (function() {
+  var mock_stub;
+
   mock_stub = {
     expectedCalls: [],
 
@@ -26,10 +28,6 @@
     verify: function() {
       ok(this.expectedCalls.length == 0, 'All expected ajax calls invoked.')
     },
-
-    reset: function() {
-      this.expectedCalls = [];
-    }
   };
 
   wwwhisper.stub = mock_stub;
@@ -47,40 +45,63 @@
 
   module('Utility functions');
 
-  test('inArray', function() {
-    ok(wwwhisper.inArray(2, [1, 2, 3]));
-    ok(wwwhisper.inArray('a', ['a', 'b', 'c']));
-    ok(wwwhisper.inArray('foo', ['bar', 'baz', 'foo']));
-    ok(wwwhisper.inArray('foo', ['foo', 'foo', 'foo']));
-    ok(wwwhisper.inArray(true, [true]));
+  test('each', function() {
+    sum = 0;
+    wwwhisper.utils.each([1, 1, 2, 3, 5], function(x) {
+      sum += x;
+    });
+    deepEqual(sum, 12);
+    wwwhisper.utils.each([], function(x) {
+      ok(false)
+    });
+  });
 
-    ok(!wwwhisper.inArray('foo', []));
-    ok(!wwwhisper.inArray('foo', ['fooz']));
-    ok(!wwwhisper.inArray(1, [[1], 2, 3]));
+  test('findOnly', function() {
+    deepEqual(wwwhisper.utils.findOnly([[1, 2], [2, 3], [4, 5], [5, 6]],
+                                       function(x) {
+                                         return x[0] == 4;
+                                       }), [4, 5]);
+
+    deepEqual(wwwhisper.utils.findOnly([1, 2, 3, 4, 5],
+                                       function(x) {
+                                         return x == 6;
+                                       }), null)
+  });
+
+  test('inArray', function() {
+    ok(wwwhisper.utils.inArray(2, [1, 2, 3]));
+    ok(wwwhisper.utils.inArray('a', ['a', 'b', 'c']));
+    ok(wwwhisper.utils.inArray('foo', ['bar', 'baz', 'foo']));
+    ok(wwwhisper.utils.inArray('foo', ['foo', 'foo', 'foo']));
+    ok(wwwhisper.utils.inArray(true, [true]));
+
+    ok(!wwwhisper.utils.inArray('foo', []));
+    ok(!wwwhisper.utils.inArray('foo', ['fooz']));
+    ok(!wwwhisper.utils.inArray(1, [[1], 2, 3]));
   });
 
   test('removeFromArray', function() {
     var array = new Array('aa', 'bb', 'cc');
-    wwwhisper.removeFromArray('bb', array);
+    wwwhisper.utils.removeFromArray('bb', array);
     deepEqual(array, ['aa', 'cc']);
-    wwwhisper.removeFromArray('cc', array);
+    wwwhisper.utils.removeFromArray('cc', array);
     deepEqual(array, ['aa']);
-    wwwhisper.removeFromArray('a', array);
+    wwwhisper.utils.removeFromArray('a', array);
     deepEqual(array, ['aa']);
-    wwwhisper.removeFromArray('aa', array);
+    wwwhisper.utils.removeFromArray('aa', array);
     deepEqual(array, []);
-    wwwhisper.removeFromArray(null, array);
+    wwwhisper.utils.removeFromArray(null, array);
     deepEqual(array, []);
   });
 
   test('urn2uuid', function() {
     deepEqual(
-      wwwhisper.urn2uuid('urn:uuid:41be0192-0fcc-4a9c-935d-69243b75533c'),
+      wwwhisper.utils.urn2uuid('urn:uuid:41be0192-0fcc-4a9c-935d-69243b75533c'),
       '41be0192-0fcc-4a9c-935d-69243b75533c');
   });
 
   test('extractLocationsPaths', function() {
-    var result = wwwhisper.extractLocationsPaths([
+    var result = wwwhisper.utils.extractLocationsPaths([
       {
         id: '12',
         path: '/foo',
@@ -91,9 +112,76 @@
       },
       {
         path: '/baz',
+        id: 14,
       }
     ]);
     deepEqual(result, ['/foo', '/foo/bar', '/baz']);
+  });
+
+  test('allowedUsersIds', function() {
+    deepEqual(wwwhisper.utils.allowedUsersIds(
+      {
+        id: '12',
+        path: '/foo',
+        allowedUsers: [
+          {
+            email: 'foo@example.com',
+            id: 'userA'
+          },
+          {
+            email: 'bar@example.com',
+            id: 'userB'
+          }
+        ]
+      }), ['userA', 'userB']);
+
+    deepEqual(wwwhisper.utils.allowedUsersIds(
+      {
+        id: '12',
+        path: '/foo',
+        allowedUsers: []
+      }), []);
+  });
+
+  test('canAccess', function() {
+    ok(wwwhisper.utils.canAccess(
+      {
+        id: 'userA',
+        email: 'foo@example.com'
+      },
+      {
+        id: '12',
+        path: '/foo',
+        allowedUsers: [
+          {
+            email: 'foo@example.com',
+            id: 'userA'
+          },
+          {
+            email: 'bar@example.com',
+            id: 'userB'
+          }
+        ]
+      }));
+    ok(!wwwhisper.utils.canAccess(
+      {
+        id: 'userC',
+        email: 'foo@example.com'
+      },
+      {
+        id: '12',
+        path: '/foo',
+        allowedUsers: [
+          {
+            email: 'foo@example.com',
+            id: 'userA',
+          },
+          {
+            email: 'bar@example.com',
+            id: 'userB',
+          }
+        ]
+      }));
   });
 
   module('Ajax calls');
@@ -176,9 +264,9 @@
     wwwhisper.locations.push(location);
     mock_stub.expectAjaxCall('DELETE', wwwhisper.users[0].self, null, null);
 
-    ok(wwwhisper.canAccess(user, location));
+    ok(wwwhisper.utils.canAccess(user, location));
     wwwhisper.removeUser(wwwhisper.users[0]);
-    ok(!wwwhisper.canAccess(user, location));
+    ok(!wwwhisper.utils.canAccess(user, location));
 
     deepEqual(location.allowedUsers, []);
     mock_stub.verify();
@@ -202,9 +290,9 @@
     mock_stub.expectAjaxCall(
       'PUT', location.self + 'allowed-users/17/', null, user);
 
-    ok(!wwwhisper.canAccess(user, location));
+    ok(!wwwhisper.utils.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
-    ok(wwwhisper.canAccess(user, location));
+    ok(wwwhisper.utils.canAccess(user, location));
 
     deepEqual(wwwhisper.locations[0].allowedUsers, [user]);
     mock_stub.verify();
@@ -230,9 +318,9 @@
     mock_stub.expectAjaxCall(
       'PUT', location.self + 'allowed-users/17/', null, user);
 
-    ok(!wwwhisper.canAccess(user, location));
+    ok(!wwwhisper.utils.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
-    ok(wwwhisper.canAccess(user, location));
+    ok(wwwhisper.utils.canAccess(user, location));
 
     deepEqual(wwwhisper.locations[0].allowedUsers, [user]);
     deepEqual(wwwhisper.users, [user]);
@@ -255,9 +343,9 @@
     wwwhisper.users.push(user);
     wwwhisper.locations.push(location);
 
-    ok(wwwhisper.canAccess(user, location));
+    ok(wwwhisper.utils.canAccess(user, location));
     wwwhisper.allowAccessByUser(user.email, location);
-    ok(wwwhisper.canAccess(user, location));
+    ok(wwwhisper.utils.canAccess(user, location));
 
     mock_stub.verify();
   });
@@ -282,9 +370,9 @@
     mock_stub.expectAjaxCall(
       'DELETE', location.self + 'allowed-users/17/', null, null);
 
-    ok(wwwhisper.canAccess(user, location));
+    ok(wwwhisper.utils.canAccess(user, location));
     wwwhisper.revokeAccessByUser(user, location);
-    ok(!wwwhisper.canAccess(user, location));
+    ok(!wwwhisper.utils.canAccess(user, location));
 
     deepEqual(wwwhisper.locations[0].allowedUsers, []);
     mock_stub.verify();
