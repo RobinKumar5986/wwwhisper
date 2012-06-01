@@ -417,10 +417,10 @@
     };
   };
 
-  wwwhisper.stub = {
-    csrfToken: null,
+  function Stub() {
+    this.csrfToken = null;
 
-    ajax: function(method, resource, params, successCallback) {
+    this.ajax = function(method, resource, params, successCallback) {
       var jsonData = null;
       if (params !== null) {
         jsonData = JSON.stringify(params);
@@ -432,20 +432,21 @@
         data: jsonData,
         //dataType: method === 'GET' ?  'json' : 'text',
         dataType: 'json',
-        headers: {'X-CSRFToken' : wwwhisper.stub.csrfToken},
+        headers: {'X-CSRFToken' : this.csrfToken},
         success: successCallback,
         error: function(jqXHR) {
           // TODO: nice messages for user input related failures.
           $('body').html(jqXHR.responseText);
         }
       });
-    }
+    };
   };
 
   if (window.ExposeForTests) {
-    wwwhisper.utils = utils;
+    window.wwwhisper_utils = utils;
     window.wwwhisper = wwwhisper;
   } else {
+    wwwhisper.stub = new Stub();
     wwwhisper.ui = new UI();
     wwwhisper.initialize();
   }

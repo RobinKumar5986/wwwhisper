@@ -47,61 +47,61 @@
 
   test('each', function() {
     sum = 0;
-    wwwhisper.utils.each([1, 1, 2, 3, 5], function(x) {
+    wwwhisper_utils.each([1, 1, 2, 3, 5], function(x) {
       sum += x;
     });
     deepEqual(sum, 12);
-    wwwhisper.utils.each([], function(x) {
+    wwwhisper_utils.each([], function(x) {
       ok(false)
     });
   });
 
   test('findOnly', function() {
-    deepEqual(wwwhisper.utils.findOnly([[1, 2], [2, 3], [4, 5], [5, 6]],
+    deepEqual(wwwhisper_utils.findOnly([[1, 2], [2, 3], [4, 5], [5, 6]],
                                        function(x) {
                                          return x[0] == 4;
                                        }), [4, 5]);
 
-    deepEqual(wwwhisper.utils.findOnly([1, 2, 3, 4, 5],
+    deepEqual(wwwhisper_utils.findOnly([1, 2, 3, 4, 5],
                                        function(x) {
                                          return x == 6;
                                        }), null)
   });
 
   test('inArray', function() {
-    ok(wwwhisper.utils.inArray(2, [1, 2, 3]));
-    ok(wwwhisper.utils.inArray('a', ['a', 'b', 'c']));
-    ok(wwwhisper.utils.inArray('foo', ['bar', 'baz', 'foo']));
-    ok(wwwhisper.utils.inArray('foo', ['foo', 'foo', 'foo']));
-    ok(wwwhisper.utils.inArray(true, [true]));
+    ok(wwwhisper_utils.inArray(2, [1, 2, 3]));
+    ok(wwwhisper_utils.inArray('a', ['a', 'b', 'c']));
+    ok(wwwhisper_utils.inArray('foo', ['bar', 'baz', 'foo']));
+    ok(wwwhisper_utils.inArray('foo', ['foo', 'foo', 'foo']));
+    ok(wwwhisper_utils.inArray(true, [true]));
 
-    ok(!wwwhisper.utils.inArray('foo', []));
-    ok(!wwwhisper.utils.inArray('foo', ['fooz']));
-    ok(!wwwhisper.utils.inArray(1, [[1], 2, 3]));
+    ok(!wwwhisper_utils.inArray('foo', []));
+    ok(!wwwhisper_utils.inArray('foo', ['fooz']));
+    ok(!wwwhisper_utils.inArray(1, [[1], 2, 3]));
   });
 
   test('removeFromArray', function() {
     var array = new Array('aa', 'bb', 'cc');
-    wwwhisper.utils.removeFromArray('bb', array);
+    wwwhisper_utils.removeFromArray('bb', array);
     deepEqual(array, ['aa', 'cc']);
-    wwwhisper.utils.removeFromArray('cc', array);
+    wwwhisper_utils.removeFromArray('cc', array);
     deepEqual(array, ['aa']);
-    wwwhisper.utils.removeFromArray('a', array);
+    wwwhisper_utils.removeFromArray('a', array);
     deepEqual(array, ['aa']);
-    wwwhisper.utils.removeFromArray('aa', array);
+    wwwhisper_utils.removeFromArray('aa', array);
     deepEqual(array, []);
-    wwwhisper.utils.removeFromArray(null, array);
+    wwwhisper_utils.removeFromArray(null, array);
     deepEqual(array, []);
   });
 
   test('urn2uuid', function() {
     deepEqual(
-      wwwhisper.utils.urn2uuid('urn:uuid:41be0192-0fcc-4a9c-935d-69243b75533c'),
+      wwwhisper_utils.urn2uuid('urn:uuid:41be0192-0fcc-4a9c-935d-69243b75533c'),
       '41be0192-0fcc-4a9c-935d-69243b75533c');
   });
 
   test('extractLocationsPaths', function() {
-    var result = wwwhisper.utils.extractLocationsPaths([
+    var result = wwwhisper_utils.extractLocationsPaths([
       {
         id: '12',
         path: '/foo',
@@ -119,7 +119,7 @@
   });
 
   test('allowedUsersIds', function() {
-    deepEqual(wwwhisper.utils.allowedUsersIds(
+    deepEqual(wwwhisper_utils.allowedUsersIds(
       {
         id: '12',
         path: '/foo',
@@ -135,7 +135,7 @@
         ]
       }), ['userA', 'userB']);
 
-    deepEqual(wwwhisper.utils.allowedUsersIds(
+    deepEqual(wwwhisper_utils.allowedUsersIds(
       {
         id: '12',
         path: '/foo',
