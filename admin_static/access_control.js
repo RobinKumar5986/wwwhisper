@@ -2,6 +2,20 @@
   'use strict';
 
   var utils = {
+
+    assert: function(condition, message) {
+      function AssertionError(message) {
+        this.message = message;
+        this.toString = function() {
+          return 'AssertionError: ' + this.message;
+        };
+      }
+
+      if (!condition) {
+        throw new AssertionError(message);
+      }
+    },
+
     each: function(iterable, callback) {
       $.each(iterable, function(id, value) {
         callback(value);
@@ -14,7 +28,8 @@
       if (result.length === 0) {
         return null;
       }
-      // TODO: assert array has only one element.
+      utils.assert(result.length === 1,
+                   'Not unique result of findOnly function.');
       return result[0];
     },
 
@@ -84,7 +99,6 @@
 
     this.getLocations = function(nextCallback) {
       stub.ajax('GET', 'api/locations/', null, function(result) {
-        // TODO: parse json here.
         that.locations = result.locations;
         nextCallback();
       });
@@ -92,7 +106,6 @@
 
     this.getUsers = function(nextCallback) {
       stub.ajax('GET', 'api/users/', null, function(result) {
-        // TODO: parse json here.
         that.users = result.users;
         nextCallback();
       });
@@ -120,7 +133,6 @@
       }
       stub.ajax('POST', 'api/locations/', {path: locationPath},
                 function(newLocation) {
-                  // TODO: parse json.
                   that.locations.push(newLocation);
                   ui.refresh();
                 });

@@ -45,6 +45,13 @@
 
   module('Utility functions');
 
+  test('assert', function() {
+    utils.assert(true, "Should not throw.");
+    raises(function() {
+      utils.assert(false, "Should throw.");
+    });
+  });
+
   test('each', function() {
     var sum = 0;
     utils.each([1, 1, 2, 3, 5], function(x) {
@@ -66,6 +73,12 @@
                              function(x) {
                                return x === 6;
                              }), null);
+    raises(function() {
+      utils.findOnly([1, 2, 3, 1],
+                     function(x) {
+                       return x === 1;
+                     });
+    });
   });
 
   test('inArray', function() {
