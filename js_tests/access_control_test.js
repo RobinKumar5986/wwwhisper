@@ -1,10 +1,13 @@
 (function() {
+  'use strict';
+
   var mock_stub, controller;
 
   function MockStub() {
     var expectedCalls = [];
 
     this.ajax = function(method, resource, params, successCallback) {
+      var expectedCall;
       if (expectedCalls.length === 0) {
         ok(false, 'Unexpected ajax call ' + method + ' ' + resource);
       } else {
@@ -27,13 +30,13 @@
     };
 
     this.verify = function() {
-      ok(expectedCalls.length == 0, 'All expected ajax calls invoked.')
+      ok(expectedCalls.length === 0, 'All expected ajax calls invoked.');
     };
-  };
+  }
 
   function MockUI(controller) {
     this.refresh = function() {};
-  };
+  }
 
   QUnit.testStart = function() {
     mock_stub = new MockStub();
@@ -43,26 +46,26 @@
   module('Utility functions');
 
   test('each', function() {
-    sum = 0;
+    var sum = 0;
     utils.each([1, 1, 2, 3, 5], function(x) {
       sum += x;
     });
     deepEqual(sum, 12);
     utils.each([], function(x) {
-      ok(false)
+      ok(false);
     });
   });
 
   test('findOnly', function() {
     deepEqual(utils.findOnly([[1, 2], [2, 3], [4, 5], [5, 6]],
                              function(x) {
-                               return x[0] == 4;
+                               return x[0] === 4;
                              }), [4, 5]);
 
     deepEqual(utils.findOnly([1, 2, 3, 4, 5],
                              function(x) {
-                               return x == 6;
-                             }), null)
+                               return x === 6;
+                             }), null);
   });
 
   test('inArray', function() {
@@ -78,7 +81,7 @@
   });
 
   test('removeFromArray', function() {
-    var array = new Array('aa', 'bb', 'cc');
+    var array = ['aa', 'bb', 'cc'];
     utils.removeFromArray('bb', array);
     deepEqual(array, ['aa', 'cc']);
     utils.removeFromArray('cc', array);
@@ -101,15 +104,15 @@
     var result = utils.extractLocationsPaths([
       {
         id: '12',
-        path: '/foo',
+        path: '/foo'
       },
       {
         id: '13',
-        path: '/foo/bar',
+        path: '/foo/bar'
       },
       {
         path: '/baz',
-        id: 14,
+        id: 14
       }
     ]);
     deepEqual(result, ['/foo', '/foo/bar', '/baz']);
@@ -143,11 +146,12 @@
   module('Controller');
 
   test('Controller creates UI object with itself as parameter', function(){
-    var passedControlled = null;
-    var UIConstructor = function(controllerArg)  {
+    var passedControlled, UIConstructor;
+    passedControlled = null;
+    UIConstructor = function(controllerArg)  {
       passedControlled = controllerArg;
     };
-    var controller = new Controller(UIConstructor, null);
+    controller = new Controller(UIConstructor, null);
     deepEqual(controller, passedControlled);
   });
 
@@ -183,11 +187,11 @@
         allowedUsers: [
           {
             email: 'foo@example.com',
-            id: 'userA',
+            id: 'userA'
           },
           {
             email: 'bar@example.com',
-            id: 'userB',
+            id: 'userB'
           }
         ]
       }));
@@ -208,7 +212,7 @@
       path: '/foo',
       allowedUsers: [
         userA,
-        userB,
+        userB
       ]
     };
     ok(controller.canAccess(userA, location));
@@ -223,7 +227,7 @@
     userA = {
       email: 'foo@example.com',
       id: 'userA'
-    },
+    };
     userB = {
       email: 'bar@example.com',
       id: 'userB'
@@ -239,7 +243,7 @@
     locationA = {
       path: '/foo',
       id: 'locationA'
-    },
+    };
     locationB = {
       path: '/foo/bar',
       id: 'locationB'
@@ -299,7 +303,7 @@
     callbackB = function(nextCallback) {
       deepEqual(cnt, 1);
       cnt += 1;
-      nextCallback()
+      nextCallback();
     };
     callbackC = function() {
       deepEqual(cnt, 2);
@@ -360,8 +364,8 @@
       id: '13',
       path: '/foo',
       self: 'example.com/locations/13/',
-      allowedUsers: [],
-    }]
+      allowedUsers: []
+    }];
     mock_stub.expectAjaxCall(
       'DELETE', controller.locations[0].self, null, null);
     controller.removeLocation(controller.locations[0]);
@@ -394,9 +398,10 @@
   });
 
   test('addUser', function() {
-    var nextCallbackInvoked = false;
+    var nextCallbackInvoked, newUser;
     deepEqual(controller.users, []);
-    var newUser = {id: '13', email: 'foo@example.com'};
+    nextCallbackInvoked = false;
+    newUser = {id: '13', email: 'foo@example.com'};
     mock_stub.expectAjaxCall('POST', 'api/users/', {email: 'foo@example.com'},
                              newUser);
     controller.addUser('foo@example.com',
@@ -413,8 +418,8 @@
     controller.users = [{
       id: '13',
       email: 'foo@example.com',
-      self: 'example.com/users/13/',
-    }]
+      self: 'example.com/users/13/'
+    }];
     mock_stub.expectAjaxCall('DELETE', controller.users[0].self, null, null);
     controller.removeUser(controller.users[0]);
     deepEqual(controller.users, []);
@@ -426,13 +431,13 @@
     user = {
       id: '13',
       email: 'foo@example.com',
-      self: 'example.com/users/13/',
+      self: 'example.com/users/13/'
     };
     location = {
       id: '17',
       path: '/bar',
       self: 'example.com/locations/13/',
-      allowedUsers: [user],
+      allowedUsers: [user]
     };
     controller.users.push(user);
     controller.locations.push(location);
@@ -451,13 +456,13 @@
     user = {
       id: '17',
       email: 'foo@example.com',
-      self: 'example.com/users/17/',
+      self: 'example.com/users/17/'
     };
     location = {
       id: '13',
       path: '/bar',
       self: 'example.com/locations/13/',
-      allowedUsers: [],
+      allowedUsers: []
     };
     controller.users.push(user);
     controller.locations.push(location);
@@ -477,13 +482,13 @@
     user = {
       id: '17',
       email: 'foo@example.com',
-      self: 'example.com/users/17/',
+      self: 'example.com/users/17/'
     };
     location = {
       id: '13',
       path: '/bar',
       self: 'example.com/locations/13/',
-      allowedUsers: [],
+      allowedUsers: []
     };
     controller.locations.push(location);
     // User should first be added.
@@ -506,13 +511,13 @@
     user = {
       id: '17',
       email: 'foo@example.com',
-      self: 'example.com/users/17/',
+      self: 'example.com/users/17/'
     };
     location = {
       id: '13',
       path: '/bar',
       self: 'example.com/locations/13/',
-      allowedUsers: [user],
+      allowedUsers: [user]
     };
     controller.users.push(user);
     controller.locations.push(location);
@@ -530,13 +535,13 @@
     user = {
       id: '17',
       email: 'foo@example.com',
-      self: 'example.com/users/17/',
+      self: 'example.com/users/17/'
     };
     location = {
       id: '13',
       path: '/bar',
       self: 'example.com/locations/13/',
-      allowedUsers: [user],
+      allowedUsers: [user]
     };
     controller.users.push(user);
     controller.locations.push(location);

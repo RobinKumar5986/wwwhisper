@@ -3,7 +3,7 @@
 
   var utils = {
     each: function(iterable, callback) {
-      $.each(iterable, function(_id, value) {
+      $.each(iterable, function(id, value) {
         callback(value);
       });
     },
@@ -47,9 +47,8 @@
     }
   };
 
-  function Controller(uiConstructor, stub) {
-    var that = this;
-    var ui = new uiConstructor(this);
+  function Controller(UIConstructor, stub) {
+    var that = this, ui = new UIConstructor(this);
 
     this.locations = [];
     this.users = [];
@@ -115,7 +114,7 @@
         callbacks[0](
           that.buildCallbacksChain(callbacks.slice(1, callbacks.length))
         );
-      }
+      };
     };
 
     this.addLocation = function(locationPathArg) {
@@ -166,7 +165,7 @@
 
     // TODO: allow->grant
     this.allowAccessByUser = function(email, location) {
-      var cleanedEmail, user, location, grantPermissionCallback;
+      var cleanedEmail, user, grantPermissionCallback;
       cleanedEmail = $.trim(email);
       if (cleanedEmail.length === 0) {
         return;
@@ -213,7 +212,7 @@
                                 that.getUsers,
                                 ui.refresh])();
     };
-  };
+  }
 
   function UI(controller) {
     var view = {
@@ -226,19 +225,19 @@
 
     function focusedElement() {
       return $(document.activeElement);
-    };
+    }
 
     function locationPathId(location) {
       return 'location-' + utils.urn2uuid(location.id);
-    };
+    }
 
     function locationInfoId(location) {
       return 'resource-info-' + utils.urn2uuid(location.id);
-    };
+    }
 
     function addAllowedUserInputId(location) {
       return 'add-allowed-user-input-' + utils.urn2uuid(location.id);
-    };
+    }
 
     function findSelectLocation() {
       var activeElement, urn;
@@ -250,7 +249,74 @@
       return utils.findOnly(controller.locations, function(location) {
         return location.id === urn;
       });
-    };
+    }
+
+    function showNotifyDialog(to, locations) {
+      var body, website, locationsString, delimiter;
+      if (locations.length === 0) {
+        body = 'I have shared nothing with you. Enjoy.';
+      } else {
+        website = 'a website';
+        if (locations.length > 1) {
+          website = 'websites';
+        }
+        locationsString = $.map(locations, function(locationPath) {
+          delimiter = (locationPath[0] !== '/') ? '/' : '';
+          return 'https://' + location.host + delimiter + locationPath;
+        }).join('\n');
+
+        body = 'I have shared ' + website + ' with you.\n'
+          + 'Please visit:\n' + locationsString;
+      }
+      $('#notify-modal')
+        .find('#notify-to').attr('value', to.join(', ')).end()
+        .find('#notify-body').text(body).end()
+        .modal('show');
+    }
+
+    function createLocationInfo(location) {
+      var locationInfo, allowedUserList;
+      locationInfo = view.locationInfo.clone(true)
+        .attr('id', locationInfoId(location))
+        .attr('location-urn', location.id)
+        .find('.add-allowed-user')
+        .attr('id', addAllowedUserInputId(location))
+        .change(function() {
+          controller.allowAccessByUser($(this).val(), location);
+        })
+      // TODO: fix of remove.
+      // .typeahead({
+      //   'source': model.users
+      // })
+        .end();
+
+      allowedUserList = locationInfo.find('.allowed-user-list');
+      utils.each(location.allowedUsers, function(user) {
+        view.allowedUser.clone(true)
+          .find('.user-mail').text(user.email).end()
+          .find('.remove-user').click(function() {
+            controller.revokeAccessByUser(user, location);
+          }).end()
+          .appendTo(allowedUserList);
+      });
+      locationInfo.appendTo('#location-info-list');
+    }
+
+    function highlightAccessibleLocations(user) {
+      utils.each(controller.locations, function(location) {
+        var id = '#' + locationPathId(location);
+        if (controller.canAccess(user, location)) {
+          $(id + ' a').addClass('accessible');
+        } else {
+          $(id + ' a').addClass('not-accessible');
+        }
+      });
+    }
+
+    function highlighLocationsOff() {
+      $('#location-list a').removeClass('accessible');
+      $('#location-list a').removeClass('not-accessible');
+    }
 
     function showUsers() {
       var userView;
@@ -272,7 +338,7 @@
           }).end()
           .appendTo('#user-list');
       });
-    };
+    }
 
     function showLocations() {
       utils.each(controller.locations, function(location) {
@@ -305,80 +371,12 @@
           controller.addLocation($(this).val());
         }).end()
         .appendTo('#location-list');
-    };
+    }
 
     function showLocationInfo(location) {
       $('#' + locationPathId(location)).addClass('active');
       $('#' + locationInfoId(location)).addClass('active');
-    };
-
-    function createLocationInfo(location) {
-      var locationInfo, allowedUserList;
-      locationInfo = view.locationInfo.clone(true)
-        .attr('id', locationInfoId(location))
-        .attr('location-urn', location.id)
-        .find('.add-allowed-user')
-        .attr('id', addAllowedUserInputId(location))
-        .change(function() {
-          controller.allowAccessByUser($(this).val(), location);
-        })
-      // TODO: fix of remove.
-      // .typeahead({
-      //   'source': model.users
-      // })
-        .end();
-
-      allowedUserList = locationInfo.find('.allowed-user-list');
-      utils.each(location.allowedUsers, function(user) {
-        view.allowedUser.clone(true)
-          .find('.user-mail').text(user.email).end()
-          .find('.remove-user').click(function() {
-            controller.revokeAccessByUser(user, location);
-          }).end()
-          .appendTo(allowedUserList);
-      });
-      locationInfo.appendTo('#location-info-list');
-    };
-
-    function highlightAccessibleLocations(user) {
-      utils.each(controller.locations, function(location) {
-        var id = '#' + locationPathId(location);
-        if (controller.canAccess(user, location)) {
-          $(id + ' a').addClass('accessible');
-        } else {
-          $(id + ' a').addClass('not-accessible');
-        }
-      });
-    };
-
-    function highlighLocationsOff() {
-      $('#location-list a').removeClass('accessible');
-      $('#location-list a').removeClass('not-accessible');
-    };
-
-    function showNotifyDialog(to, locations) {
-      var body, website, locationsString, delimiter;
-      if (locations.length === 0) {
-        body = 'I have shared nothing with you. Enjoy.';
-      } else {
-        website = 'a website';
-        if (locations.length > 1) {
-          website = 'websites';
-        }
-        locationsString = $.map(locations, function(locationPath) {
-          delimiter = (locationPath[0] !== '/') ? '/' : '';
-          return 'https://' + location.host + delimiter + locationPath;
-        }).join('\n');
-
-        body = 'I have shared ' + website + ' with you.\n'
-          + 'Please visit:\n' + locationsString;
-      }
-      $('#notify-modal')
-        .find('#notify-to').attr('value', to.join(', ')).end()
-        .find('#notify-body').text(body).end()
-        .modal('show');
-    };
-
+    }
 
     this.refresh = function() {
       var focusedElementId, selectLocation;
@@ -413,7 +411,7 @@
       view.user = $('.user-list-item').clone(true);
       $('.locations-root').text(location.host);
     };
-  };
+  }
 
   function Stub() {
     this.csrfToken = null;
@@ -438,7 +436,7 @@
         }
       });
     };
-  };
+  }
 
   if (window.ExposeForTests) {
     window.utils = utils;
