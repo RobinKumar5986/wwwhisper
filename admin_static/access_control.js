@@ -82,14 +82,6 @@
       });
     };
 
-    this.getCsrfToken = function(nextCallback) {
-      stub.ajax('GET', '/auth/api/csrftoken/', null,
-                function(result) {
-                  stub.csrfToken = result.csrfToken;
-                  nextCallback();
-                });
-    };
-
     this.getLocations = function(nextCallback) {
       stub.ajax('GET', 'api/locations/', null, function(result) {
         // TODO: parse json here.
@@ -207,8 +199,7 @@
 
     this.initialize = function() {
       ui.initialize();
-      that.buildCallbacksChain([that.getCsrfToken,
-                                that.getLocations,
+      that.buildCallbacksChain([that.getLocations,
                                 that.getUsers,
                                 ui.refresh])();
     };
@@ -414,9 +405,10 @@
   }
 
   function Stub() {
-    this.csrfToken = null;
+    var csrfToken = null, that = this;
 
-    this.ajax = function(method, resource, params, successCallback) {
+    function ajaxCommon(method, resource, params, headersDict,
+                        successCallback) {
       var jsonData = null;
       if (params !== null) {
         jsonData = JSON.stringify(params);
@@ -428,13 +420,33 @@
         data: jsonData,
         //dataType: method === 'GET' ?  'json' : 'text',
         dataType: 'json',
-        headers: {'X-CSRFToken' : this.csrfToken},
+        headers: headersDict,
         success: successCallback,
         error: function(jqXHR) {
           // TODO: nice messages for user input related failures.
           $('body').html(jqXHR.responseText);
         }
       });
+    }
+
+    function getCsrfToken(nextCallback) {
+      ajaxCommon('GET', '/auth/api/csrftoken/', null, null,
+                 function(result) {
+                   csrfToken = result.csrfToken;
+                   nextCallback();
+                 });
+    }
+
+    this.ajax = function(method, resource, params, successCallback) {
+      if (csrfToken === null) {
+        // Get token and reexecute the call.
+        getCsrfToken(function() {
+          that.ajax(method, resource, params, successCallback);
+        });
+        return;
+      }
+      ajaxCommon(method, resource, params, {'X-CSRFToken' : csrfToken},
+                 successCallback);
     };
   }
 
