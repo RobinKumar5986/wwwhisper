@@ -464,7 +464,7 @@
     mock_stub.verify();
   });
 
-  test('allowAccess when user exists', function() {
+  test('grantAccess when user exists', function() {
     var location, user;
     user = {
       id: '17',
@@ -483,14 +483,14 @@
       'PUT', location.self + 'allowed-users/17/', null, user);
 
     ok(!controller.canAccess(user, location));
-    controller.allowAccessByUser(user.email, location);
+    controller.grantAccess(user.email, location);
     ok(controller.canAccess(user, location));
 
     deepEqual(controller.locations[0].allowedUsers, [user]);
     mock_stub.verify();
   });
 
-  test('allowAccess when user does not exist', function() {
+  test('grantAccess when user does not exist', function() {
     var location, user;
     user = {
       id: '17',
@@ -511,7 +511,7 @@
       'PUT', location.self + 'allowed-users/17/', null, user);
 
     ok(!controller.canAccess(user, location));
-    controller.allowAccessByUser(user.email, location);
+    controller.grantAccess(user.email, location);
     ok(controller.canAccess(user, location));
 
     deepEqual(controller.locations[0].allowedUsers, [user]);
@@ -519,7 +519,7 @@
     mock_stub.verify();
   });
 
-  test('allowAccess when user already can access location', function() {
+  test('grantAccess when user already can access location', function() {
     var location, user;
     user = {
       id: '17',
@@ -536,7 +536,7 @@
     controller.locations.push(location);
 
     ok(controller.canAccess(user, location));
-    controller.allowAccessByUser(user.email, location);
+    controller.grantAccess(user.email, location);
     ok(controller.canAccess(user, location));
 
     mock_stub.verify();
@@ -563,7 +563,7 @@
       'DELETE', location.self + 'allowed-users/17/', null, null);
 
     ok(controller.canAccess(user, location));
-    controller.revokeAccessByUser(user, location);
+    controller.revokeAccess(user, location);
     ok(!controller.canAccess(user, location));
 
     deepEqual(controller.locations[0].allowedUsers, []);

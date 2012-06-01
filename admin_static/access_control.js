@@ -167,8 +167,7 @@
                 });
     };
 
-    // TODO: allow->grant
-    this.allowAccessByUser = function(email, location) {
+    this.grantAccess = function(email, location) {
       var cleanedEmail, user, grantPermissionCallback;
       cleanedEmail = $.trim(email);
       if (cleanedEmail.length === 0) {
@@ -198,7 +197,7 @@
       }
     };
 
-    this.revokeAccessByUser = function(user, location) {
+    this.revokeAccess = function(user, location) {
       stub.ajax(
         'DELETE',
         location.self + 'allowed-users/' + utils.urn2uuid(user.id) + '/',
@@ -285,7 +284,7 @@
         .find('.add-allowed-user')
         .attr('id', addAllowedUserInputId(location))
         .change(function() {
-          controller.allowAccessByUser($(this).val(), location);
+          controller.grantAccess($(this).val(), location);
         })
       // TODO: fix of remove.
       // .typeahead({
@@ -298,7 +297,7 @@
         view.allowedUser.clone(true)
           .find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
-            controller.revokeAccessByUser(user, location);
+            controller.revokeAccess(user, location);
           }).end()
           .appendTo(allowedUserList);
       });
