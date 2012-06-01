@@ -1,6 +1,7 @@
 (function () {
   'use strict';
-  var utils, wwwhisper;
+  var utils;
+  var wwwhisper;
 
   utils = {
     each: function(iterable, callback) {
@@ -216,32 +217,32 @@
     },
   };
 
-  wwwhisper.ui = {
-    view: {
+  function UI() {
+    var view = {
       locationPath : null,
       locationInfo : null,
       allowedUser : null,
       addLocation : null,
       user : null
-    },
+    };
 
-    _focusedElement: function() {
+    function focusedElement() {
       return $(document.activeElement);
-    },
+    };
 
-    _locationPathId: function(location) {
+    function locationPathId(location) {
       return 'location-' + utils.urn2uuid(location.id);
-    },
+    };
 
-    _locationInfoId: function(location) {
+    function locationInfoId(location) {
       return 'resource-info-' + utils.urn2uuid(location.id);
-    },
+    };
 
-    _addAllowedUserInputId: function(location) {
+    function addAllowedUserInputId(location) {
       return 'add-allowed-user-input-' + utils.urn2uuid(location.id);
-    },
+    };
 
-    _findSelectLocation: function() {
+    function findSelectLocation() {
       var activeElement, urn;
       activeElement = $('#location-list').find('.active');
       if (activeElement.length === 0) {
@@ -251,21 +252,21 @@
       return utils.findOnly(wwwhisper.locations, function(location) {
         return location.id === urn;
       });
-    },
+    };
 
-    _showUsers: function() {
+    function showUsers() {
       var userView;
       utils.each(wwwhisper.users, function(user) {
-        userView = wwwhisper.ui.view.user.clone(true);
+        userView = view.user.clone(true);
         userView.find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
             wwwhisper.removeUser(user);
           }).end()
           .find('.highlight').hover(function() {
-            wwwhisper.ui._highlightAccessibleLocations(user);
-          }, wwwhisper.ui._highlighLocationsOff).end()
+            highlightAccessibleLocations(user);
+          }, highlighLocationsOff).end()
           .find('.notify').click(function() {
-            wwwhisper.ui._showNotifyDialog(
+            showNotifyDialog(
               [user.email],
               utils.extractLocationsPaths(
                 wwwhisper.accessibleLocations(user))
@@ -273,15 +274,15 @@
           }).end()
           .appendTo('#user-list');
       });
-    },
+    };
 
-    _showLocations: function() {
+    function showLocations() {
       utils.each(wwwhisper.locations, function(location) {
-        wwwhisper.ui.view.locationPath.clone(true)
-          .attr('id', wwwhisper.ui._locationPathId(location))
+        view.locationPath.clone(true)
+          .attr('id', locationPathId(location))
           .attr('location-urn', location.id)
           .find('.url').attr(
-            'href', '#' + wwwhisper.ui._locationInfoId(location)).end()
+            'href', '#' + locationInfoId(location)).end()
           .find('.path').text(location.path).end()
           .find('.remove-location').click(function(event) {
             // Do not show removed location info.
@@ -289,14 +290,14 @@
             wwwhisper.removeLocation(location);
           }).end()
           .find('.notify').click(function() {
-            wwwhisper.ui._showNotifyDialog(
+            showNotifyDialog(
               location.allowedUsers, [location.path]);
           }).end()
           .appendTo('#location-list');
-        wwwhisper.ui._createLocationInfo(location);
+        createLocationInfo(location);
       });
 
-      wwwhisper.ui.view.addLocation.clone(true)
+      view.addLocation.clone(true)
         .find('#add-location-input')
       // TODO: fix or remove.
       // .typeahead({
@@ -306,20 +307,20 @@
           wwwhisper.addLocation($(this).val());
         }).end()
         .appendTo('#location-list');
-    },
+    };
 
-    _showLocationInfo: function(location) {
-      $('#' + wwwhisper.ui._locationPathId(location)).addClass('active');
-      $('#' + wwwhisper.ui._locationInfoId(location)).addClass('active');
-    },
+    function showLocationInfo(location) {
+      $('#' + locationPathId(location)).addClass('active');
+      $('#' + locationInfoId(location)).addClass('active');
+    };
 
-    _createLocationInfo: function(location) {
+    function createLocationInfo(location) {
       var locationInfo, allowedUserList;
-      locationInfo = wwwhisper.ui.view.locationInfo.clone(true)
-        .attr('id', wwwhisper.ui._locationInfoId(location))
+      locationInfo = view.locationInfo.clone(true)
+        .attr('id', locationInfoId(location))
         .attr('location-urn', location.id)
         .find('.add-allowed-user')
-        .attr('id', wwwhisper.ui._addAllowedUserInputId(location))
+        .attr('id', addAllowedUserInputId(location))
         .change(function() {
           wwwhisper.allowAccessByUser($(this).val(), location);
         })
@@ -331,7 +332,7 @@
 
       allowedUserList = locationInfo.find('.allowed-user-list');
       utils.each(location.allowedUsers, function(user) {
-        wwwhisper.ui.view.allowedUser.clone(true)
+        view.allowedUser.clone(true)
           .find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
             wwwhisper.revokeAccessByUser(user, location);
@@ -339,25 +340,25 @@
           .appendTo(allowedUserList);
       });
       locationInfo.appendTo('#location-info-list');
-    },
+    };
 
-    _highlightAccessibleLocations: function(user) {
+    function highlightAccessibleLocations(user) {
       utils.each(wwwhisper.locations, function(location) {
-        var id = '#' + wwwhisper.ui._locationPathId(location);
+        var id = '#' + locationPathId(location);
         if (wwwhisper.canAccess(user, location)) {
           $(id + ' a').addClass('accessible');
         } else {
           $(id + ' a').addClass('not-accessible');
         }
       });
-    },
+    };
 
-    _highlighLocationsOff: function() {
+    function highlighLocationsOff() {
       $('#location-list a').removeClass('accessible');
       $('#location-list a').removeClass('not-accessible');
-    },
+    };
 
-    _showNotifyDialog: function(to, locations) {
+    function showNotifyDialog(to, locations) {
       var body, website, locationsString, delimiter;
       if (locations.length === 0) {
         body = 'I have shared nothing with you. Enjoy.';
@@ -378,13 +379,13 @@
         .find('#notify-to').attr('value', to.join(', ')).end()
         .find('#notify-body').text(body).end()
         .modal('show');
-    },
+    };
 
 
-    refresh: function() {
+    this.refresh = function() {
       var focusedElementId, selectLocation;
-      selectLocation = wwwhisper.ui._findSelectLocation();
-      focusedElementId = wwwhisper.ui._focusedElement().attr('id');
+      selectLocation = findSelectLocation();
+      focusedElementId = focusedElement().attr('id');
 
       if (selectLocation === null && wwwhisper.locations.length > 0) {
         selectLocation = wwwhisper.locations[0];
@@ -394,27 +395,26 @@
       $('#location-info-list').empty();
       $('#user-list').empty();
 
-      wwwhisper.ui._showLocations();
-      wwwhisper.ui._showUsers();
+      showLocations();
+      showUsers();
 
       if (selectLocation !== null) {
-        wwwhisper.ui._showLocationInfo(selectLocation);
+        showLocationInfo(selectLocation);
       }
       if (focusedElementId) {
         $('#' + focusedElementId).focus();
       }
-    },
+    };
 
-    initialize: function() {
-      wwwhisper.ui.view.locationPath = $('#location-list-item').clone(true);
-      wwwhisper.ui.view.locationInfo =
-        $('#location-info-list-item').clone(true);
-      wwwhisper.ui.view.allowedUser = $('#allowed-user-list-item').clone(true);
-      wwwhisper.ui.view.locationInfo.find('#allowed-user-list-item').remove();
-      wwwhisper.ui.view.addLocation = $('#add-location').clone(true);
-      wwwhisper.ui.view.user = $('.user-list-item').clone(true);
+    this.initialize = function() {
+      view.locationPath = $('#location-list-item').clone(true);
+      view.locationInfo = $('#location-info-list-item').clone(true);
+      view.allowedUser = $('#allowed-user-list-item').clone(true);
+      view.locationInfo.find('#allowed-user-list-item').remove();
+      view.addLocation = $('#add-location').clone(true);
+      view.user = $('.user-list-item').clone(true);
       $('.locations-root').text(location.host);
-    }
+    };
   };
 
   wwwhisper.stub = {
@@ -446,6 +446,7 @@
     wwwhisper.utils = utils;
     window.wwwhisper = wwwhisper;
   } else {
+    wwwhisper.ui = new UI();
     wwwhisper.initialize();
   }
 }());
