@@ -1,9 +1,7 @@
 (function () {
   'use strict';
-  var utils;
-  var wwwhisper;
 
-  utils = {
+  var utils = {
     each: function(iterable, callback) {
       $.each(iterable, function(_id, value) {
         callback(value);
@@ -49,175 +47,175 @@
     }
   };
 
-  wwwhisper = {
-    locations: [],
-    users: [],
+  function Controller(uiConstructor, stub) {
+    var that = this;
+    var ui = new uiConstructor(this);
 
-    canAccess: function(user, location) {
+    this.locations = [];
+    this.users = [];
+
+    this.canAccess = function(user, location) {
       return utils.inArray(
         user.id, utils.allowedUsersIds(location));
-    },
+    };
 
-    removeAllowedUser: function(user, location) {
+    this.removeAllowedUser = function(user, location) {
       location.allowedUsers = $.grep(location.allowedUsers, function(u) {
         return u.id !== user.id;
       });
-    },
+    };
 
-    findUserWithEmail: function(email) {
-      return utils.findOnly(wwwhisper.users, function(user) {
+    this.findUserWithEmail = function(email) {
+      return utils.findOnly(that.users, function(user) {
         return user.email === email;
       });
-    },
+    };
 
-    findLocationWithId: function(id) {
-      return utils.findOnly(wwwhisper.locations, function(location) {
+    this.findLocationWithId = function(id) {
+      return utils.findOnly(that.locations, function(location) {
         return location.id === id;
       });
-    },
+    };
 
-    accessibleLocations: function(user) {
-      return $.grep(wwwhisper.locations, function(location) {
-        return wwwhisper.canAccess(user, location);
+    this.accessibleLocations = function(user) {
+      return $.grep(that.locations, function(location) {
+        return that.canAccess(user, location);
       });
-    },
+    };
 
-    getCsrfToken: function(nextCallback) {
-      wwwhisper.stub.ajax('GET', '/auth/api/csrftoken/', null,
-                          function(result) {
-                            wwwhisper.stub.csrfToken = result.csrfToken;
-                            nextCallback();
-                          });
-    },
+    this.getCsrfToken = function(nextCallback) {
+      stub.ajax('GET', '/auth/api/csrftoken/', null,
+                function(result) {
+                  stub.csrfToken = result.csrfToken;
+                  nextCallback();
+                });
+    };
 
-    getLocations: function(nextCallback) {
-      wwwhisper.stub.ajax('GET', 'api/locations/', null, function(result) {
+    this.getLocations = function(nextCallback) {
+      stub.ajax('GET', 'api/locations/', null, function(result) {
         // TODO: parse json here.
-        wwwhisper.locations = result.locations;
+        that.locations = result.locations;
         nextCallback();
       });
-    },
+    };
 
-    getUsers: function(nextCallback) {
-      wwwhisper.stub.ajax('GET', 'api/users/', null, function(result) {
+    this.getUsers = function(nextCallback) {
+      stub.ajax('GET', 'api/users/', null, function(result) {
         // TODO: parse json here.
-        wwwhisper.users = result.users;
+        that.users = result.users;
         nextCallback();
       });
-    },
+    };
 
-    buildCallbacksChain: function(callbacks) {
+    this.buildCallbacksChain = function(callbacks) {
       if (callbacks.length === 1) {
         return callbacks[0];
       }
       return function() {
         callbacks[0](
-          wwwhisper.buildCallbacksChain(callbacks.slice(1, callbacks.length))
+          that.buildCallbacksChain(callbacks.slice(1, callbacks.length))
         );
       }
-    },
+    };
 
-    addLocation: function(locationPathArg) {
+    this.addLocation = function(locationPathArg) {
       var locationPath = $.trim(locationPathArg);
       if (locationPath.length === 0 || utils.inArray(
-        locationPath, utils.extractLocationsPaths(wwwhisper.locations))) {
+        locationPath, utils.extractLocationsPaths(that.locations))) {
         // TODO: Should existence check be done by client? Path is
         // encoded anyway on the server site, so this check is not
         // 100% accurate.
         return;
       }
-      wwwhisper.stub.ajax('POST', 'api/locations/', {path: locationPath},
-                          function(newLocation) {
-                            // TODO: parse json.
-                            wwwhisper.locations.push(newLocation);
-                            wwwhisper.ui.refresh();
-                          });
-    },
+      stub.ajax('POST', 'api/locations/', {path: locationPath},
+                function(newLocation) {
+                  // TODO: parse json.
+                  that.locations.push(newLocation);
+                  ui.refresh();
+                });
+    };
 
-    removeLocation: function(location) {
-      wwwhisper.stub.ajax(
-        'DELETE', location.self, null,
+    this.removeLocation = function(location) {
+      stub.ajax('DELETE', location.self, null,
         function() {
-          utils.removeFromArray(location, wwwhisper.locations);
-          wwwhisper.ui.refresh();
+          utils.removeFromArray(location, that.locations);
+          ui.refresh();
         });
-    },
+    };
 
-    addUser: function(emailArg, nextCallback) {
-      wwwhisper.stub.ajax('POST', 'api/users/', {email: emailArg},
-                          function(user) {
-                            wwwhisper.users.push(user);
-                            nextCallback(user);
-                          });
-    },
+    this.addUser = function(emailArg, nextCallback) {
+      stub.ajax('POST', 'api/users/', {email: emailArg},
+                function(user) {
+                  that.users.push(user);
+                  nextCallback(user);
+                });
+    };
 
-    removeUser: function(user) {
-      wwwhisper.stub.ajax(
-        'DELETE', user.self, null,
-        function() {
-          utils.each(wwwhisper.locations, function(location) {
-            if (wwwhisper.canAccess(user, location)) {
-              wwwhisper.removeAllowedUser(user, location);
-            }
-          });
-          utils.removeFromArray(user, wwwhisper.users);
-          wwwhisper.ui.refresh();
-        });
-    },
+    this.removeUser = function(user) {
+      stub.ajax('DELETE', user.self, null,
+                function() {
+                  utils.each(that.locations, function(location) {
+                    if (that.canAccess(user, location)) {
+                      that.removeAllowedUser(user, location);
+                    }
+                  });
+                  utils.removeFromArray(user, that.users);
+                  ui.refresh();
+                });
+    };
 
     // TODO: allow->grant
-    allowAccessByUser: function(email, location) {
+    this.allowAccessByUser = function(email, location) {
       var cleanedEmail, user, location, grantPermissionCallback;
       cleanedEmail = $.trim(email);
       if (cleanedEmail.length === 0) {
         return;
       }
-      user = wwwhisper.findUserWithEmail(cleanedEmail);
-      if (user !== null && wwwhisper.canAccess(user, location)) {
+      user = that.findUserWithEmail(cleanedEmail);
+      if (user !== null && that.canAccess(user, location)) {
         // User already can access location.
         return;
       }
 
       grantPermissionCallback = function(userArg) {
-        wwwhisper.stub.ajax(
+        stub.ajax(
           'PUT',
-          location.self + 'allowed-users/'
-            + utils.urn2uuid(userArg.id) + '/',
+          location.self + 'allowed-users/' + utils.urn2uuid(userArg.id) + '/',
           null,
           function() {
             location.allowedUsers.push(userArg);
-            wwwhisper.ui.refresh();
+            ui.refresh();
           });
       };
 
       if (user !== null) {
         grantPermissionCallback(user);
       } else {
-        wwwhisper.addUser(cleanedEmail, grantPermissionCallback);
+        that.addUser(cleanedEmail, grantPermissionCallback);
       }
-    },
+    };
 
-    revokeAccessByUser: function(user, location) {
-      wwwhisper.stub.ajax(
+    this.revokeAccessByUser = function(user, location) {
+      stub.ajax(
         'DELETE',
         location.self + 'allowed-users/' + utils.urn2uuid(user.id) + '/',
         null,
         function() {
-          wwwhisper.removeAllowedUser(user, location);
-          wwwhisper.ui.refresh();
+          that.removeAllowedUser(user, location);
+          ui.refresh();
         });
-    },
+    };
 
-    initialize: function() {
-      wwwhisper.ui.initialize();
-      wwwhisper.buildCallbacksChain([wwwhisper.getCsrfToken,
-                                     wwwhisper.getLocations,
-                                     wwwhisper.getUsers,
-                                     wwwhisper.ui.refresh])();
-    },
+    this.initialize = function() {
+      ui.initialize();
+      that.buildCallbacksChain([that.getCsrfToken,
+                                that.getLocations,
+                                that.getUsers,
+                                ui.refresh])();
+    };
   };
 
-  function UI() {
+  function UI(controller) {
     var view = {
       locationPath : null,
       locationInfo : null,
@@ -249,18 +247,18 @@
         return null;
       }
       urn = activeElement.attr('location-urn');
-      return utils.findOnly(wwwhisper.locations, function(location) {
+      return utils.findOnly(controller.locations, function(location) {
         return location.id === urn;
       });
     };
 
     function showUsers() {
       var userView;
-      utils.each(wwwhisper.users, function(user) {
+      utils.each(controller.users, function(user) {
         userView = view.user.clone(true);
         userView.find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
-            wwwhisper.removeUser(user);
+            controller.removeUser(user);
           }).end()
           .find('.highlight').hover(function() {
             highlightAccessibleLocations(user);
@@ -269,7 +267,7 @@
             showNotifyDialog(
               [user.email],
               utils.extractLocationsPaths(
-                wwwhisper.accessibleLocations(user))
+                controller.accessibleLocations(user))
             );
           }).end()
           .appendTo('#user-list');
@@ -277,7 +275,7 @@
     };
 
     function showLocations() {
-      utils.each(wwwhisper.locations, function(location) {
+      utils.each(controller.locations, function(location) {
         view.locationPath.clone(true)
           .attr('id', locationPathId(location))
           .attr('location-urn', location.id)
@@ -287,7 +285,7 @@
           .find('.remove-location').click(function(event) {
             // Do not show removed location info.
             event.preventDefault();
-            wwwhisper.removeLocation(location);
+            controller.removeLocation(location);
           }).end()
           .find('.notify').click(function() {
             showNotifyDialog(
@@ -304,7 +302,7 @@
       //   'source': utils.allLocationsPaths()
       // })
         .change(function() {
-          wwwhisper.addLocation($(this).val());
+          controller.addLocation($(this).val());
         }).end()
         .appendTo('#location-list');
     };
@@ -322,7 +320,7 @@
         .find('.add-allowed-user')
         .attr('id', addAllowedUserInputId(location))
         .change(function() {
-          wwwhisper.allowAccessByUser($(this).val(), location);
+          controller.allowAccessByUser($(this).val(), location);
         })
       // TODO: fix of remove.
       // .typeahead({
@@ -335,7 +333,7 @@
         view.allowedUser.clone(true)
           .find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
-            wwwhisper.revokeAccessByUser(user, location);
+            controller.revokeAccessByUser(user, location);
           }).end()
           .appendTo(allowedUserList);
       });
@@ -343,9 +341,9 @@
     };
 
     function highlightAccessibleLocations(user) {
-      utils.each(wwwhisper.locations, function(location) {
+      utils.each(controller.locations, function(location) {
         var id = '#' + locationPathId(location);
-        if (wwwhisper.canAccess(user, location)) {
+        if (controller.canAccess(user, location)) {
           $(id + ' a').addClass('accessible');
         } else {
           $(id + ' a').addClass('not-accessible');
@@ -387,8 +385,8 @@
       selectLocation = findSelectLocation();
       focusedElementId = focusedElement().attr('id');
 
-      if (selectLocation === null && wwwhisper.locations.length > 0) {
-        selectLocation = wwwhisper.locations[0];
+      if (selectLocation === null && controller.locations.length > 0) {
+        selectLocation = controller.locations[0];
       }
 
       $('#location-list').empty();
@@ -443,11 +441,9 @@
   };
 
   if (window.ExposeForTests) {
-    window.wwwhisper_utils = utils;
-    window.wwwhisper = wwwhisper;
+    window.utils = utils;
+    window.Controller = Controller;
   } else {
-    wwwhisper.stub = new Stub();
-    wwwhisper.ui = new UI();
-    wwwhisper.initialize();
+    (new Controller(UI, new Stub())).initialize();
   }
 }());
