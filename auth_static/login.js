@@ -1,32 +1,14 @@
 (function () {
   'use strict';
-  // TODO: can this global be removed?
-  var csrfToken = null;
-
-  // TODO: remove duplication
-  function ajax(method, resource, params, successCallback) {
-    $.ajax({
-      url: '/auth/api/' + resource,
-      type: method,
-      data: JSON.stringify(params),
-      dataType: method === 'GET' ?  'json' : 'text',
-      headers: csrfToken != null ? {'X-CSRFToken' : csrfToken}: {},
-      success: successCallback,
-      error: function(jqXHR) {
-        $('body').html(jqXHR.responseText);
-      }
-    });
-  }
 
   function sendAssertion(assertion) {
+    var stub = new wwwhisper.Stub();
     if (assertion) {
-      ajax('GET', 'csrftoken/', {}, function(result) {
-        csrfToken = result.csrfToken;
-        ajax('POST', 'login/', {'assertion' : assertion.toString()},
-             function(result) {
-               window.location.reload(true);
-             });
-      });
+      stub.ajax('POST', '/auth/api/login/',
+                {'assertion' : assertion.toString()},
+                function() {
+                  window.location.reload(true);
+                });
     } else {
       alert('BrowserID assertion not set');
     }

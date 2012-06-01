@@ -15,8 +15,6 @@
         url: resource,
         type: method,
         data: jsonData,
-        //dataType: method === 'GET' ?  'json' : 'text',
-        dataType: 'json',
         headers: headersDict,
         success: successCallback,
         error: function(jqXHR) {
