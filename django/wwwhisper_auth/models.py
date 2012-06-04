@@ -66,14 +66,14 @@ class Location(ValidatedModel):
             raise LookupError('User can not access location.')
         return permission
 
-    def get_allowed_users(self):
+    def allowed_users(self):
         return [permission.user.attributes_dict() for permission in
                 Permission.objects.filter(http_location=self.path)]
 
     def attributes_dict(self):
         return _add_common_attributes(self, {
                 'path': self.path,
-                'allowedUsers': self.get_allowed_users(),
+                'allowedUsers': self.allowed_users(),
                 })
 
     @models.permalink
