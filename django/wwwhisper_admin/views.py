@@ -73,7 +73,7 @@ class ItemView(RestView):
                             mimetype="application/json")
 
     def delete(self, request, **kwargs):
-        deleted = self.collection.delete(**kwargs)
+        deleted = self.collection.delete_item(**kwargs)
         if not deleted:
             return HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())

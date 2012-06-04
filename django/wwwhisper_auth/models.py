@@ -113,7 +113,7 @@ class Collection(object):
         filter_args = {self.uuid_column_name: uuid}
         return _find(self.model_class, **filter_args)
 
-    def delete(self, uuid):
+    def delete_item(self, uuid):
         item = self.get_item(uuid)
         if item is None:
             return False

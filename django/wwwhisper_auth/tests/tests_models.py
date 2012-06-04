@@ -29,7 +29,7 @@ class UsersCollectionTest(CollectionTestCase):
     def test_delete_user(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         self.assertIsNotNone(self.users_collection.get_item(user.uuid))
-        self.assertTrue(self.users_collection.delete(user.uuid))
+        self.assertTrue(self.users_collection.delete_item(user.uuid))
         self.assertIsNone(self.users_collection.get_item(user.uuid))
 
     def test_create_user_twice(self):
@@ -41,15 +41,15 @@ class UsersCollectionTest(CollectionTestCase):
 
     def test_delete_user_twice(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
-        self.assertTrue(self.users_collection.delete(user.uuid))
-        self.assertFalse(self.users_collection.delete(user.uuid))
+        self.assertTrue(self.users_collection.delete_item(user.uuid))
+        self.assertFalse(self.users_collection.delete_item(user.uuid))
 
     def test_get_all_users(self):
         user1 = self.users_collection.create_item('foo@example.com')
         user2 = self.users_collection.create_item('bar@example.com')
         self.assertItemsEqual(['foo@example.com', 'bar@example.com'],
                               [u.email for u in self.users_collection.all()])
-        self.users_collection.delete(user1.uuid)
+        self.users_collection.delete_item(user1.uuid)
         self.assertItemsEqual(['bar@example.com'],
                               [u.email for u in self.users_collection.all()])
 
@@ -100,7 +100,7 @@ class LocationsCollectionTest(CollectionTestCase):
     def test_delete_location(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
         self.assertIsNotNone(self.locations_collection.get_item(location.uuid))
-        self.assertTrue(self.locations_collection.delete(location.uuid))
+        self.assertTrue(self.locations_collection.delete_item(location.uuid))
         self.assertIsNone(self.locations_collection.get_item(location.uuid))
 
     def test_create_location_twice(self):
@@ -112,8 +112,8 @@ class LocationsCollectionTest(CollectionTestCase):
 
     def test_delete_location_twice(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
-        self.assertTrue(self.locations_collection.delete(location.uuid))
-        self.assertFalse(self.locations_collection.delete(location.uuid))
+        self.assertTrue(self.locations_collection.delete_item(location.uuid))
+        self.assertFalse(self.locations_collection.delete_item(location.uuid))
 
     def test_get_all_locations(self):
         location1 = self.locations_collection.create_item('/foo')
@@ -121,7 +121,7 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertItemsEqual(['/foo/bar', '/foo'],
                               [l.path for l
                                in self.locations_collection.all()])
-        self.locations_collection.delete(location1.uuid)
+        self.locations_collection.delete_item(location1.uuid)
         self.assertItemsEqual(['/foo/bar'],
                               [l.path for l
                                in self.locations_collection.all()])
@@ -159,7 +159,7 @@ class LocationsCollectionTest(CollectionTestCase):
     def test_grant_access_to_deleted_location(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         location = self.locations_collection.create_item(TEST_LOCATION)
-        self.assertTrue(self.locations_collection.delete(location.uuid))
+        self.assertTrue(self.locations_collection.delete_item(location.uuid))
         self.assertRaises(ValidationError,
                           location.grant_access,
                           user.uuid)
@@ -184,7 +184,7 @@ class LocationsCollectionTest(CollectionTestCase):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         location = self.locations_collection.create_item(TEST_LOCATION)
         location.grant_access(user.uuid)
-        self.assertTrue(self.locations_collection.delete(location.uuid))
+        self.assertTrue(self.locations_collection.delete_item(location.uuid))
         self.assertRaisesRegexp(LookupError,
                                 'User can not access location.',
                                 location.revoke_access,
