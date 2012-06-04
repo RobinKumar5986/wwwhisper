@@ -3,10 +3,10 @@ from django.test import TestCase
 from django.test.client import Client
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
+from wwwhisper_auth.tests.utils import HttpTestCase
 
 import json
 import wwwhisper_auth.models as models
-
 
 class FakeAssertionVeryfingBackend(ModelBackend):
     def authenticate(self, assertion, audience = None):
@@ -15,34 +15,28 @@ class FakeAssertionVeryfingBackend(ModelBackend):
         except User.DoesNotExist:
             return None
 
-class AuthTestCase(TestCase):
+class AuthTestCase(HttpTestCase):
     def setUp(self):
-        self.client = Client()
         self.locations_collection = models.LocationsCollection()
         self.users_collection = models.UsersCollection()
 
         settings.AUTHENTICATION_BACKENDS = (
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
-
-    def post(self, path, args):
-        return self.client.post(path,
-                                json.dumps(args),
-                                'text/json',
-                                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        super(AuthTestCase, self).setUp()
 
 class Auth(AuthTestCase):
     def test_is_authorized_requires_path_parameter(self):
-        response = self.client.get('/auth/api/is_authorized/')
+        response = self.get('/auth/api/is_authorized/')
         self.assertEqual(400, response.status_code)
 
     def test_is_authorized_for_not_authenticated_user(self):
-        response = self.client.get('/auth/api/is_authorized/?path=/bar/')
+        response = self.get('/auth/api/is_authorized/?path=/bar/')
         self.assertEqual(403, response.status_code)
 
     def test_is_authorized_for_not_authorized_user(self):
         self.users_collection.create_item('foo@example.com')
         self.assertTrue(self.client.login(assertion='foo@example.com'))
-        response = self.client.get('/auth/api/is_authorized/?path=/foo/')
+        response = self.get('/auth/api/is_authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
 
     def test_is_authorized_for_authorized_user(self):
@@ -50,13 +44,13 @@ class Auth(AuthTestCase):
         location = self.locations_collection.create_item('/foo/')
         location.grant_access(user.uuid)
         self.assertTrue(self.client.login(assertion='foo@example.com'))
-        response = self.client.get('/auth/api/is_authorized/?path=/foo/')
+        response = self.get('/auth/api/is_authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
 
 
 class Login(AuthTestCase):
     def test_login_requires_assertion(self):
-        response = self.client.post('/auth/api/login/', {})
+        response = self.post('/auth/api/login/', {})
         self.assertEqual(400, response.status_code)
 
     def test_login_fails_if_unknown_user(self):
@@ -76,13 +70,13 @@ class Logout(AuthTestCase):
         user = self.users_collection.create_item('foo@example.com')
         self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
 
-        response = self.client.get('/auth/api/is_authorized/?path=/bar/')
+        response = self.get('/auth/api/is_authorized/?path=/bar/')
         # Not authorized
         self.assertEqual(401, response.status_code)
 
-        response = self.client.post('/auth/api/logout/')
+        response = self.post('/auth/api/logout/', {})
         self.assertEqual(200, response.status_code)
 
-        response = self.client.get('/auth/api/is_authorized/?path=/bar/')
+        response = self.get('/auth/api/is_authorized/?path=/bar/')
         # Not authenticated
         self.assertEqual(403, response.status_code)

@@ -29,5 +29,4 @@ class RestView(View):
             trace = "".join(traceback.format_exc())
             logger.debug('Invalid arguments, handler not found: %s\n%s'
                          % (err, trace))
-            # TODO: change error code.
             return HttpResponse('Invalid request arguments', status=400)

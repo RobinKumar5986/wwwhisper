@@ -190,6 +190,24 @@ class LocationsCollectionTest(CollectionTestCase):
                                 location.revoke_access,
                                 user.uuid)
 
+    def test_deleting_user_revokes_access(self):
+        user = self.users_collection.create_item(TEST_USER_EMAIL)
+        location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        location.grant_access(user.uuid)
+        self.assertTrue(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.users_collection.delete_item(user.uuid)
+        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+
+    def test_deleting_location_revokes_access(self):
+        user = self.users_collection.create_item(TEST_USER_EMAIL)
+        location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        location.grant_access(user.uuid)
+        self.assertTrue(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.locations_collection.delete_item(location.uuid)
+        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+
     def test_revoke_access_for_not_existing_user(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
         self.assertRaisesRegexp(LookupError,
@@ -333,6 +351,7 @@ class LocationsCollectionTest(CollectionTestCase):
 
     def create_location(self, path):
         return self.locations_collection.create_item(path)
+
     def test_path_encoding(self):
         self.assertEqual('/', self.create_location('/').path)
         self.assertEqual('/foo', self.create_location('/foo').path)
@@ -343,6 +362,4 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertEqual('/foo~', self.create_location('/foo~').path)
         self.assertEqual('/foo/bar%21%407%2A',
                          self.create_location('/foo/bar!@7*').path)
-
-    # TODO: test that removing user and location revokes access
 

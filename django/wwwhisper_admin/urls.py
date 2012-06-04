@@ -3,7 +3,6 @@ from django.contrib.auth.models import User
 from views import CollectionView, ItemView, AllowedUsersView
 from wwwhisper_auth.models import LocationsCollection, UsersCollection
 
-#TODO: clean urls!
 users_collection = UsersCollection()
 locations_collection = LocationsCollection()
 
