@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, include, url
+from django.conf.urls.defaults import patterns, url
 from views import CsrfToken, Auth, Login, Logout
 
 urlpatterns = patterns(

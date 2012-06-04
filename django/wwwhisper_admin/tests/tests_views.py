@@ -1,4 +1,4 @@
-from wwwhisper_auth.tests import HttpTestCase
+from wwwhisper_auth.tests.utils import HttpTestCase
 from wwwhisper_auth.models import SITE_URL
 
 import wwwhisper_admin.views
@@ -78,12 +78,6 @@ class UserTest(AdminViewTestCase):
       self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'User not found')
 
-   # TODO: make this a generic test for the RestView.
-   def test_add_user_invalid_arg_name(self):
-      response = self.post('/admin/api/users/', {'eemail' : 'foo@bar.org'})
-      self.assertEqual(400, response.status_code)
-      self.assertRegexpMatches(response.content, 'Invalid request arguments')
-
    def test_add_user_invalid_email(self):
       response = self.post('/admin/api/users/', {'email' : 'foo.bar'})
       self.assertEqual(400, response.status_code)
@@ -157,11 +151,6 @@ class LocationTest(AdminViewTestCase):
       response = self.get('/admin/api/locations/%s/' % FAKE_UUID)
       self.assertEqual(404, response.status_code)
       self.assertRegexpMatches(response.content, 'Location not found')
-
-   def test_add_location_invalid_arg_name(self):
-      response = self.post('/admin/api/locations/', {'peth' : '/foo/bar'})
-      self.assertEqual(400, response.status_code)
-      self.assertRegexpMatches(response.content, 'Invalid request arguments')
 
    def test_add_location_invalid_path(self):
       response = self.post('/admin/api/locations/', {'path' : '/foo/../bar'})

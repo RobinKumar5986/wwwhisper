@@ -14,18 +14,18 @@ class RestView(View):
     @method_decorator(csrf_protect)
     def dispatch(self, request, *args, **kwargs):
         method = request.method.lower()
-        # TODO: remove delete
-        if method == 'post' or method == 'put':
+        # Parse body as json object if it is not empty (empty body
+        # contains '--BoUnDaRyStRiNg--')
+        if (method == 'post' or method == 'put') \
+                and len(request.body) != 0 and request.body[0] != '-':
             try:
-                kwargs.update(json.loads(request.raw_post_data))
+                kwargs.update(json.loads(request.body))
             except ValueError, err:
                 logger.debug(
-                    'Failed to parse arguments as json object: %s' % (err))
+                    'Failed to parse request body as json object: %s' % (err))
         try:
             return super(RestView, self).dispatch(request, *args, **kwargs)
         except TypeError, err:
-            # TODO: test that this is called
-            # TODO: test what happens when invalid method is called.
             trace = "".join(traceback.format_exc())
             logger.debug('Invalid arguments, handler not found: %s\n%s'
                          % (err, trace))
