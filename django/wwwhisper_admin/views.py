@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
-from wwwhisper_auth.rest_view import RestView
+from wwwhisper_auth.utils import RestView
 from wwwhisper_auth.models import CreationException
 from wwwhisper_auth.models import full_url
 
