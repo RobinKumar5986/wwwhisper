@@ -1,4 +1,5 @@
 from wwwhisper_auth.tests import HttpTestCase
+from wwwhisper_auth.models import SITE_URL
 
 import wwwhisper_admin.views
 import json
@@ -9,9 +10,6 @@ TEST_LOCATION = '/pub/kika/'
 
 def uid_regexp():
    return '[0-9a-z-]{36}'
-
-def site_url():
-   return wwwhisper_admin.views.site_url()
 
 def extract_uuid(urn):
    return urn.replace('urn:uuid:', '')
@@ -40,7 +38,7 @@ class UserTest(AdminViewTestCase):
       self.assertRegexpMatches(parsed_response_body['id'],
                                '^urn:uuid:%s$' % uid_regexp())
       self.assertEqual(TEST_USER_EMAIL, parsed_response_body['email'])
-      self_url = '%s/admin/api/users/%s/' % (site_url(), user_uuid)
+      self_url = '%s/admin/api/users/%s/' % (SITE_URL, user_uuid)
       self.assertEqual(self_url, parsed_response_body['self'])
       self.assertEqual(self_url, response['Location'])
       self.assertEqual(self_url, response['Content-Location'])
@@ -67,7 +65,7 @@ class UserTest(AdminViewTestCase):
       response = self.get('/admin/api/users/')
       self.assertEqual(200, response.status_code)
       parsed_response_body = json.loads(response.content)
-      self.assertEqual('%s/admin/api/users/' % site_url(),
+      self.assertEqual('%s/admin/api/users/' % SITE_URL,
                        parsed_response_body['self'])
 
       users = parsed_response_body['users']
@@ -119,7 +117,7 @@ class LocationTest(AdminViewTestCase):
       self.assertRegexpMatches(parsed_response_body['id'],
                                '^urn:uuid:%s$' % uid_regexp())
       self.assertEqual(TEST_LOCATION, parsed_response_body['path'])
-      self_url = '%s/admin/api/locations/%s/' % (site_url(), location_uuid)
+      self_url = '%s/admin/api/locations/%s/' % (SITE_URL, location_uuid)
       self.assertEqual(self_url, parsed_response_body['self'])
       self.assertEqual(self_url, response['Location'])
       self.assertEqual(self_url, response['Content-Location'])
@@ -147,7 +145,7 @@ class LocationTest(AdminViewTestCase):
       response = self.get('/admin/api/locations/')
       self.assertEqual(200, response.status_code)
       parsed_response_body = json.loads(response.content)
-      self.assertEquals('%s/admin/api/locations/' % site_url(),
+      self.assertEquals('%s/admin/api/locations/' % SITE_URL,
                         parsed_response_body['self'])
 
       locations = parsed_response_body['locations']

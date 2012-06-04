@@ -3,6 +3,7 @@ from django.http import HttpResponse
 from django.http import HttpResponseNotFound
 from wwwhisper_auth.rest_view import RestView
 from wwwhisper_auth.models import CreationException
+from wwwhisper_auth.models import full_url
 
 import json
 import logging
@@ -22,17 +23,6 @@ def success(message=None):
 def error(message):
     logger.debug('Error %s' % (message))
     return HttpResponse(message, status=400)
-
-# TODO: can this warning be fatal initialization error?
-# TODO: remove duplication
-def site_url():
-    return getattr(settings, 'SITE_URL',
-                   'WARNING: SITE_URL is not set')
-
-# TODO: remove duplication
-# TODO: should HttpRequest.build_absolute_uri(request.path) be used instead?
-def full_url(absolute_path):
-    return site_url() + absolute_path
 
 class CollectionView(RestView):
     collection = None

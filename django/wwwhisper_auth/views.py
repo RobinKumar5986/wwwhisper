@@ -75,7 +75,6 @@ class Login(RestView):
             # TODO: show nice 'nothing shared' page here.
             return HttpResponse('Login failed', status=400)
 
-# TODO: Logout -> signout?
 class Logout(RestView):
     # TODO: should get be at /auth/api/logout not at /auth/logout?
     def get(self, request):

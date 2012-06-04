@@ -29,7 +29,6 @@ class ValidatedModel(models.Model):
         abstract = True
 
 User.uuid = property(lambda(self): self.username)
-# TODO: get_attributes_dict for symmetry with get_absolute_url?
 User.attributes_dict = lambda(self): \
     _add_common_attributes(self, {'email': self.email})
 
@@ -175,15 +174,14 @@ def can_access(email, path):
                    user__email=email,
                    http_location=longest_match) is not None
 
-def _full_url(absolute_path):
+def full_url(absolute_path):
     return SITE_URL + absolute_path
 
 def _urn_from_uuid(uuid):
     return 'urn:uuid:' + uuid
 
-# TODO: make it a member?
 def _add_common_attributes(item, attributes_dict):
-    attributes_dict['self'] = _full_url(item.get_absolute_url())
+    attributes_dict['self'] = full_url(item.get_absolute_url())
     if hasattr(item, 'uuid'):
         attributes_dict['id'] = _urn_from_uuid(item.uuid)
     return attributes_dict
