@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
+from wwwhisper_auth.utils import HttpResponseBadRequest
+from wwwhisper_auth.utils import HttpResponseCreated
+from wwwhisper_auth.utils import HttpResponseNoContent
 from wwwhisper_auth.utils import RestView
 from wwwhisper_auth.models import CreationException
 from wwwhisper_auth.models import full_url
@@ -11,19 +14,6 @@ import uuid
 
 logger = logging.getLogger(__name__)
 
-class HttpResponseNoContent(HttpResponse):
-    def __init__(self):
-        super(HttpResponseNoContent, self).__init__(status=204)
-
-def success(message=None):
-    if message:
-        return HttpResponse(message, status=200)
-    return HttpResponse(status=200)
-
-def error(message):
-    logger.debug('Error %s' % (message))
-    return HttpResponse(message, status=400)
-
 class CollectionView(RestView):
     collection = None
 
@@ -31,11 +21,9 @@ class CollectionView(RestView):
         try:
             created_item = self.collection.create_item(**kwargs)
         except CreationException as ex:
-            return error(ex)
+            return HttpResponseBadRequest(ex)
         attributes_dict = created_item.attributes_dict()
-        response = HttpResponse(json.dumps(attributes_dict),
-                                mimetype="application/json",
-                                status=201)
+        response = HttpResponseCreated(json.dumps(attributes_dict))
         response['Location'] = attributes_dict['self']
         response['Content-Location'] = attributes_dict['self']
         return response
@@ -102,14 +90,11 @@ class AllowedUsersView(RestView):
             (permission, created) = location.grant_access(user_uuid)
             attributes_dict = permission.attributes_dict()
             if created:
-                response =  HttpResponse(json.dumps(attributes_dict),
-                                         mimetype="application/json",
-                                         status=201)
+                response =  HttpResponseCreated(json.dumps(attributes_dict))
                 response['Location'] = attributes_dict['self']
             else:
                 response = HttpResponse(json.dumps(attributes_dict),
-                                        mimetype="application/json",
-                                        status=200)
+                                        mimetype="application/json")
             return response
         except LookupError, ex:
             return HttpResponseNotFound(ex)

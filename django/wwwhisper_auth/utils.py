@@ -9,6 +9,20 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
+class HttpResponseBadRequest(HttpResponse):
+    def __init__(self, message):
+        logger.debug('Bad request %s' % (message))
+        super(HttpResponseBadRequest, self).__init__(message, status=400)
+
+class HttpResponseNoContent(HttpResponse):
+    def __init__(self):
+        super(HttpResponseNoContent, self).__init__(status=204)
+
+class HttpResponseCreated(HttpResponse):
+    def __init__(self, json_representation):
+        super(HttpResponseCreated, self).__init__(
+            json_representation, mimetype="application/json", status=201)
+
 class RestView(View):
 
     @method_decorator(csrf_protect)
