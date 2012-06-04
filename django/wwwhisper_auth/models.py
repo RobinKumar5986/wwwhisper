@@ -109,12 +109,12 @@ class Collection(object):
     def all(self):
         return self.model_class.objects.all()
 
-    def get(self, uuid):
+    def get_item(self, uuid):
         filter_args = {self.uuid_column_name: uuid}
         return _find(self.model_class, **filter_args)
 
     def delete(self, uuid):
-        item = self.get(uuid)
+        item = self.get_item(uuid)
         if item is None:
             return False
         item.delete()
