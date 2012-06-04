@@ -260,18 +260,21 @@ class LocationsCollectionTest(CollectionTestCase):
         location1.grant_access(user2.uuid)
         location2.grant_access(user3.uuid)
 
-        self.assertItemsEqual(['foo@example.com', 'bar@example.com'],
-                              [u['email'] for u in location1.allowed_users()])
-        self.assertItemsEqual(['baz@example.com'],
-                              [u['email'] for u in location2.allowed_users()])
+        self.assertItemsEqual(
+            ['foo@example.com', 'bar@example.com'],
+            [u['email'] for u in location1.get_allowed_users()])
+        self.assertItemsEqual(
+            ['baz@example.com'],
+            [u['email'] for u in location2.get_allowed_users()])
 
         location1.revoke_access(user1.uuid)
-        self.assertItemsEqual(['bar@example.com'],
-                              [u['email'] for u in location1.allowed_users()])
+        self.assertItemsEqual(
+            ['bar@example.com'],
+            [u['email'] for u in location1.get_allowed_users()])
 
     def test_get_allowed_users_when_empty(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
-        self.assertEqual([], location.allowed_users())
+        self.assertEqual([], location.get_allowed_users())
 
     def test_path_validation(self):
         self.assertRaisesRegexp(CreationException,
