@@ -21,6 +21,7 @@ def access_denied_page(email):
 
 class Auth(View):
     def get(self, request):
+        # TODO: is path encoded by nginx? (e.g. ' ' replaced with %20?).
         path = request.GET.get('path', None)
         if path is None:
             return HttpResponseBadRequest(

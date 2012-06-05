@@ -1,7 +1,6 @@
 from django.forms import ValidationError
 from django.test import TestCase
 from wwwhisper_auth.models import CreationException
-from wwwhisper_auth.models import InvalidPath
 from wwwhisper_auth.models import can_access
 import wwwhisper_auth.models as models
 
@@ -38,6 +37,13 @@ class UsersCollectionTest(CollectionTestCase):
                                 'User already exists',
                                 self.users_collection.create_item,
                                 TEST_USER_EMAIL)
+
+        # Make sure user lookup is case insensitive.
+        self.users_collection.create_item('uSeR@bar.com')
+        self.assertRaisesRegexp(CreationException,
+                                'User already exists',
+                                self.users_collection.create_item,
+                                'UsEr@bar.com')
 
     def test_delete_user_twice(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
@@ -85,6 +91,13 @@ class UsersCollectionTest(CollectionTestCase):
                                 self.users_collection.create_item,
                                 '')
 
+    def test_email_normalization(self):
+        self.assertEqual('x@y.z',
+                         self.users_collection.create_item('x@y.z').email)
+
+        self.assertEqual('abc@y.z',
+                         self.users_collection.create_item('aBc@y.z').email)
+
 class LocationsCollectionTest(CollectionTestCase):
     def test_create_location(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
@@ -109,6 +122,14 @@ class LocationsCollectionTest(CollectionTestCase):
                                 'Location already exists',
                                 self.locations_collection.create_item,
                                 TEST_LOCATION)
+
+        # Regression test that makes sure location that needs encoding
+        # (includes space character) can't also be created twice.
+        self.locations_collection.create_item('/foo bar')
+        self.assertRaisesRegexp(CreationException,
+                                'Location already exists',
+                                self.locations_collection.create_item,
+                                '/foo bar')
 
     def test_delete_location_twice(self):
         location = self.locations_collection.create_item(TEST_LOCATION)

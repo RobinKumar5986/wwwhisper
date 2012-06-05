@@ -13,7 +13,7 @@ import uuid
 # This attribute is required, exception is thrown when not set.
 SITE_URL = getattr(settings, 'SITE_URL')
 
-class InvalidPath(ValueError):
+class ValidationError(ValueError):
     pass
 
 class CreationException(Exception):
@@ -126,12 +126,14 @@ class UsersCollection(Collection):
     uuid_column_name = 'username'
 
     def create_item(self, email):
-        if not _is_email_valid(email):
-            raise CreationException('Invalid email format.')
-        if _find(User, email=email) is not None:
+        try:
+            encoded_email = _encode_email(email)
+        except ValidationError, ex:
+            raise CreationException(ex)
+        if _find(User, email=encoded_email) is not None:
             raise CreationException('User already exists.')
         user = User.objects.create(
-            username=str(uuid.uuid4()), email=email, is_active=True)
+            username=str(uuid.uuid4()), email=encoded_email, is_active=True)
         return user
 
 class LocationsCollection(Collection):
@@ -143,9 +145,9 @@ class LocationsCollection(Collection):
     def create_item(self, path):
         try:
             encoded_path = _encode_path(path)
-        except InvalidPath, ex:
+        except ValidationError, ex:
             raise CreationException(ex)
-        if _find(Location, path=path) is not None:
+        if _find(Location, path=encoded_path) is not None:
             raise CreationException('Location already exists.')
         location = Location.objects.create(path=encoded_path)
         location.save()
@@ -194,7 +196,12 @@ def _find(model_class, **kwargs):
         return None
     return item.get()
 
-# TODO: capital letters in email are not accepted
+def _encode_email(email):
+    encoded_email = email.lower()
+    if not _is_email_valid(encoded_email):
+        raise ValidationError('Invalid email format.')
+    return encoded_email
+
 def _is_email_valid(email):
     """Validates email with regexp defined by BrowserId:
     browserid/browserid/static/dialog/resources/validation.js
@@ -221,21 +228,21 @@ def _encode_path(path):
     if parsed_url.username != None:
         not_expected.append("username: '%s'" % parsed_url.username)
     if len(not_expected):
-        raise InvalidPath('Invalid path, not expected: %s.'
+        raise ValidationError('Invalid path, not expected: %s.'
                           % string.join(not_expected, ', '))
     stripped_path = parsed_url.path.strip()
     if stripped_path == '':
-        raise InvalidPath('Path should not be empty.')
+        raise ValidationError('Path should not be empty.')
 
     normalized_path =  posixpath.normpath(stripped_path)
     if (normalized_path != stripped_path and
         normalized_path + '/' != stripped_path):
-        raise InvalidPath(
+        raise ValidationError(
             'Path should be normalized (without /../ or /./ or //)')
     #TODO: test if this makes sense:
     try:
         encoded_path = stripped_path.encode('utf-8', 'strict')
     except UnicodeError, er:
-        raise InvalidPath('Invalid path encoding %s' % str(er))
+        raise ValidationError('Invalid path encoding %s' % str(er))
     return urllib.quote(encoded_path, '/~')
 
