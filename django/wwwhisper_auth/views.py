@@ -4,7 +4,6 @@ from django.template import Context, loader
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
-from django_browserid.auth import get_audience
 from wwwhisper_auth.utils import HttpResponseBadRequest, RestView
 
 import django.contrib.auth as contrib_auth
@@ -59,9 +58,8 @@ class Login(RestView):
         """Process browserid assertions."""
         if assertion == None:
             return HttpResponseBadRequest('BrowserId assertion not set.')
-        # TODO: is get_audience here correct?
         user = contrib_auth.authenticate(assertion=assertion,
-                                         audience=get_audience(request))
+                                         audience=models.SITE_URL)
         if user:
             contrib_auth.login(request, user)
             logger.debug('%s successfully logged.' % (user.email))
