@@ -20,7 +20,12 @@
 
   <body>
     {% block body %} {% endblock %}
-    {% block scripts %}{% endblock %}
+
+    <script src="/auth/assets/js/jquery.js" type="text/javascript">
+    </script>
+    <script src="/auth/assets/js/stub.js" type="text/javascript"></script>
+
+    {% block scripts %} {% endblock %}
   </body>
 </html>
 
