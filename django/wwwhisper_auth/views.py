@@ -50,9 +50,14 @@ class CsrfToken(View):
 
 class Login(RestView):
     def get(self, request):
-        # TODO: login page for logged in users
-        t = loader.get_template('auth/login.html')
-        return HttpResponse(t.render(Context({})))
+        user = request.user
+        if user and user.is_authenticated():
+            template = loader.get_template('auth/logout.html')
+            context = Context({'email' : user.email})
+        else:
+            template = loader.get_template('auth/login.html')
+            context = Context({})
+        return HttpResponse(template.render(context))
 
     def post(self, request, assertion):
         """Process browserid assertions."""
