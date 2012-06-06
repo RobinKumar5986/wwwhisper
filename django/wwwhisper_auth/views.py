@@ -35,10 +35,10 @@ class Auth(View):
                 return HttpResponse('Access granted.')
             else:
                 logger.debug('%s: access denied.' % (debug_msg))
-                return HttpResponse(access_denied_page(user.email), status=401)
+                return HttpResponse(access_denied_page(user.email), status=403)
         else:
             logger.debug('%s: user not authenticated.' % (debug_msg))
-            return HttpResponse('Login required.', status=403)
+            return HttpResponse('Login required.', status=401)
 
 class CsrfToken(View):
     @method_decorator(ensure_csrf_cookie)
