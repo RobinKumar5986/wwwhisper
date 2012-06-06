@@ -5,7 +5,8 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth.backend import AssertionVerificationException;
-from wwwhisper_auth.utils import HttpResponseBadRequest, RestView
+from wwwhisper_auth.utils import HttpResponseBadRequest
+from wwwhisper_auth.utils import RestView
 import django.contrib.auth as contrib_auth
 import json
 import logging
@@ -84,13 +85,14 @@ class Logout(RestView):
     def get(self, request):
         user = request.user
         if not user.is_authenticated():
-            return HttpResponse("Logged out.")
+            template = loader.get_template('auth/bye.html')
+            return HttpResponse(template.render(Context({})))
         t = loader.get_template('auth/logout.html')
         c = Context({'email' : user.email})
         return HttpResponse(t.render(c))
 
     def post(self, request):
         contrib_auth.logout(request)
-        return HttpResponse("Logged out")
+        return HttpResponse('Logged out.')
 
 
