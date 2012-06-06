@@ -18,18 +18,32 @@ class UsersCollectionTest(CollectionTestCase):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         self.assertTrue(TEST_USER_EMAIL, user.email)
 
-    def test_get_user(self):
+    def test_find_user(self):
         user1 = self.users_collection.create_item(TEST_USER_EMAIL)
-        user2 = self.users_collection.get_item(user1.uuid)
+        user2 = self.users_collection.find_item(user1.uuid)
         self.assertIsNotNone(user2)
-        self.assertEqual(user1.email, user2.email)
-        self.assertEqual(user1.uuid, user2.uuid)
+        self.assertEqual(user1, user2)
+
+    def test_find_user_by_email(self):
+        self.assertIsNone(
+            self.users_collection.find_item_by_email(TEST_USER_EMAIL))
+        user1 = self.users_collection.create_item(TEST_USER_EMAIL)
+        user2 = self.users_collection.find_item_by_email(TEST_USER_EMAIL)
+        self.assertIsNotNone(user2)
+        self.assertEqual(user1, user2)
+
+    def test_find_user_by_email_is_case_insensitive(self):
+        user1 = self.users_collection.create_item('foo@bar.com')
+        user2 = self.users_collection.find_item_by_email('FOo@bar.com')
+        self.assertIsNotNone(user2)
+        self.assertEqual(user1, user2)
+
 
     def test_delete_user(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
-        self.assertIsNotNone(self.users_collection.get_item(user.uuid))
+        self.assertIsNotNone(self.users_collection.find_item(user.uuid))
         self.assertTrue(self.users_collection.delete_item(user.uuid))
-        self.assertIsNone(self.users_collection.get_item(user.uuid))
+        self.assertIsNone(self.users_collection.find_item(user.uuid))
 
     def test_create_user_twice(self):
         self.users_collection.create_item(TEST_USER_EMAIL)
@@ -103,18 +117,18 @@ class LocationsCollectionTest(CollectionTestCase):
         location = self.locations_collection.create_item(TEST_LOCATION)
         self.assertTrue(TEST_LOCATION, location.path)
 
-    def test_get_location(self):
+    def test_find_location(self):
         location1 = self.locations_collection.create_item(TEST_LOCATION)
-        location2 = self.locations_collection.get_item(location1.uuid)
+        location2 = self.locations_collection.find_item(location1.uuid)
         self.assertIsNotNone(location2)
         self.assertEqual(location1.path, location2.path)
         self.assertEqual(location1.uuid, location2.uuid)
 
     def test_delete_location(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
-        self.assertIsNotNone(self.locations_collection.get_item(location.uuid))
+        self.assertIsNotNone(self.locations_collection.find_item(location.uuid))
         self.assertTrue(self.locations_collection.delete_item(location.uuid))
-        self.assertIsNone(self.locations_collection.get_item(location.uuid))
+        self.assertIsNone(self.locations_collection.find_item(location.uuid))
 
     def test_create_location_twice(self):
         self.locations_collection.create_item(TEST_LOCATION)

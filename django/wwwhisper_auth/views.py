@@ -1,3 +1,4 @@
+from django_browserid.base import verify
 from django.core.context_processors import csrf
 from django.http import HttpResponse
 from django.template import Context, loader
@@ -5,7 +6,6 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth.utils import HttpResponseBadRequest, RestView
-
 import django.contrib.auth as contrib_auth
 import json
 import logging
@@ -58,6 +58,8 @@ class Login(RestView):
         """Process browserid assertions."""
         if assertion == None:
             return HttpResponseBadRequest('BrowserId assertion not set.')
+        result = verify(assertion=assertion, audience=models.SITE_URL)
+        print "VERIFIED USER TO BE " + str(result)
         user = contrib_auth.authenticate(assertion=assertion,
                                          audience=models.SITE_URL)
         if user:

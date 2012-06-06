@@ -108,12 +108,12 @@ class Collection(object):
     def all(self):
         return self.model_class.objects.all()
 
-    def get_item(self, uuid):
+    def find_item(self, uuid):
         filter_args = {self.uuid_column_name: uuid}
         return _find(self.model_class, **filter_args)
 
     def delete_item(self, uuid):
-        item = self.get_item(uuid)
+        item = self.find_item(uuid)
         if item is None:
             return False
         item.delete()
@@ -136,6 +136,13 @@ class UsersCollection(Collection):
             username=str(uuid.uuid4()), email=encoded_email, is_active=True)
         return user
 
+    def find_item_by_email(self, email):
+        try:
+            encoded_email = _encode_email(email)
+        except ValidationError, ex:
+            return None
+        return _find(self.model_class, email=encoded_email);
+
 class LocationsCollection(Collection):
     collection_name = 'locations'
     item_name = 'location'
@@ -155,6 +162,7 @@ class LocationsCollection(Collection):
 
 
 # TODO: How to handle trailing '/'? Maybe remove it prior to adding path to db?
+# TODO: change email to user id
 def can_access(email, path):
     path_len = len(path)
     longest_match = ''

@@ -43,7 +43,7 @@ class ItemView(RestView):
     collection = None
 
     def get(self, request, **kwargs):
-        item = self.collection.get_item(**kwargs)
+        item = self.collection.find_item(**kwargs)
         if item is None:
             return HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())
@@ -61,7 +61,7 @@ class AllowedUsersView(RestView):
     locations_collection = None
 
     def get(self, request, location_uuid, user_uuid):
-        location = self.locations_collection.get_item(location_uuid)
+        location = self.locations_collection.find_item(location_uuid)
         if location is None:
             return HttpResponseNotFound('Location not found.')
         try:
@@ -72,7 +72,7 @@ class AllowedUsersView(RestView):
             return HttpResponseNotFound(ex)
 
     def delete(self, request, location_uuid, user_uuid):
-        location = self.locations_collection.get_item(location_uuid)
+        location = self.locations_collection.find_item(location_uuid)
         if not location:
             return HttpResponseNotFound('Location not found.')
         try:
@@ -83,7 +83,7 @@ class AllowedUsersView(RestView):
 
 
     def put(self, request, location_uuid, user_uuid):
-        location = self.locations_collection.get_item(location_uuid)
+        location = self.locations_collection.find_item(location_uuid)
         if not location:
             return HttpResponseNotFound('Location not found.')
         try:
