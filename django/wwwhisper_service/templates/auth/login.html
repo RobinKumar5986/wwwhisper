@@ -1,18 +1,14 @@
 {% extends "auth/base.html" %}
 
-{% block body %}
-<div class="container">
-  <header class="jumbotron subhead" id="overview">
-    <h1>Protected site</h1>
-    <p class="lead">Access to this site is restricted. Please sign in
-      with your email:</p>
-    <p>
-      <a href="#" id="browserid" title="Sign-in with BrowserID">
-        <img src="/auth/assets/img/sign_in_green.png" alt="Sign in">
-      </a>
-    </p>
-  </header>
-</div>
+{% block message %}
+<h1>Protected site</h1>
+<p class="lead">Access to this site is restricted. Please sign in
+with your email:</p>
+<p>
+<a href="#" id="browserid" title="Sign-in with BrowserID">
+<img src="/auth/assets/img/sign_in_green.png" alt="Sign in">
+</a>
+</p>
 {% endblock %}
 
 {% block scripts %}

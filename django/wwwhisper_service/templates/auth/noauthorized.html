@@ -1,14 +1,10 @@
 {% extends "auth/base.html" %}
 
-{% block body %}
-<div class="container">
-  <header class="jumbotron subhead" id="overview">
-    <h1>Access denied</h1>
-    <p class="lead">
-      <i>{{ email }}</i> can not access this URL. </p>
-    Go somewhere else or <a href="#" id="logout">sign out</a>
-  </header>
-</div>
+{% block message %}
+<h1>Access denied</h1>
+<p class="lead">
+<i>{{ email }}</i> can not access this URL. </p>
+Go somewhere else or <a href="#" id="logout">sign out</a>
 {% endblock %}
 
 {% block scripts %}

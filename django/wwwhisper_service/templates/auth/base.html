@@ -19,10 +19,13 @@
   </head>
 
   <body>
-    {% block body %} {% endblock %}
+   <div class="container">
+     <header class="jumbotron subhead" id="overview">
+     {% block message %} {% endblock %}
+     </header>
+   </div>
 
-    <script src="/auth/assets/js/jquery.js" type="text/javascript">
-    </script>
+    <script src="/auth/assets/js/jquery.js" type="text/javascript"></script>
     <script src="/auth/assets/js/stub.js" type="text/javascript"></script>
 
     {% block scripts %} {% endblock %}
