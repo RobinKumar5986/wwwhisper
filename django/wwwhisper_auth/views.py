@@ -52,6 +52,8 @@ class Login(RestView):
     def get(self, request):
         user = request.user
         if user and user.is_authenticated():
+            # If a user is alredy logged in, show an info page with
+            # user's email and a logout link.
             template = loader.get_template('auth/logout.html')
             context = Context({'email' : user.email})
         else:
@@ -72,12 +74,10 @@ class Login(RestView):
             logger.debug('%s successfully logged.' % (user.email))
             return HttpResponse("Login successful.")
         else:
-            # TODO: if user exists, it doesn't mean she can access
-            # something.
-            # TODO: show nice 'nothing shared' page here.
             # Return forbidden because request was well formed (400
             # doesn't seem appropriate).
-            return HttpResponse('Nothing shared.', status=403)
+            template = loader.get_template('auth/nothing_shared.html')
+            return HttpResponse(template.render(Context({})), status=403)
 
 class Logout(RestView):
     # TODO: should get be at /auth/api/logout not at /auth/logout?
