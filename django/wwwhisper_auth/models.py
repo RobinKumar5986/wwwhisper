@@ -11,6 +11,7 @@ import urllib
 import uuid
 
 # This attribute is required, exception is thrown when not set.
+# TODO: raise ImproperlyConfigured().
 SITE_URL = getattr(settings, 'SITE_URL')
 
 class ValidationError(ValueError):

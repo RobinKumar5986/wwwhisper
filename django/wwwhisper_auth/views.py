@@ -1,10 +1,10 @@
-from django_browserid.base import verify
 from django.core.context_processors import csrf
 from django.http import HttpResponse
 from django.template import Context, loader
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
+from wwwhisper_auth.backend import AssertionVerificationException;
 from wwwhisper_auth.utils import HttpResponseBadRequest, RestView
 import django.contrib.auth as contrib_auth
 import json
@@ -58,19 +58,21 @@ class Login(RestView):
         """Process browserid assertions."""
         if assertion == None:
             return HttpResponseBadRequest('BrowserId assertion not set.')
-        result = verify(assertion=assertion, audience=models.SITE_URL)
-        print "VERIFIED USER TO BE " + str(result)
-        user = contrib_auth.authenticate(assertion=assertion,
-                                         audience=models.SITE_URL)
-        if user:
+        try:
+            user = contrib_auth.authenticate(assertion=assertion)
+        except AssertionVerificationException, ex:
+            return HttpResponseBadRequest(ex)
+        if user is not None:
             contrib_auth.login(request, user)
             logger.debug('%s successfully logged.' % (user.email))
             return HttpResponse("Login successful.")
         else:
-            logger.debug('Login failed (nothing shared with user '
-                         'or assertion incorrect).')
+            # TODO: if user exists, it doesn't mean she can access
+            # something.
             # TODO: show nice 'nothing shared' page here.
-            return HttpResponseBadRequest('Login failed')
+            # Return forbidden because request was well formed (400
+            # doesn't seem appropriate).
+            return HttpResponse('Nothing shared.', status=403)
 
 class Logout(RestView):
     # TODO: should get be at /auth/api/logout not at /auth/logout?

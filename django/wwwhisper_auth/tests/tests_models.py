@@ -38,7 +38,6 @@ class UsersCollectionTest(CollectionTestCase):
         self.assertIsNotNone(user2)
         self.assertEqual(user1, user2)
 
-
     def test_delete_user(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         self.assertIsNotNone(self.users_collection.find_item(user.uuid))

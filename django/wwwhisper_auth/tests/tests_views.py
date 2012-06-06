@@ -9,7 +9,7 @@ import json
 import wwwhisper_auth.models as models
 
 class FakeAssertionVeryfingBackend(ModelBackend):
-    def authenticate(self, assertion, audience = None):
+    def authenticate(self, assertion):
         try:
             return User.objects.get(email=assertion)
         except User.DoesNotExist:
@@ -55,13 +55,13 @@ class Login(AuthTestCase):
 
     def test_login_fails_if_unknown_user(self):
         response = self.post('/auth/api/login/',
-                                  {'assertion' : 'foo@example.com'})
-        self.assertEqual(400, response.status_code)
+                             {'assertion' : 'foo@example.com'})
+        self.assertEqual(403, response.status_code)
 
     def test_login_succeeds_if_known_user(self):
         self.users_collection.create_item('foo@example.com')
         response = self.post('/auth/api/login/',
-                                  {'assertion' : 'foo@example.com'})
+                             {'assertion' : 'foo@example.com'})
         self.assertEqual(200, response.status_code)
 
 
