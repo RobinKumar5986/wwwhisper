@@ -279,17 +279,18 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertFalse(can_access(user.uuid, '/foo/bar/baz/bam'))
 
     # TODO: it should rather not be ignored?
-    def test_trailing_slash_ignored(self):
+    def test_trailing_slash_respected(self):
         # TODO: what about this / here.
+
+        # Granting access to location ending with '/' should not grant
+        # acces to the location with the same path but without '/'.
         location = self.locations_collection.create_item('/foo/bar/')
         user = self.users_collection.create_item('foo@example.com')
         location.grant_access(user.uuid)
 
-        self.assertTrue(can_access(user.uuid, '/foo/bar'))
+        self.assertFalse(can_access(user.uuid, '/foo/bar'))
         self.assertTrue(can_access(user.uuid, '/foo/bar/'))
 
-        self.assertFalse(can_access(user.uuid, '/foo/barr'))
-        self.assertFalse(can_access(user.uuid, '/foo/ba/'))
 
     def test_grant_access_to_root(self):
         location = self.locations_collection.create_item('/')

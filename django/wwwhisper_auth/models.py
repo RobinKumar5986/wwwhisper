@@ -164,7 +164,6 @@ class LocationsCollection(Collection):
         return location
 
 
-# TODO: How to handle trailing '/'? Maybe remove it prior to adding path to db?
 def can_access(uuid, path):
     path_len = len(path)
     longest_match = ''
@@ -173,12 +172,16 @@ def can_access(uuid, path):
     for location in Location.objects.all():
         probed_path = location.path
         probed_path_len = len(probed_path)
-        stripped_probed_path = probed_path.rstrip('/')
-        stripped_probed_path_len = len(stripped_probed_path)
-        if (path.startswith(stripped_probed_path) and
+        trailing_slash_index = None
+        if probed_path[probed_path_len - 1] == '/':
+            trailing_slash_index = probed_path_len - 1
+        else:
+            trailing_slash_index = probed_path_len
+
+        if (path.startswith(probed_path) and
             probed_path_len > longest_match_len and
-            (stripped_probed_path_len == path_len
-             or path[stripped_probed_path_len] == '/')):
+            (probed_path_len == path_len or
+             path[trailing_slash_index] == '/')) :
             longest_match_len = probed_path_len
             longest_match = probed_path
     return longest_match_len != -1 \
