@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from urlparse import urlparse
 
@@ -10,9 +11,10 @@ import sys
 import urllib
 import uuid
 
-# This attribute is required, exception is thrown when not set.
-# TODO: raise ImproperlyConfigured().
-SITE_URL = getattr(settings, 'SITE_URL')
+SITE_URL = getattr(settings, 'SITE_URL', None)
+if SITE_URL is None:
+    raise ImproperlyConfigured(
+        'WWWhisper requires SITE_URL to be set in django settings.py file');
 
 class ValidationError(ValueError):
     pass
@@ -163,8 +165,7 @@ class LocationsCollection(Collection):
 
 
 # TODO: How to handle trailing '/'? Maybe remove it prior to adding path to db?
-# TODO: change email to user id
-def can_access(email, path):
+def can_access(uuid, path):
     path_len = len(path)
     longest_match = ''
     longest_match_len = -1
@@ -182,7 +183,7 @@ def can_access(email, path):
             longest_match = probed_path
     return longest_match_len != -1 \
         and  _find(Permission,
-                   user__email=email,
+                   user__username=uuid,
                    http_location=longest_match) is not None
 
 def full_url(absolute_path):

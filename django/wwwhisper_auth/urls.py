@@ -6,6 +6,5 @@ urlpatterns = patterns(
     url(r'^csrftoken/$', CsrfToken.as_view()),
     url(r'^login/$', Login.as_view()),
     url(r'^logout/$', Logout.as_view()),
-    # TODO: is authorized?
     url(r'^is-authorized/$', Auth.as_view()),
     )

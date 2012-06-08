@@ -26,7 +26,7 @@ class Auth(View):
 
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)
-            if models.can_access(user.email, path):
+            if models.can_access(user.uuid, path):
                 logger.debug('%s: access granted.' % (debug_msg))
                 return HttpResponse('Access granted.')
             else:
@@ -79,7 +79,6 @@ class Login(RestView):
             return HttpResponse(template.render(Context({})), status=403)
 
 class Logout(RestView):
-    # TODO: should get be at /auth/api/logout not at /auth/logout?
     def get(self, request):
         user = request.user
         if not user.is_authenticated():

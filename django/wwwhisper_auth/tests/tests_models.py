@@ -166,11 +166,11 @@ class LocationsCollectionTest(CollectionTestCase):
     def test_grant_access(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         location = self.locations_collection.create_item(TEST_LOCATION)
-        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertFalse(can_access(user.uuid, TEST_LOCATION))
         (perm, created) = location.grant_access(user.uuid)
         self.assertTrue(created)
         self.assertIsNotNone(perm)
-        self.assertTrue(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertTrue(can_access(user.uuid, TEST_LOCATION))
 
     def test_grant_access_for_not_existing_user(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
@@ -188,7 +188,7 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertFalse(created2)
         self.assertEqual(permission1, permission2)
         self.assertEqual(TEST_USER_EMAIL, permission1.user.email)
-        self.assertTrue(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertTrue(can_access(user.uuid, TEST_LOCATION))
 
     def test_grant_access_to_deleted_location(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
@@ -202,9 +202,9 @@ class LocationsCollectionTest(CollectionTestCase):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         location = self.locations_collection.create_item(TEST_LOCATION)
         location.grant_access(user.uuid)
-        self.assertTrue(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertTrue(can_access(user.uuid, TEST_LOCATION))
         location.revoke_access(user.uuid)
-        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertFalse(can_access(user.uuid, TEST_LOCATION))
 
     def test_revoke_not_granted_access(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
@@ -227,20 +227,20 @@ class LocationsCollectionTest(CollectionTestCase):
     def test_deleting_user_revokes_access(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         location = self.locations_collection.create_item(TEST_LOCATION)
-        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertFalse(can_access(user.uuid, TEST_LOCATION))
         location.grant_access(user.uuid)
-        self.assertTrue(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertTrue(can_access(user.uuid, TEST_LOCATION))
         self.users_collection.delete_item(user.uuid)
-        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertFalse(can_access(user.uuid, TEST_LOCATION))
 
     def test_deleting_location_revokes_access(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         location = self.locations_collection.create_item(TEST_LOCATION)
-        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertFalse(can_access(user.uuid, TEST_LOCATION))
         location.grant_access(user.uuid)
-        self.assertTrue(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertTrue(can_access(user.uuid, TEST_LOCATION))
         self.locations_collection.delete_item(location.uuid)
-        self.assertFalse(can_access(TEST_USER_EMAIL, TEST_LOCATION))
+        self.assertFalse(can_access(user.uuid, TEST_LOCATION))
 
     def test_revoke_access_for_not_existing_user(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
@@ -254,15 +254,15 @@ class LocationsCollectionTest(CollectionTestCase):
         user = self.users_collection.create_item('foo@example.com')
         location.grant_access(user.uuid)
 
-        self.assertTrue(can_access('foo@example.com', '/foo/bar'))
-        self.assertTrue(can_access('foo@example.com', '/foo/bar/'))
-        self.assertTrue(can_access('foo@example.com', '/foo/bar/b'))
-        self.assertTrue(can_access('foo@example.com', '/foo/bar/baz'))
-        self.assertTrue(can_access('foo@example.com', '/foo/bar/baz/bar/'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar/'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar/b'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar/baz'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar/baz/bar/'))
 
-        self.assertFalse(can_access('foo@example.com', '/foo/ba'))
-        self.assertFalse(can_access('foo@example.com', '/foo/barr'))
-        self.assertFalse(can_access('foo@example.com', '/foo/foo/bar'))
+        self.assertFalse(can_access(user.uuid, '/foo/ba'))
+        self.assertFalse(can_access(user.uuid, '/foo/barr'))
+        self.assertFalse(can_access(user.uuid, '/foo/foo/bar'))
 
     def test_more_specific_location_takes_precedence_over_generic(self):
         location = self.locations_collection.create_item('/foo/bar')
@@ -270,13 +270,13 @@ class LocationsCollectionTest(CollectionTestCase):
         location.grant_access(user.uuid)
 
         self.locations_collection.create_item('/foo/bar/baz')
-        self.assertTrue(can_access('foo@example.com', '/foo/bar'))
-        self.assertTrue(can_access('foo@example.com', '/foo/bar/ba'))
-        self.assertTrue(can_access('foo@example.com', '/foo/bar/bazz'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar/ba'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar/bazz'))
 
-        self.assertFalse(can_access('foo@example.com', '/foo/bar/baz'))
-        self.assertFalse(can_access('foo@example.com', '/foo/bar/baz/'))
-        self.assertFalse(can_access('foo@example.com', '/foo/bar/baz/bam'))
+        self.assertFalse(can_access(user.uuid, '/foo/bar/baz'))
+        self.assertFalse(can_access(user.uuid, '/foo/bar/baz/'))
+        self.assertFalse(can_access(user.uuid, '/foo/bar/baz/bam'))
 
     # TODO: it should rather not be ignored?
     def test_trailing_slash_ignored(self):
@@ -285,20 +285,20 @@ class LocationsCollectionTest(CollectionTestCase):
         user = self.users_collection.create_item('foo@example.com')
         location.grant_access(user.uuid)
 
-        self.assertTrue(can_access('foo@example.com', '/foo/bar'))
-        self.assertTrue(can_access('foo@example.com', '/foo/bar/'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar/'))
 
-        self.assertFalse(can_access('foo@example.com', '/foo/barr'))
-        self.assertFalse(can_access('foo@example.com', '/foo/ba/'))
+        self.assertFalse(can_access(user.uuid, '/foo/barr'))
+        self.assertFalse(can_access(user.uuid, '/foo/ba/'))
 
     def test_grant_access_to_root(self):
         location = self.locations_collection.create_item('/')
         user = self.users_collection.create_item('foo@example.com')
         location.grant_access(user.uuid)
 
-        self.assertTrue(can_access('foo@example.com', '/'))
-        self.assertTrue(can_access('foo@example.com', '/f'))
-        self.assertTrue(can_access('foo@example.com', '/foo/bar/baz'))
+        self.assertTrue(can_access(user.uuid, '/'))
+        self.assertTrue(can_access(user.uuid, '/f'))
+        self.assertTrue(can_access(user.uuid, '/foo/bar/baz'))
 
     def test_get_allowed_users(self):
         location1 = self.locations_collection.create_item('/foo/bar')
