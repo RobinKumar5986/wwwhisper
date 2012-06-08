@@ -1,9 +1,9 @@
 {% extends "auth/base.html" %}
 
 {% block message %}
+<h1>Not authenticated</h1>
 <p class="lead">
-You are signed in as <i>{{ email }}</i>.<br />
-<a href="#" id="logout">sign out</a>
+You are signed out.
 {% endblock %}
 
 {% block scripts %}

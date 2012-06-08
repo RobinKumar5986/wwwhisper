@@ -14,11 +14,6 @@ import wwwhisper_auth.models as models
 
 logger = logging.getLogger(__name__)
 
-def access_denied_page(email):
-    t = loader.get_template('auth/noauthorized.html')
-    c = Context({'email' : email})
-    return t.render(c)
-
 class Auth(View):
     def get(self, request):
         # TODO: is path encoded by nginx? (e.g. ' ' replaced with %20?).
@@ -36,7 +31,9 @@ class Auth(View):
                 return HttpResponse('Access granted.')
             else:
                 logger.debug('%s: access denied.' % (debug_msg))
-                return HttpResponse(access_denied_page(user.email), status=403)
+                template = loader.get_template('auth/not_authorized.html')
+                context = Context({'email' : user.email})
+                return HttpResponse(template.render(context), status=403)
         else:
             logger.debug('%s: user not authenticated.' % (debug_msg))
             return HttpResponse('Login required.', status=401)
@@ -77,6 +74,7 @@ class Login(RestView):
         else:
             # Return forbidden because request was well formed (400
             # doesn't seem appropriate).
+            # TODO: Clean the way error is passed to js.
             template = loader.get_template('auth/nothing_shared.html')
             return HttpResponse(template.render(Context({})), status=403)
 
@@ -85,7 +83,7 @@ class Logout(RestView):
     def get(self, request):
         user = request.user
         if not user.is_authenticated():
-            template = loader.get_template('auth/bye.html')
+            template = loader.get_template('auth/not_authenticated.html')
             return HttpResponse(template.render(Context({})))
         t = loader.get_template('auth/logout.html')
         c = Context({'email' : user.email})
@@ -93,6 +91,7 @@ class Logout(RestView):
 
     def post(self, request):
         contrib_auth.logout(request)
-        return HttpResponse('Logged out.')
+        template = loader.get_template('auth/bye.html')
+        return HttpResponse(template.render(Context({})))
 
 
