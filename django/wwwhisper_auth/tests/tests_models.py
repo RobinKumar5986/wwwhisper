@@ -2,6 +2,7 @@ from django.forms import ValidationError
 from django.test import TestCase
 from wwwhisper_auth.models import CreationException
 from wwwhisper_auth.models import can_access
+from wwwhisper_auth.models import normalize_path
 import wwwhisper_auth.models as models
 
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
@@ -278,10 +279,7 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertFalse(can_access(user.uuid, '/foo/bar/baz/'))
         self.assertFalse(can_access(user.uuid, '/foo/bar/baz/bam'))
 
-    # TODO: it should rather not be ignored?
     def test_trailing_slash_respected(self):
-        # TODO: what about this / here.
-
         # Granting access to location ending with '/' should not grant
         # acces to the location with the same path but without '/'.
         location = self.locations_collection.create_item('/foo/bar/')
@@ -291,6 +289,34 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertFalse(can_access(user.uuid, '/foo/bar'))
         self.assertTrue(can_access(user.uuid, '/foo/bar/'))
 
+    def test_normalize_path(self):
+        self.assertEqual('/', normalize_path('/'))
+        self.assertEqual('/foo', normalize_path('/foo'))
+        self.assertEqual('/foo/', normalize_path('/foo/'))
+        self.assertEqual('/', normalize_path('/..'))
+        self.assertEqual('/foo/bar',
+                         normalize_path('/fooz/../foo/baz/../bar/boo/..'))
+        self.assertEqual('/foo/bar', normalize_path('/foo//bar'))
+        self.assertEqual('/foo/bar', normalize_path('/foo/./bar'))
+        self.assertEqual('/foo/bar%20baz', normalize_path('/foo/bar%20baz'))
+
+    def test_normalize_path_strips_params_query_and_fragment(self):
+        self.assertEqual('/foo', normalize_path('/foo;bar'))
+        self.assertEqual('/foo', normalize_path('/foo?bar'))
+        self.assertEqual('/foo', normalize_path('/foo#bar'))
+
+    def test_normalize_incorrect_path(self):
+        self.assertRaisesRegexp(ValidationError, 'empty', normalize_path, '')
+        self.assertRaisesRegexp(ValidationError, 'empty', normalize_path, ' ')
+        self.assertRaisesRegexp(ValidationError, 'scheme', normalize_path,
+                                'file://foo')
+        self.assertRaisesRegexp(ValidationError, 'domain', normalize_path,
+                                'http://example.com/foo')
+        self.assertRaisesRegexp(ValidationError, 'port', normalize_path,
+                                'http://example.com:81/foo')
+        self.assertRaisesRegexp(ValidationError, 'username', normalize_path,
+                                'http://boo@example.com/foo')
+        self.assertRaisesRegexp(ValidationError, 'dot', normalize_path, '.')
 
     def test_grant_access_to_root(self):
         location = self.locations_collection.create_item('/')
@@ -326,68 +352,68 @@ class LocationsCollectionTest(CollectionTestCase):
         location = self.locations_collection.create_item(TEST_LOCATION)
         self.assertEqual([], location.allowed_users())
 
-    def test_path_validation(self):
+    def test_location_path_validation(self):
         self.assertRaisesRegexp(CreationException,
-                                "empty",
+                                'empty',
                                 self.locations_collection.create_item,
                                 '')
         self.assertRaisesRegexp(CreationException,
-                                "empty",
+                                'empty',
                                 self.locations_collection.create_item,
                                 ' ')
         self.assertRaisesRegexp(CreationException,
-                                "parameters",
+                                'parameters',
                                 self.locations_collection.create_item,
                                 '/foo;bar')
         self.assertRaisesRegexp(CreationException,
-                                "query",
+                                'query',
                                 self.locations_collection.create_item,
                                 '/foo?s=bar')
         self.assertRaisesRegexp(CreationException,
-                                "fragment",
+                                'fragment',
                                 self.locations_collection.create_item,
                                 '/foo#bar')
         self.assertRaisesRegexp(CreationException,
-                                "scheme",
+                                'scheme',
                                 self.locations_collection.create_item,
                                 'file://foo')
         self.assertRaisesRegexp(CreationException,
-                                "domain",
+                                'domain',
                                 self.locations_collection.create_item,
                                 'http://example.com/foo')
         self.assertRaisesRegexp(CreationException,
-                                "port",
+                                'port',
                                 self.locations_collection.create_item,
                                 'http://example.com:81/foo')
         self.assertRaisesRegexp(CreationException,
-                                "username",
+                                'username',
                                 self.locations_collection.create_item,
                                 'http://boo@example.com/foo')
         self.assertRaisesRegexp(CreationException,
-                                "normalized",
+                                'normalized',
                                 self.locations_collection.create_item,
                                 '/foo/./')
         self.assertRaisesRegexp(CreationException,
-                                "normalized",
+                                'normalized',
                                 self.locations_collection.create_item,
                                 '/foo/..')
         self.assertRaisesRegexp(CreationException,
-                                "normalized",
+                                'normalized',
                                 self.locations_collection.create_item,
                                 '/foo/../bar/')
         self.assertRaisesRegexp(CreationException,
-                                "normalized",
+                                'normalized',
                                 self.locations_collection.create_item,
                                 '/foo//bar')
         self.assertRaisesRegexp(CreationException,
-                                "normalized",
+                                'normalized',
                                 self.locations_collection.create_item,
                                 '/foo//')
 
     def create_location(self, path):
         return self.locations_collection.create_item(path)
 
-    def test_path_encoding(self):
+    def test_location_path_encoding(self):
         self.assertEqual('/', self.create_location('/').path)
         self.assertEqual('/foo', self.create_location('/foo').path)
         self.assertEqual('/foo/', self.create_location('/foo/').path)

@@ -1,4 +1,8 @@
+"""
+
+"""
 from django.core.context_processors import csrf
+from django.forms import ValidationError
 from django.http import HttpResponse
 from django.template import Context, loader
 from django.utils.decorators import method_decorator
@@ -26,7 +30,12 @@ class Auth(View):
 
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)
-            if models.can_access(user.uuid, path):
+            try:
+                normalized_path = models.normalize_path(path)
+            except ValidationError:
+                return HttpResponseBadRequest('Incorrect path')
+
+            if models.can_access(user.uuid, normalized_path):
                 logger.debug('%s: access granted.' % (debug_msg))
                 return HttpResponse('Access granted.')
             else:

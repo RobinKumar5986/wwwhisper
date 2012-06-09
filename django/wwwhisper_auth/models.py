@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
+from django.forms import ValidationError
 from urlparse import urlparse
 
 import posixpath
@@ -15,9 +16,6 @@ SITE_URL = getattr(settings, 'SITE_URL', None)
 if SITE_URL is None:
     raise ImproperlyConfigured(
         'WWWhisper requires SITE_URL to be set in django settings.py file');
-
-class ValidationError(ValueError):
-    pass
 
 class CreationException(Exception):
     pass;
@@ -164,8 +162,8 @@ class LocationsCollection(Collection):
         return location
 
 
-def can_access(uuid, path):
-    path_len = len(path)
+def can_access(uuid, normalized_path):
+    normalized_path_len = len(normalized_path)
     longest_match = ''
     longest_match_len = -1
 
@@ -178,10 +176,10 @@ def can_access(uuid, path):
         else:
             trailing_slash_index = probed_path_len
 
-        if (path.startswith(probed_path) and
+        if (normalized_path.startswith(probed_path) and
             probed_path_len > longest_match_len and
-            (probed_path_len == path_len or
-             path[trailing_slash_index] == '/')) :
+            (probed_path_len == normalized_path_len or
+             normalized_path[trailing_slash_index] == '/')) :
             longest_match_len = probed_path_len
             longest_match = probed_path
     return longest_match_len != -1 \
@@ -222,6 +220,31 @@ def _is_email_valid(email):
     return re.match(
         "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
         email) != None
+
+def normalize_path(path):
+    parsed_url = urlparse(path)
+    not_expected = []
+    if parsed_url.scheme != '':
+        not_expected.append("scheme: '%s'" % parsed_url.scheme)
+    if parsed_url.netloc != '':
+        not_expected.append("domain: '%s'" % parsed_url.netloc)
+    if parsed_url.port != None:
+        not_expected.append("port: '%d'" % parsed_url.port)
+    if parsed_url.username != None:
+        not_expected.append("username: '%s'" % parsed_url.username)
+    if len(not_expected):
+        raise ValidationError('Invalid path, not expected: %s.'
+                              % string.join(not_expected, ', '))
+    stripped_path = parsed_url.path.strip()
+    if stripped_path == '':
+        raise ValidationError('Path should not be empty.')
+
+    normalized_path =  posixpath.normpath(stripped_path)
+    if normalized_path == '.':
+        raise ValidationError('Invalid path, not expected dot');
+    if stripped_path[-1] == '/' and normalized_path[-1] != '/':
+        normalized_path += '/'
+    return normalized_path
 
 def _encode_path(path):
     parsed_url = urlparse(path)
