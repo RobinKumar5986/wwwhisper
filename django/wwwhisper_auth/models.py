@@ -201,32 +201,6 @@ class LocationsCollection(Collection):
                 longest_matched_location = location
         return longest_matched_location
 
-# def can_access(uuid, normalized_path):
-#     normalized_path_len = len(normalized_path)
-#     longest_matched_location = None
-#     longest_matched_location_len = -1
-
-#     for location in Location.objects.all():
-#         probed_path = location.path
-#         probed_path_len = len(probed_path)
-#         trailing_slash_index = None
-#         if probed_path[probed_path_len - 1] == '/':
-#             trailing_slash_index = probed_path_len - 1
-#         else:
-#             trailing_slash_index = probed_path_len
-
-#         if (normalized_path.startswith(probed_path) and
-#             probed_path_len > longest_matched_location_len and
-#             (probed_path_len == normalized_path_len or
-#              normalized_path[trailing_slash_index] == '/')) :
-#             longest_matched_location_len = probed_path_len
-#             longest_matched_location = location
-#     return longest_matched_location is not None \
-#         and (longest_matched_location.not_authenticated_access
-#              or _find(Permission,
-#                       user__username=uuid,
-#                       http_location=longest_matched_location.path) is not None)
-
 def full_url(absolute_path):
     return SITE_URL + absolute_path
 
