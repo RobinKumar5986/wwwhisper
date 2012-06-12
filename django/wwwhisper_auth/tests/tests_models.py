@@ -2,7 +2,7 @@ from django.forms import ValidationError
 from django.test import TestCase
 from wwwhisper_auth.models import CreationException
 from wwwhisper_auth.models import can_access
-from wwwhisper_auth.models import normalize_path
+from wwwhisper_auth.models import validate_path
 import wwwhisper_auth.models as models
 
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
@@ -136,14 +136,6 @@ class LocationsCollectionTest(CollectionTestCase):
                                 'Location already exists',
                                 self.locations_collection.create_item,
                                 TEST_LOCATION)
-
-        # Regression test that makes sure location that needs encoding
-        # (includes space character) can't also be created twice.
-        self.locations_collection.create_item('/foo bar')
-        self.assertRaisesRegexp(CreationException,
-                                'Location already exists',
-                                self.locations_collection.create_item,
-                                '/foo bar')
 
     def test_delete_location_twice(self):
         location = self.locations_collection.create_item(TEST_LOCATION)
@@ -289,35 +281,6 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertFalse(can_access(user.uuid, '/foo/bar'))
         self.assertTrue(can_access(user.uuid, '/foo/bar/'))
 
-    def test_normalize_path(self):
-        self.assertEqual('/', normalize_path('/'))
-        self.assertEqual('/foo', normalize_path('/foo'))
-        self.assertEqual('/foo/', normalize_path('/foo/'))
-        self.assertEqual('/', normalize_path('/..'))
-        self.assertEqual('/foo/bar',
-                         normalize_path('/fooz/../foo/baz/../bar/boo/..'))
-        self.assertEqual('/foo/bar', normalize_path('/foo//bar'))
-        self.assertEqual('/foo/bar', normalize_path('/foo/./bar'))
-        self.assertEqual('/foo/bar%20baz', normalize_path('/foo/bar%20baz'))
-
-    def test_normalize_path_strips_params_query_and_fragment(self):
-        self.assertEqual('/foo', normalize_path('/foo;bar'))
-        self.assertEqual('/foo', normalize_path('/foo?bar'))
-        self.assertEqual('/foo', normalize_path('/foo#bar'))
-
-    def test_normalize_incorrect_path(self):
-        self.assertRaisesRegexp(ValidationError, 'empty', normalize_path, '')
-        self.assertRaisesRegexp(ValidationError, 'empty', normalize_path, ' ')
-        self.assertRaisesRegexp(ValidationError, 'scheme', normalize_path,
-                                'file://foo')
-        self.assertRaisesRegexp(ValidationError, 'domain', normalize_path,
-                                'http://example.com/foo')
-        self.assertRaisesRegexp(ValidationError, 'port', normalize_path,
-                                'http://example.com:81/foo')
-        self.assertRaisesRegexp(ValidationError, 'username', normalize_path,
-                                'http://boo@example.com/foo')
-        self.assertRaisesRegexp(ValidationError, 'dot', normalize_path, '.')
-
     def test_grant_access_to_root(self):
         location = self.locations_collection.create_item('/')
         user = self.users_collection.create_item('foo@example.com')
@@ -358,7 +321,11 @@ class LocationsCollectionTest(CollectionTestCase):
                                 self.locations_collection.create_item,
                                 '')
         self.assertRaisesRegexp(CreationException,
-                                'empty',
+                                'absolute',
+                                self.locations_collection.create_item,
+                                'foo')
+        self.assertRaisesRegexp(CreationException,
+                                'absolute',
                                 self.locations_collection.create_item,
                                 ' ')
         self.assertRaisesRegexp(CreationException,
@@ -373,22 +340,6 @@ class LocationsCollectionTest(CollectionTestCase):
                                 'fragment',
                                 self.locations_collection.create_item,
                                 '/foo#bar')
-        self.assertRaisesRegexp(CreationException,
-                                'scheme',
-                                self.locations_collection.create_item,
-                                'file://foo')
-        self.assertRaisesRegexp(CreationException,
-                                'domain',
-                                self.locations_collection.create_item,
-                                'http://example.com/foo')
-        self.assertRaisesRegexp(CreationException,
-                                'port',
-                                self.locations_collection.create_item,
-                                'http://example.com:81/foo')
-        self.assertRaisesRegexp(CreationException,
-                                'username',
-                                self.locations_collection.create_item,
-                                'http://boo@example.com/foo')
         self.assertRaisesRegexp(CreationException,
                                 'normalized',
                                 self.locations_collection.create_item,
@@ -413,14 +364,36 @@ class LocationsCollectionTest(CollectionTestCase):
     def create_location(self, path):
         return self.locations_collection.create_item(path)
 
-    def test_location_path_encoding(self):
+    """Path passed to create_location is expected to be saved verbatim."""
+    def test_location_path_not_encoded(self):
         self.assertEqual('/', self.create_location('/').path)
         self.assertEqual('/foo', self.create_location('/foo').path)
         self.assertEqual('/foo/', self.create_location('/foo/').path)
         self.assertEqual('/foo.', self.create_location('/foo.').path)
         self.assertEqual('/foo..', self.create_location('/foo..').path)
-        self.assertEqual('/foo%20bar', self.create_location('/foo bar').path)
+        self.assertEqual('/foo%20bar', self.create_location('/foo%20bar').path)
         self.assertEqual('/foo~', self.create_location('/foo~').path)
-        self.assertEqual('/foo/bar%21%407%2A',
+        self.assertEqual('/foo/bar!@7*',
                          self.create_location('/foo/bar!@7*').path)
 
+
+class PathValidation(TestCase):
+    def test_validate_path(self):
+        self.assertIsNone(validate_path('/'))
+        self.assertIsNone(validate_path('/foo/bar'))
+        self.assertIsNone(validate_path('/foo/bar/'))
+
+        self.assertRegexpMatches(validate_path(''),
+                                 'Path should not be empty');
+        self.assertRegexpMatches(validate_path('foo'),
+                                 'Path should be absolute');
+        self.assertRegexpMatches(validate_path('/foo/../bar'),
+                                 'Path should be normalized');
+        self.assertRegexpMatches(validate_path('/foo/./bar'),
+                                 'Path should be normalized');
+        self.assertRegexpMatches(validate_path('/foo/bar/..'),
+                                 'Path should be normalized');
+        self.assertRegexpMatches(validate_path('/foo//bar'),
+                                 'Path should be normalized');
+        self.assertRegexpMatches(validate_path('/foo/bar///'),
+                                 'Path should be normalized');

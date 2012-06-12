@@ -30,12 +30,11 @@ class Auth(View):
 
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)
-            try:
-                normalized_path = models.normalize_path(path)
-            except ValidationError:
-                return HttpResponseBadRequest('Incorrect path')
+            path_validation_error = models.validate_path(path)
+            if path_validation_error is not None:
+                return HttpResponseBadRequest(path_validation_error)
 
-            if models.can_access(user.uuid, normalized_path):
+            if models.can_access(user.uuid, path):
                 logger.debug('%s: access granted.' % (debug_msg))
                 return HttpResponse('Access granted.')
             else:

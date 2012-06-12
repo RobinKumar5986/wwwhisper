@@ -47,13 +47,13 @@ class Auth(AuthTestCase):
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
 
-    def test_is_authorized_normalizes_path(self):
+    def test_is_authorized_for_not_normalized_path(self):
         user = self.users_collection.create_item('foo@example.com')
         location = self.locations_collection.create_item('/foo/')
         location.grant_access(user.uuid)
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.get('/auth/api/is-authorized/?path=/bar/../foo/')
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(400, response.status_code)
 
     def test_is_authorized_for_invalid_path(self):
         user = self.users_collection.create_item('foo@example.com')

@@ -9,7 +9,6 @@ import posixpath
 import re
 import string
 import sys
-import urllib
 import uuid
 
 SITE_URL = getattr(settings, 'SITE_URL', None)
@@ -151,13 +150,15 @@ class LocationsCollection(Collection):
     uuid_column_name = 'uuid'
 
     def create_item(self, path):
-        try:
-            encoded_path = _encode_path(path)
-        except ValidationError, ex:
-            raise CreationException(ex)
-        if _find(Location, path=encoded_path) is not None:
+        validation_error = validate_path(path)
+        if validation_error is not None:
+            raise CreationException(validation_error)
+        validation_error = _find_query_params_or_fragment(path)
+        if validation_error is not None:
+            raise CreationException(validation_error)
+        if _find(Location, path=path) is not None:
             raise CreationException('Location already exists.')
-        location = Location.objects.create(path=encoded_path)
+        location = Location.objects.create(path=path)
         location.save()
         return location
 
@@ -221,64 +222,29 @@ def _is_email_valid(email):
         "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
         email) != None
 
-def normalize_path(path):
-    parsed_url = urlparse(path)
-    not_expected = []
-    if parsed_url.scheme != '':
-        not_expected.append("scheme: '%s'" % parsed_url.scheme)
-    if parsed_url.netloc != '':
-        not_expected.append("domain: '%s'" % parsed_url.netloc)
-    if parsed_url.port != None:
-        not_expected.append("port: '%d'" % parsed_url.port)
-    if parsed_url.username != None:
-        not_expected.append("username: '%s'" % parsed_url.username)
-    if len(not_expected):
-        raise ValidationError('Invalid path, not expected: %s.'
-                              % string.join(not_expected, ', '))
-    stripped_path = parsed_url.path.strip()
-    if stripped_path == '':
-        raise ValidationError('Path should not be empty.')
+def validate_path(path):
+    if path == '':
+        return 'Path should not be empty.'
+    elif not posixpath.isabs(path):
+        return 'Path should be absolute (starting with /).'
+    normalized_path =  posixpath.normpath(path)
+    if (normalized_path != path and
+        normalized_path + '/' != path):
+        return 'Path should be normalized (without /../ or /./ or //)'
+    return None
 
-    normalized_path =  posixpath.normpath(stripped_path)
-    if normalized_path == '.':
-        raise ValidationError('Invalid path, not expected dot');
-    if stripped_path[-1] == '/' and normalized_path[-1] != '/':
-        normalized_path += '/'
-    return normalized_path
-
-def _encode_path(path):
-    parsed_url = urlparse(path)
+def _find_query_params_or_fragment(absolute_path):
+    parsed_url = urlparse(absolute_path)
     not_expected = []
-    if parsed_url.scheme != '':
-        not_expected.append("scheme: '%s'" % parsed_url.scheme)
-    if parsed_url.netloc != '':
-        not_expected.append("domain: '%s'" % parsed_url.netloc)
     if parsed_url.params != '':
         not_expected.append("parameters: '%s'" % parsed_url.params)
     if parsed_url.query != '':
         not_expected.append("query: '%s'" % parsed_url.query)
     if parsed_url.fragment != '':
         not_expected.append("fragment: '%s'" % parsed_url.fragment)
-    if parsed_url.port != None:
-        not_expected.append("port: '%d'" % parsed_url.port)
-    if parsed_url.username != None:
-        not_expected.append("username: '%s'" % parsed_url.username)
-    if len(not_expected):
-        raise ValidationError('Invalid path, not expected: %s.'
-                          % string.join(not_expected, ', '))
-    stripped_path = parsed_url.path.strip()
-    if stripped_path == '':
-        raise ValidationError('Path should not be empty.')
 
-    normalized_path =  posixpath.normpath(stripped_path)
-    if (normalized_path != stripped_path and
-        normalized_path + '/' != stripped_path):
-        raise ValidationError(
-            'Path should be normalized (without /../ or /./ or //)')
-    #TODO: test if this makes sense:
-    try:
-        encoded_path = stripped_path.encode('utf-8', 'strict')
-    except UnicodeError, er:
-        raise ValidationError('Invalid path encoding %s' % str(er))
-    return urllib.quote(encoded_path, '/~')
+    if len(not_expected):
+        return 'Invalid path, not expected: %s.' % \
+            string.join(not_expected, ', ')
+    return None
 
