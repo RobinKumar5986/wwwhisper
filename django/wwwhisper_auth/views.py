@@ -46,7 +46,7 @@ class Auth(View):
             context = Context({'email' : user.email})
             return HttpResponse(template.render(context), status=403)
 
-        if location is not None and location.not_authenticated_access:
+        if location is not None and location.open_access:
             logger.debug('%s: authentication not required, access granted.'
                          % (debug_msg))
             return HttpResponse('Access granted.')

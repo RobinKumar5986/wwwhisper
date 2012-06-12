@@ -49,7 +49,7 @@ class Auth(AuthTestCase):
 
     def test_is_authorized_for_open_location(self):
         location = self.locations_collection.create_item('/foo/')
-        location.allow_not_authenticated_access()
+        location.allow_open_access()
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
 
@@ -57,7 +57,7 @@ class Auth(AuthTestCase):
         user = self.users_collection.create_item('foo@example.com')
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         location = self.locations_collection.create_item('/foo/')
-        location.allow_not_authenticated_access()
+        location.allow_open_access()
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
 

@@ -36,18 +36,19 @@ class Location(ValidatedModel):
     path = models.CharField(max_length=2000, null=False, primary_key=True)
     uuid = models.CharField(max_length=36, null=False, db_index=True,
                             editable=False)
-    not_authenticated_access = models.BooleanField(default=False, null=False)
+    # Not authenticated access allowed.
+    open_access = models.BooleanField(default=False, null=False)
 
-    def allow_not_authenticated_access(self):
-        self.not_authenticated_access = True;
+    def allow_open_access(self):
+        self.open_access = True;
         self.save();
 
-    def disallow_not_authenticated_access(self):
-        self.not_authenticated_access= False
+    def disallow_open_access(self):
+        self.open_access= False
         self.save();
 
     def can_access(self, user_uuid):
-        return (self.not_authenticated_access
+        return (self.open_access
                 or _find(Permission,
                          user__username=user_uuid,
                          http_location=self.path) is not None)
@@ -88,6 +89,7 @@ class Location(ValidatedModel):
     def attributes_dict(self):
         return _add_common_attributes(self, {
                 'path': self.path,
+                'openAccess': self.open_access,
                 'allowedUsers': self.allowed_users(),
                 })
 
