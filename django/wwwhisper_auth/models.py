@@ -36,6 +36,22 @@ class Location(ValidatedModel):
     path = models.CharField(max_length=2000, null=False, primary_key=True)
     uuid = models.CharField(max_length=36, null=False, db_index=True,
                             editable=False)
+    not_authenticated_access = models.BooleanField(default=False, null=False)
+
+    def allow_not_authenticated_access(self):
+        self.not_authenticated_access = True;
+        self.save();
+
+    def disallow_not_authenticated_access(self):
+        self.not_authenticated_access= False
+        self.save();
+
+    def can_access(self, user_uuid):
+        return (self.not_authenticated_access
+                or _find(Permission,
+                         user__username=user_uuid,
+                         http_location=self.path) is not None)
+
     def grant_access(self, user_uuid):
         user = _find(User, username=user_uuid)
         if user is None:
@@ -163,30 +179,53 @@ class LocationsCollection(Collection):
         return location
 
 
-def can_access(uuid, normalized_path):
-    normalized_path_len = len(normalized_path)
-    longest_match = ''
-    longest_match_len = -1
+    def find_parent(self, normalized_path):
+        normalized_path_len = len(normalized_path)
+        longest_matched_location = None
+        longest_matched_location_len = -1
 
-    for location in Location.objects.all():
-        probed_path = location.path
-        probed_path_len = len(probed_path)
-        trailing_slash_index = None
-        if probed_path[probed_path_len - 1] == '/':
-            trailing_slash_index = probed_path_len - 1
-        else:
-            trailing_slash_index = probed_path_len
+        for location in Location.objects.all():
+            probed_path = location.path
+            probed_path_len = len(probed_path)
+            trailing_slash_index = None
+            if probed_path[probed_path_len - 1] == '/':
+                trailing_slash_index = probed_path_len - 1
+            else:
+                trailing_slash_index = probed_path_len
 
-        if (normalized_path.startswith(probed_path) and
-            probed_path_len > longest_match_len and
-            (probed_path_len == normalized_path_len or
-             normalized_path[trailing_slash_index] == '/')) :
-            longest_match_len = probed_path_len
-            longest_match = probed_path
-    return longest_match_len != -1 \
-        and  _find(Permission,
-                   user__username=uuid,
-                   http_location=longest_match) is not None
+            if (normalized_path.startswith(probed_path) and
+                probed_path_len > longest_matched_location_len and
+                (probed_path_len == normalized_path_len or
+                 normalized_path[trailing_slash_index] == '/')) :
+                longest_matched_location_len = probed_path_len
+                longest_matched_location = location
+        return longest_matched_location
+
+# def can_access(uuid, normalized_path):
+#     normalized_path_len = len(normalized_path)
+#     longest_matched_location = None
+#     longest_matched_location_len = -1
+
+#     for location in Location.objects.all():
+#         probed_path = location.path
+#         probed_path_len = len(probed_path)
+#         trailing_slash_index = None
+#         if probed_path[probed_path_len - 1] == '/':
+#             trailing_slash_index = probed_path_len - 1
+#         else:
+#             trailing_slash_index = probed_path_len
+
+#         if (normalized_path.startswith(probed_path) and
+#             probed_path_len > longest_matched_location_len and
+#             (probed_path_len == normalized_path_len or
+#              normalized_path[trailing_slash_index] == '/')) :
+#             longest_matched_location_len = probed_path_len
+#             longest_matched_location = location
+#     return longest_matched_location is not None \
+#         and (longest_matched_location.not_authenticated_access
+#              or _find(Permission,
+#                       user__username=uuid,
+#                       http_location=longest_matched_location.path) is not None)
 
 def full_url(absolute_path):
     return SITE_URL + absolute_path

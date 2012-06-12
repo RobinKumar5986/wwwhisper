@@ -47,6 +47,20 @@ class Auth(AuthTestCase):
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
 
+    def test_is_authorized_for_open_location(self):
+        location = self.locations_collection.create_item('/foo/')
+        location.allow_not_authenticated_access()
+        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertEqual(200, response.status_code)
+
+    def test_is_authorized_for_open_location_and_authenticated_user(self):
+        user = self.users_collection.create_item('foo@example.com')
+        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        location = self.locations_collection.create_item('/foo/')
+        location.allow_not_authenticated_access()
+        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertEqual(200, response.status_code)
+
     def test_is_authorized_for_not_normalized_path(self):
         user = self.users_collection.create_item('foo@example.com')
         location = self.locations_collection.create_item('/foo/')

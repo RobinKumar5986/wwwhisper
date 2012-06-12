@@ -19,8 +19,9 @@ import wwwhisper_auth.models as models
 logger = logging.getLogger(__name__)
 
 class Auth(View):
+    locations_collection = None
+
     def get(self, request):
-        # TODO: is path encoded by nginx? (e.g. ' ' replaced with %20?).
         path = request.GET.get('path', None)
         if path is None:
             return HttpResponseBadRequest(
@@ -28,23 +29,29 @@ class Auth(View):
         debug_msg = "Auth request to '%s'" % (path)
         user = request.user
 
+        path_validation_error = models.validate_path(path)
+        if path_validation_error is not None:
+            logger.debug('%s: incorrect path.' % (debug_msg))
+            return HttpResponseBadRequest(path_validation_error)
+        location = self.locations_collection.find_parent(path)
+
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)
-            path_validation_error = models.validate_path(path)
-            if path_validation_error is not None:
-                return HttpResponseBadRequest(path_validation_error)
 
-            if models.can_access(user.uuid, path):
+            if location is not None and location.can_access(user.uuid):
                 logger.debug('%s: access granted.' % (debug_msg))
                 return HttpResponse('Access granted.')
-            else:
-                logger.debug('%s: access denied.' % (debug_msg))
-                template = loader.get_template('auth/not_authorized.html')
-                context = Context({'email' : user.email})
-                return HttpResponse(template.render(context), status=403)
-        else:
-            logger.debug('%s: user not authenticated.' % (debug_msg))
-            return HttpResponse('Login required.', status=401)
+            logger.debug('%s: access denied.' % (debug_msg))
+            template = loader.get_template('auth/not_authorized.html')
+            context = Context({'email' : user.email})
+            return HttpResponse(template.render(context), status=403)
+
+        if location is not None and location.not_authenticated_access:
+            logger.debug('%s: authentication not required, access granted.'
+                         % (debug_msg))
+            return HttpResponse('Access granted.')
+        logger.debug('%s: user not authenticated.' % (debug_msg))
+        return HttpResponse('Login required.', status=401)
 
 class CsrfToken(View):
     @method_decorator(ensure_csrf_cookie)
