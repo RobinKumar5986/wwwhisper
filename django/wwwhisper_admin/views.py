@@ -57,6 +57,44 @@ class ItemView(RestView):
                 '%s not found' % self.collection.item_name.capitalize())
         return HttpResponseNoContent()
 
+class OpenAccessView(RestView):
+    locations_collection = None
+
+    def _json_representation(self, request):
+        return json.dumps({'self' : full_url(request.path)})
+
+    def get(self, request, location_uuid):
+        location = self.locations_collection.find_item(location_uuid)
+        if location is None:
+            return HttpResponseNotFound('Location not found.')
+        if location.open_access is False:
+            return HttpResponseNotFound(
+                'Open access to location disallowed.')
+        return HttpResponse(self._json_representation(request),
+                            mimetype="application/json")
+
+    def put(self, request, location_uuid):
+        location = self.locations_collection.find_item(location_uuid)
+        if location is None:
+            return HttpResponseNotFound('Location not found.')
+        if location.open_access:
+            return HttpResponse(self._json_representation(request),
+                                mimetype="application/json")
+        location.allow_open_access()
+        response =  HttpResponseCreated(self._json_representation(request))
+        response['Location'] = full_url(request.path)
+        return response
+
+    def delete(self, request, location_uuid):
+        location = self.locations_collection.find_item(location_uuid)
+        if location is None:
+            return HttpResponseNotFound('Location not found.')
+        if location.open_access is False:
+            return HttpResponseNotFound(
+                'Open access to location already disallowed.')
+        location.disallow_open_access()
+        return HttpResponseNoContent()
+
 class AllowedUsersView(RestView):
     locations_collection = None
 

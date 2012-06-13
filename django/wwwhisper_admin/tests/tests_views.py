@@ -111,6 +111,7 @@ class LocationTest(AdminViewTestCase):
       self.assertRegexpMatches(parsed_response_body['id'],
                                '^urn:uuid:%s$' % uid_regexp())
       self.assertEqual(TEST_LOCATION, parsed_response_body['path'])
+      self.assertFalse(parsed_response_body['openAccess'])
       self_url = '%s/admin/api/locations/%s/' % (SITE_URL, location_uuid)
       self.assertEqual(self_url, parsed_response_body['self'])
       self.assertEqual(self_url, response['Location'])
@@ -123,6 +124,56 @@ class LocationTest(AdminViewTestCase):
       parsed_get_response_body = json.loads(get_response.content)
       self.assertEqual(parsed_add_location_response_body,
                        parsed_get_response_body)
+
+   def test_allow_open_access_to_location(self):
+      location = self.add_location()
+      self.assertFalse(location['openAccess'])
+
+      open_access_url = location['self'] + 'open-access/'
+      put_response = self.put(open_access_url)
+      self.assertEqual(201, put_response.status_code)
+      self.assertEqual(open_access_url,
+                       json.loads(put_response.content)['self']);
+      self.assertEqual(open_access_url, put_response['Location'])
+
+      # Get location again and make sure openAccess attribute is now true.
+      location = json.loads(self.get(location['self']).content)
+      self.assertTrue(location['openAccess'])
+
+   def test_allow_open_access_to_location_if_already_allowed(self):
+      location = self.add_location()
+      open_access_url = location['self'] + 'open-access/'
+      put_response1 = self.put(open_access_url)
+      put_response2 = self.put(open_access_url)
+      self.assertEqual(200, put_response2.status_code)
+      self.assertFalse(put_response2.has_header('Location'))
+      self.assertEqual(put_response1.content, put_response2.content);
+
+   def test_check_open_access_to_location(self):
+      location = self.add_location()
+      open_access_url = location['self'] + 'open-access/'
+      self.put(open_access_url)
+      get_response = self.get(open_access_url)
+      self.assertEqual(200, get_response.status_code)
+      self.assertEqual(open_access_url,
+                       json.loads(get_response.content)['self']);
+
+   def test_disallow_open_access_to_location(self):
+      location = self.add_location()
+      open_access_url = location['self'] + 'open-access/'
+      self.put(open_access_url)
+      delete_response = self.delete(open_access_url)
+      self.assertEqual(204, delete_response.status_code)
+      get_response = self.get(open_access_url)
+      self.assertEqual(404, get_response.status_code)
+
+   def test_disallow_open_access_to_location_if_already_disallowed(self):
+      location = self.add_location()
+      open_access_url = location['self'] + 'open-access/'
+      self.put(open_access_url)
+      self.delete(open_access_url)
+      delete_response = self.delete(open_access_url)
+      self.assertEqual(404, delete_response.status_code)
 
    def test_delete_location(self):
       location_url = self.add_location()['self']

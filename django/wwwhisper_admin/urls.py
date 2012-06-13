@@ -1,6 +1,7 @@
 from django.conf.urls.defaults import patterns, include, url
 from django.contrib.auth.models import User
-from views import CollectionView, ItemView, AllowedUsersView
+from views import CollectionView, ItemView
+from views import OpenAccessView, AllowedUsersView
 from wwwhisper_auth.models import LocationsCollection, UsersCollection
 
 users_collection = UsersCollection()
@@ -21,4 +22,6 @@ urlpatterns = patterns(
         '(?P<user_uuid>[0-9a-z-]+)/$',
         AllowedUsersView.as_view(locations_collection=locations_collection),
         name='wwwhisper_allowed_user'),
+    url(r'^locations/(?P<location_uuid>[0-9a-z-]+)/open-access/$',
+        OpenAccessView.as_view(locations_collection=locations_collection)),
     )
