@@ -80,7 +80,7 @@ class OpenAccessView(RestView):
         if location.open_access:
             return HttpResponse(self._json_representation(request),
                                 mimetype="application/json")
-        location.allow_open_access()
+        location.grant_open_access()
         response =  HttpResponseCreated(self._json_representation(request))
         response['Location'] = full_url(request.path)
         return response
@@ -92,7 +92,7 @@ class OpenAccessView(RestView):
         if location.open_access is False:
             return HttpResponseNotFound(
                 'Open access to location already disallowed.')
-        location.disallow_open_access()
+        location.revoke_open_access()
         return HttpResponseNoContent()
 
 class AllowedUsersView(RestView):

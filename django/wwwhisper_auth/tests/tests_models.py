@@ -286,13 +286,13 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertEqual(location,
                          self.locations_collection.find_parent('/foo/bar/baz'))
 
-    def test_allow_open_access(self):
+    def test_grant_open_access(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         location = self.locations_collection.create_item(TEST_LOCATION)
         self.assertFalse(location.can_access(user.uuid))
-        location.allow_open_access()
+        location.grant_open_access()
         self.assertTrue(location.can_access(user.uuid))
-        location.disallow_open_access()
+        location.revoke_open_access()
         self.assertFalse(location.can_access(user.uuid))
 
     def test_get_allowed_users(self):

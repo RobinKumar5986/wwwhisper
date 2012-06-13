@@ -542,7 +542,6 @@
     mock_stub.verify();
   });
 
-
   test('revokeAccess', function() {
     var location, user;
     user = {
@@ -569,4 +568,41 @@
     deepEqual(controller.locations[0].allowedUsers, []);
     mock_stub.verify();
   });
+
+  test('grantOpenAccess.', function() {
+    var location;
+    location = {
+      id: '13',
+      openAccess: false,
+      path: '/bar',
+      self: 'example.com/locations/13/',
+      allowedUsers: []
+    };
+    controller.locations.push(location);
+    mock_stub.expectAjaxCall(
+      'PUT', location.self + 'open-access/', null, null);
+
+    controller.grantOpenAccess(location);
+    ok(location.openAccess);
+    mock_stub.verify();
+  });
+
+  test('revokeOpenAccess.', function() {
+    var location;
+    location = {
+      id: '13',
+      openAccess: true,
+      path: '/bar',
+      self: 'example.com/locations/13/',
+      allowedUsers: []
+    };
+    controller.locations.push(location);
+    mock_stub.expectAjaxCall(
+      'DELETE', location.self + 'open-access/', null, null);
+
+    controller.revokeOpenAccess(location);
+    ok(!location.openAccess);
+    mock_stub.verify();
+  });
+
 }());

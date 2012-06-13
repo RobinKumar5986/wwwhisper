@@ -39,11 +39,11 @@ class Location(ValidatedModel):
     # Not authenticated access allowed.
     open_access = models.BooleanField(default=False, null=False)
 
-    def allow_open_access(self):
+    def grant_open_access(self):
         self.open_access = True;
         self.save();
 
-    def disallow_open_access(self):
+    def revoke_open_access(self):
         self.open_access= False
         self.save();
 

@@ -123,6 +123,7 @@
     };
 
     this.addLocation = function(locationPathArg) {
+      // TODO: do not trim. Spaces are significant.
       var locationPath = $.trim(locationPathArg);
       if (locationPath.length === 0 || utils.inArray(
         locationPath, utils.extractLocationsPaths(that.locations))) {
@@ -167,12 +168,43 @@
                 });
     };
 
+    this.grantOpenAccess = function(location) {
+      if (location.openAccess) {
+        return;
+      }
+      stub.ajax(
+        'PUT',
+        location.self + 'open-access/',
+        null,
+        function() {
+          location.openAccess = true;
+          ui.refresh();
+        }
+      );
+    };
+
+    this.revokeOpenAccess = function(location) {
+      if (!location.openAccess) {
+        return;
+      }
+      stub.ajax(
+        'DELETE',
+        location.self + 'open-access/',
+        null,
+        function() {
+          location.openAccess = false;
+          ui.refresh();
+        }
+      );
+    };
+
     this.grantAccess = function(email, location) {
       var cleanedEmail, user, grantPermissionCallback;
       cleanedEmail = $.trim(email);
       if (cleanedEmail.length === 0) {
         return;
       }
+
       user = that.findUserWithEmail(cleanedEmail);
       if (user !== null && that.canAccess(user, location)) {
         // User already can access location.
@@ -284,7 +316,11 @@
         .find('.add-allowed-user')
         .attr('id', addAllowedUserInputId(location))
         .change(function() {
-          controller.grantAccess($(this).val(), location);
+          if ($.trim($(this).val()) === '*') {
+            controller.grantOpenAccess(location);
+          } else {
+            controller.grantAccess($(this).val(), location);
+          }
         })
       // TODO: fix of remove.
       // .typeahead({
@@ -293,14 +329,24 @@
         .end();
 
       allowedUserList = locationInfo.find('.allowed-user-list');
-      utils.each(location.allowedUsers, function(user) {
+      if (location.openAccess) {
+        // TODO: remove mail icon
         view.allowedUser.clone(true)
-          .find('.user-mail').text(user.email).end()
+          .find('.user-mail').text('*').end()
           .find('.remove-user').click(function() {
-            controller.revokeAccess(user, location);
+            controller.revokeOpenAccess(location);
           }).end()
           .appendTo(allowedUserList);
-      });
+      } else {
+        utils.each(location.allowedUsers, function(user) {
+          view.allowedUser.clone(true)
+            .find('.user-mail').text(user.email).end()
+            .find('.remove-user').click(function() {
+              controller.revokeAccess(user, location);
+            }).end()
+            .appendTo(allowedUserList);
+        });
+      }
       locationInfo.appendTo('#location-info-list');
     }
 
