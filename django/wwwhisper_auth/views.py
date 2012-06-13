@@ -22,6 +22,9 @@ class Auth(View):
     locations_collection = None
 
     def get(self, request):
+        #TODO: start here. This returns encoded path! So you can
+        #simply drop arguments
+        print "WHOOOOOOOOOOOOOOOOA" + request.get_full_path()
         path = request.GET.get('path', None)
         if path is None:
             return HttpResponseBadRequest(
