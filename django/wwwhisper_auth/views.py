@@ -18,17 +18,22 @@ import wwwhisper_auth.models as models
 
 logger = logging.getLogger(__name__)
 
+def _get_encoded_path_argument(request):
+    request_path_and_args = request.get_full_path()
+    assert request_path_and_args.startswith(request.path)
+    args = request_path_and_args[len(request.path):]
+    if not args.startswith('?path='):
+        return None
+    return args[len('?path='):]
+
 class Auth(View):
     locations_collection = None
 
     def get(self, request):
-        #TODO: start here. This returns encoded path! So you can
-        #simply drop arguments
-        print "WHOOOOOOOOOOOOOOOOA" + request.get_full_path()
-        path = request.GET.get('path', None)
+        path = _get_encoded_path_argument(request)
         if path is None:
             return HttpResponseBadRequest(
-                "Auth request should have 'path' paramater.")
+                "Auth request should have 'path' argument.")
         debug_msg = "Auth request to '%s'" % (path)
         user = request.user
 
