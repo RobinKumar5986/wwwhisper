@@ -1,7 +1,6 @@
 from django.forms import ValidationError
 from django.test import TestCase
 from wwwhisper_auth.models import CreationException
-from wwwhisper_auth.models import validate_path
 import wwwhisper_auth.models as models
 
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
@@ -322,83 +321,29 @@ class LocationsCollectionTest(CollectionTestCase):
 
     def test_location_path_validation(self):
         self.assertRaisesRegexp(CreationException,
-                                'empty',
+                                'should be absolute and normalized',
                                 self.locations_collection.create_item,
-                                '')
+                                '/foo/../bar')
         self.assertRaisesRegexp(CreationException,
-                                'absolute',
-                                self.locations_collection.create_item,
-                                'foo')
-        self.assertRaisesRegexp(CreationException,
-                                'absolute',
-                                self.locations_collection.create_item,
-                                ' ')
-        self.assertRaisesRegexp(CreationException,
-                                'parameters',
+                                'should not contain parameters',
                                 self.locations_collection.create_item,
                                 '/foo;bar')
         self.assertRaisesRegexp(CreationException,
-                                'query',
+                                'should not contain query',
                                 self.locations_collection.create_item,
                                 '/foo?s=bar')
         self.assertRaisesRegexp(CreationException,
-                                'fragment',
+                                'should not contain fragment',
                                 self.locations_collection.create_item,
                                 '/foo#bar')
-        self.assertRaisesRegexp(CreationException,
-                                'normalized',
-                                self.locations_collection.create_item,
-                                '/foo/./')
-        self.assertRaisesRegexp(CreationException,
-                                'normalized',
-                                self.locations_collection.create_item,
-                                '/foo/..')
-        self.assertRaisesRegexp(CreationException,
-                                'normalized',
-                                self.locations_collection.create_item,
-                                '/foo/../bar/')
-        self.assertRaisesRegexp(CreationException,
-                                'normalized',
-                                self.locations_collection.create_item,
-                                '/foo//bar')
-        self.assertRaisesRegexp(CreationException,
-                                'normalized',
-                                self.locations_collection.create_item,
-                                '/foo//')
 
     def create_location(self, path):
         return self.locations_collection.create_item(path)
 
     """Path passed to create_location is expected to be saved verbatim."""
     def test_location_path_not_encoded(self):
-        self.assertEqual('/', self.create_location('/').path)
-        self.assertEqual('/foo', self.create_location('/foo').path)
-        self.assertEqual('/foo/', self.create_location('/foo/').path)
-        self.assertEqual('/foo.', self.create_location('/foo.').path)
-        self.assertEqual('/foo..', self.create_location('/foo..').path)
         self.assertEqual('/foo%20bar', self.create_location('/foo%20bar').path)
         self.assertEqual('/foo~', self.create_location('/foo~').path)
         self.assertEqual('/foo/bar!@7*',
                          self.create_location('/foo/bar!@7*').path)
 
-
-class PathValidation(TestCase):
-    def test_validate_path(self):
-        self.assertIsNone(validate_path('/'))
-        self.assertIsNone(validate_path('/foo/bar'))
-        self.assertIsNone(validate_path('/foo/bar/'))
-
-        self.assertRegexpMatches(validate_path(''),
-                                 'Path should not be empty');
-        self.assertRegexpMatches(validate_path('foo'),
-                                 'Path should be absolute');
-        self.assertRegexpMatches(validate_path('/foo/../bar'),
-                                 'Path should be normalized');
-        self.assertRegexpMatches(validate_path('/foo/./bar'),
-                                 'Path should be normalized');
-        self.assertRegexpMatches(validate_path('/foo/bar/..'),
-                                 'Path should be normalized');
-        self.assertRegexpMatches(validate_path('/foo//bar'),
-                                 'Path should be normalized');
-        self.assertRegexpMatches(validate_path('/foo/bar///'),
-                                 'Path should be normalized');

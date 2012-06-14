@@ -24,9 +24,9 @@ class AuthTestCase(HttpTestCase):
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
         super(AuthTestCase, self).setUp()
 
-class Auth(AuthTestCase):
+class AuthTest(AuthTestCase):
     def test_is_authorized_requires_path_parameter(self):
-        response = self.get('/auth/api/is-authorized/')
+        response = self.get('/auth/api/is-authorized/?pat=/foo')
         self.assertEqual(400, response.status_code)
 
     def test_is_authorized_for_not_authenticated_user(self):
@@ -61,22 +61,32 @@ class Auth(AuthTestCase):
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
 
-    def test_is_authorized_for_not_normalized_path(self):
+    def test_is_authorized_for_invalid_path(self):
         user = self.users_collection.create_item('foo@example.com')
         location = self.locations_collection.create_item('/foo/')
         location.grant_access(user.uuid)
         self.assertTrue(self.client.login(assertion='foo@example.com'))
+
         response = self.get('/auth/api/is-authorized/?path=/bar/../foo/')
         self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'Path should be absolute and normalized')
 
-    def test_is_authorized_for_invalid_path(self):
-        user = self.users_collection.create_item('foo@example.com')
-        self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.get('/auth/api/is-authorized/?path=.')
         self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'Path should be absolute and normalized')
 
+    def test_is_authorized_decodes_path(self):
+        location = self.locations_collection.create_item('/f/')
+        location.grant_open_access()
+        response = self.get('/auth/api/is-authorized/?path=%2F%66%2F')
+        self.assertEqual(200, response.status_code)
 
-class Login(AuthTestCase):
+        response = self.get('/auth/api/is-authorized/?path=%2F%66')
+        self.assertEqual(401, response.status_code)
+
+class LoginTest(AuthTestCase):
     def test_login_requires_assertion(self):
         response = self.post('/auth/api/login/', {})
         self.assertEqual(400, response.status_code)
@@ -93,7 +103,7 @@ class Login(AuthTestCase):
         self.assertEqual(200, response.status_code)
 
 
-class Logout(AuthTestCase):
+class LogoutTest(AuthTestCase):
     def test_authentication_requested_after_logout(self):
         user = self.users_collection.create_item('foo@example.com')
         self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})

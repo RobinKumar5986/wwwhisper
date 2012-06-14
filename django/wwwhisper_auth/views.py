@@ -2,7 +2,6 @@
 
 """
 from django.core.context_processors import csrf
-from django.forms import ValidationError
 from django.http import HttpResponse
 from django.template import Context, loader
 from django.utils.decorators import method_decorator
@@ -15,10 +14,11 @@ import django.contrib.auth as contrib_auth
 import json
 import logging
 import wwwhisper_auth.models as models
+import wwwhisper_auth.url_path as url_path
 
 logger = logging.getLogger(__name__)
 
-def _get_encoded_path_argument(request):
+def _extract_encoded_path_argument(request):
     request_path_and_args = request.get_full_path()
     assert request_path_and_args.startswith(request.path)
     args = request_path_and_args[len(request.path):]
@@ -30,18 +30,27 @@ class Auth(View):
     locations_collection = None
 
     def get(self, request):
-        path = _get_encoded_path_argument(request)
-        if path is None:
+        encoded_path = _extract_encoded_path_argument(request)
+        if encoded_path is None:
             return HttpResponseBadRequest(
                 "Auth request should have 'path' argument.")
-        debug_msg = "Auth request to '%s'" % (path)
-        user = request.user
+        debug_msg = "Auth request to '%s'" % (encoded_path)
 
-        path_validation_error = models.validate_path(path)
+        path_validation_error = None
+        if url_path.contains_fragment(encoded_path):
+            path_validation_error = "Path should not include fragment ('#')"
+        else:
+            stripped_path = url_path.strip_query(encoded_path)
+            decoded_path = url_path.decode(stripped_path)
+            if not url_path.is_canonical(decoded_path):
+                path_validation_error = 'Path should be absolute and ' \
+                    'normalized (starting with / without /../ or /./ or //).'
         if path_validation_error is not None:
             logger.debug('%s: incorrect path.' % (debug_msg))
             return HttpResponseBadRequest(path_validation_error)
-        location = self.locations_collection.find_parent(path)
+
+        user = request.user
+        location = self.locations_collection.find_parent(decoded_path)
 
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)
