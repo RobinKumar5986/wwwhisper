@@ -32,8 +32,8 @@
     </div>
 
     <div class="container">
-      <div class="alert alert-success">
-        <a class="close" data-dismiss="alert">&times;</a>
+      <div class="alert alert-success hide">
+        <!-- <a class="close"  href="#" data-dismiss="alert">&times;</a> -->
         <p>
           Left side: locations under <span class='locations-root'></span>
           to which Alice wants to grant access. <br />
@@ -100,8 +100,8 @@
       </div> <!-- /.tabbable -->
 
 
-      <div class="alert alert-success">
-        <a class="close" data-dismiss="alert">&times;</a>
+      <div class="alert alert-success hide">
+        <!-- <a class="close" href="#" data-dismiss="alert">&times;</a> -->
 
         <p>
           Use <i class="icon-search"></i> to quickly check which
@@ -123,25 +123,14 @@
               <i class="menu-item icon-search highlight"></i>
             </li>
           </ul>
-        </div> <!-- /.span4 -->
+        </div>  <!-- /.span4 -->
       </div> <!-- /.row -->
 
-
-      <div class="alert alert-warning">
-        <a class="close" data-dismiss="alert">&times;</a>
-
-        <p>
-        This mock demonstrates only the most basic functionality that
-        the access management application should offer.
-        <h3>TODO:</h3>
-        <ul>
-          <li>Grouping emails (work, family, etc.).</li>
-          <li>Drag & drop.</li>
-          <li>Sorting locations and users.</li>
-        </ul>
-        </p>
-      </div>  <!-- /.alert -->
-
+      <div class="row">
+      <div class="span4 offset11">
+        <a class="btn btn-info help">Show help</a>
+      </div>
+      </div>
     </div> <!-- /.container -->
 
     <div class="modal hide fade" id="notify-modal">

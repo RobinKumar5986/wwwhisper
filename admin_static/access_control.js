@@ -461,6 +461,15 @@
       view.addLocation = $('#add-location').clone(true);
       view.user = $('.user-list-item').clone(true);
       $('.locations-root').text(location.host);
+      $('.help').click(function() {
+        if ($('.alert').hasClass('hide')) {
+          $('.alert').removeClass('hide');
+          $('.help').text('Hide help');
+        } else {
+          $('.alert').addClass('hide');
+          $('.help').text('Show help')
+        }
+      });
     };
   }
 
