@@ -11,7 +11,7 @@ def decode(path):
     return urllib.unquote_plus(path)
 
 def is_canonical(path):
-    # Posix recognizes '//' as normalized path, but it is not
+    # Posix recognizes '//' as a normalized path, but it is not
     # canonical (it is the same as '/').
     if path == '' or not posixpath.isabs(path) or path.startswith('//'):
         return False

@@ -40,8 +40,7 @@ class UrlPathTest(TestCase):
     def test_contains_fragment(self):
         self.assertTrue(contains_fragment('/foo#123'))
         self.assertTrue(contains_fragment('/foo#'))
-        # Encoded fragment separator is OK (it is not treated as
-        # fragment separator).
+        # Encoded '#' should not be treated as fragment separator.
         self.assertFalse(contains_fragment('/foo%23'))
 
     def test_contains_query(self):
