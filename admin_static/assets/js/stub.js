@@ -1,14 +1,18 @@
 (function () {
   'use strict';
 
-  function Stub() {
-    var csrfToken = null, that = this;
+  function Stub(errorHandler) {
+    var csrfToken = null, errorHandler = null, that = this;
 
     function ajaxCommon(method, resource, params, headersDict,
                         successCallback) {
       var jsonData = null;
       if (params !== null) {
         jsonData = JSON.stringify(params);
+      }
+
+      if (errorHandler !== null) {
+        errorHandler.cleanError()
       }
 
       $.ajax({
@@ -18,8 +22,12 @@
         headers: headersDict,
         success: successCallback,
         error: function(jqXHR) {
-          // TODO: nice messages for user input related failures.
-          $('body').html(jqXHR.responseText);
+          if (errorHandler !== null) {
+            errorHandler.handleError(jqXHR.responseText)
+          } else {
+            // TODO: nice messages for user input related failures.
+            $('body').html(jqXHR.responseText);
+          }
         }
       });
     }
@@ -42,6 +50,10 @@
       }
       ajaxCommon(method, resource, params, {'X-CSRFToken' : csrfToken},
                  successCallback);
+    };
+
+    this.setErrorHandler = function(handler) {
+      errorHandler = handler;
     };
   }
 

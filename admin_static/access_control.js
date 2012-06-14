@@ -242,6 +242,7 @@
 
     this.initialize = function() {
       ui.initialize();
+      stub.setErrorHandler(ui);
       that.buildCallbacksChain([that.getLocations,
                                 that.getUsers,
                                 ui.refresh])();
@@ -254,7 +255,8 @@
       locationInfo : null,
       allowedUser : null,
       addLocation : null,
-      user : null
+      user : null,
+      errorMessage : null
     };
 
     function focusedElement() {
@@ -429,6 +431,25 @@
       $('#' + locationInfoId(location)).addClass('active');
     }
 
+    this.cleanError = function() {
+      $('.alert-error').alert('close');
+    };
+
+    this.handleError = function(message) {
+      var error = view.errorMessage.clone(true);
+
+      $('#error-box').empty();
+      error.removeClass('hide')
+        .find('.alert-message')
+        .text(message)
+        .end()
+        .appendTo('#error-box');
+
+      window.setTimeout(function() {
+        error.alert('close');
+      }, 5000);
+    };
+
     this.refresh = function() {
       var focusedElementId, selectLocation;
       selectLocation = findSelectLocation();
@@ -460,14 +481,19 @@
       view.locationInfo.find('#allowed-user-list-item').remove();
       view.addLocation = $('#add-location').clone(true);
       view.user = $('.user-list-item').clone(true);
+      view.errorMessage = $('.alert-error').clone(true);
       $('.locations-root').text(location.host);
+
+      // TODO: this is only needed if alert is to be removed programatically.
+      $(".alert").alert();
+
       $('.help').click(function() {
-        if ($('.alert').hasClass('hide')) {
-          $('.alert').removeClass('hide');
+        if ($('.help-message').hasClass('hide')) {
+          $('.help-message').removeClass('hide');
           $('.help').text('Hide help');
         } else {
-          $('.alert').addClass('hide');
-          $('.help').text('Show help')
+          $('.help-message').addClass('hide');
+          $('.help').text('Show help');
         }
       });
     };

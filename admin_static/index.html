@@ -32,7 +32,7 @@
     </div>
 
     <div class="container">
-      <div class="alert alert-success hide">
+      <div class="alert alert-success help-message fade in hide">
         <!-- <a class="close"  href="#" data-dismiss="alert">&times;</a> -->
         <p>
           Left side: locations under <span class='locations-root'></span>
@@ -56,6 +56,14 @@
           about a shared site.
         </p>
       </div> <!-- /.alert -->
+
+      <div id="error-box">
+        <div class="alert alert-error fade in hide">
+           <a class="close" href="#" data-dismiss="alert">&times;</a>
+          <div class="alert-message">
+          </div>
+        </div>  <!-- /.alert -->
+      </div>  <!-- /.error-box -->
 
       <div class="tabbable tabs-left">
         <ul class="nav nav-tabs" id="location-list">
@@ -100,15 +108,12 @@
       </div> <!-- /.tabbable -->
 
 
-      <div class="alert alert-success hide">
+      <div class="alert alert-success help-message fade in hide">
         <!-- <a class="close" href="#" data-dismiss="alert">&times;</a> -->
-
-        <p>
-          Use <i class="icon-search"></i> to quickly check which
-          locations a person can access (green color). <br />
-          Use <i class="icon-envelope"></i> to compose a notification
-          about all resources shared with a person.
-        </p>
+        Use <i class="icon-search"></i> to quickly check which
+        locations a person can access (green color). <br />
+        Use <i class="icon-envelope"></i> to compose a notification
+        about all resources shared with a person.
       </div>  <!-- /.alert -->
 
       <h3>Users</h3>
