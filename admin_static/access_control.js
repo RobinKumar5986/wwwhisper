@@ -405,6 +405,9 @@
             showNotifyDialog(
               location.allowedUsers, [location.path]);
           }).end()
+          .find('.view-page').click(function() {
+            window.open(location.path,'_blank');
+          }).end()
           .appendTo('#location-list');
         createLocationInfo(location);
       });
