@@ -69,7 +69,7 @@
     this.users = [];
 
     this.canAccess = function(user, location) {
-      return utils.inArray(
+      return location.openAccess || utils.inArray(
         user.id, utils.allowedUsersIds(location));
     };
 
@@ -257,7 +257,7 @@
       addLocation : null,
       user : null,
       errorMessage : null
-    };
+    }, that = this;
 
     function focusedElement() {
       return $(document.activeElement);
@@ -318,10 +318,11 @@
         .find('.add-allowed-user')
         .attr('id', addAllowedUserInputId(location))
         .change(function() {
-          if ($.trim($(this).val()) === '*') {
+          var userId = $.trim($(this).val())
+          if (userId === '*') {
             controller.grantOpenAccess(location);
           } else {
-            controller.grantAccess($(this).val(), location);
+            controller.grantAccess(userId, location);
           }
         })
       // TODO: fix of remove.
@@ -335,7 +336,7 @@
         // TODO: remove mail icon
         view.allowedUser.clone(true)
           .find('.user-mail').text('*').end()
-          .find('.remove-user').click(function() {
+          .find('.unshare').click(function() {
             controller.revokeOpenAccess(location);
           }).end()
           .appendTo(allowedUserList);
@@ -343,7 +344,7 @@
         utils.each(location.allowedUsers, function(user) {
           view.allowedUser.clone(true)
             .find('.user-mail').text(user.email).end()
-            .find('.remove-user').click(function() {
+            .find('.unshare').click(function() {
               controller.revokeAccess(user, location);
             }).end()
             .appendTo(allowedUserList);
@@ -368,10 +369,18 @@
       $('#location-list a').removeClass('not-accessible');
     }
 
-    function showUsers() {
+    function showUsers(selectLocation) {
       var userView;
       utils.each(controller.users, function(user) {
         userView = view.user.clone(true);
+        if (selectLocation !== null &&
+            !controller.canAccess(user, selectLocation)) {
+          userView.find('.share')
+            .removeClass('hide')
+            .click(function() {
+              controller.grantAccess(user.email, selectLocation);
+            });
+        }
         userView.find('.user-mail').text(user.email).end()
           .find('.remove-user').click(function() {
             controller.removeUser(user);
@@ -464,7 +473,7 @@
       $('#user-list').empty();
 
       showLocations();
-      showUsers();
+      showUsers(selectLocation);
 
       if (selectLocation !== null) {
         showLocationInfo(selectLocation);
@@ -483,6 +492,12 @@
       view.user = $('.user-list-item').clone(true);
       view.errorMessage = $('.alert-error').clone(true);
       $('.locations-root').text(location.host);
+
+      view.locationPath.find('a').click(function(e) {
+        e.preventDefault();
+        $(this).tab('show');
+        that.refresh();
+      });
 
       // TODO: this is only needed if alert is to be removed programatically.
       $(".alert").alert();

@@ -587,6 +587,32 @@
     mock_stub.verify();
   });
 
+  test('canAccess for open location.', function() {
+    var location, user;
+    user = {
+      id: '17',
+      email: 'foo@example.com',
+      self: 'example.com/users/17/'
+    };
+    location = {
+      id: '13',
+      openAccess: false,
+      path: '/bar',
+      self: 'example.com/locations/13/',
+      allowedUsers: []
+    };
+    controller.users.push(user);
+    controller.locations.push(location);
+
+    mock_stub.expectAjaxCall(
+      'PUT', location.self + 'open-access/', null, null);
+
+    ok(!controller.canAccess(user, location));
+    controller.grantOpenAccess(location);
+    ok(controller.canAccess(user, location));
+    mock_stub.verify();
+  });
+
   test('revokeOpenAccess.', function() {
     var location;
     location = {
