@@ -3,7 +3,7 @@
 {% block message %}
 <h1>Access denied</h1>
 <p class="lead">
-<i>{{ email }}</i> can not access this URL. </p>
+<i>{{ email | escape }}</i> can not access this URL. </p>
 Go somewhere else or <a href="#" id="logout">sign out</a>
 {% endblock %}
 
