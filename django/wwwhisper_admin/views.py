@@ -1,10 +1,12 @@
 from django.conf import settings
 from django.http import HttpResponse
 from django.http import HttpResponseNotFound
-from wwwhisper_auth.utils import HttpResponseBadRequest
-from wwwhisper_auth.utils import HttpResponseCreated
-from wwwhisper_auth.utils import HttpResponseNoContent
-from wwwhisper_auth.utils import RestView
+from django.views.decorators.cache import cache_control
+
+from wwwhisper_auth.http import HttpResponseBadRequest
+from wwwhisper_auth.http import HttpResponseCreated
+from wwwhisper_auth.http import HttpResponseNoContent
+from wwwhisper_auth.http import RestView
 from wwwhisper_auth.models import CreationException
 from wwwhisper_auth.models import full_url
 

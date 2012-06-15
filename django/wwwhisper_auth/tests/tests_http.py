@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.test import TestCase
-from wwwhisper_auth.utils import RestView
+from wwwhisper_auth.http import RestView
 from wwwhisper_auth.tests.utils import HttpTestCase
 from django.conf.urls.defaults import patterns, url
 

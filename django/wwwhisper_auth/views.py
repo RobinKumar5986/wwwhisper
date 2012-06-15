@@ -8,8 +8,8 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth.backend import AssertionVerificationException;
-from wwwhisper_auth.utils import HttpResponseBadRequest
-from wwwhisper_auth.utils import RestView
+from wwwhisper_auth.http import HttpResponseBadRequest
+from wwwhisper_auth.http import RestView
 import django.contrib.auth as contrib_auth
 import json
 import logging
