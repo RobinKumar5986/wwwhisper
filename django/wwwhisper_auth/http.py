@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
 from django.views.generic import View
 
 import json
@@ -25,6 +26,7 @@ class HttpResponseCreated(HttpResponse):
 
 class RestView(View):
 
+    @method_decorator(never_cache)
     @method_decorator(csrf_protect)
     def dispatch(self, request, *args, **kwargs):
         method = request.method.lower()

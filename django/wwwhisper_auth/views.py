@@ -5,6 +5,8 @@ from django.core.context_processors import csrf
 from django.http import HttpResponse
 from django.template import Context, loader
 from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_control
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth.backend import AssertionVerificationException;
@@ -29,6 +31,7 @@ def _extract_encoded_path_argument(request):
 class Auth(View):
     locations_collection = None
 
+    @method_decorator(never_cache)
     def get(self, request):
         encoded_path = _extract_encoded_path_argument(request)
         if encoded_path is None:
@@ -71,6 +74,7 @@ class Auth(View):
         return HttpResponse('Login required.', status=401)
 
 class CsrfToken(View):
+    @never_cache
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         csrf_token = csrf(request).values()[0]
