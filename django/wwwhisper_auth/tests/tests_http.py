@@ -21,7 +21,7 @@ urlpatterns = patterns(
     url(r'^testview2/(?P<url_arg>[a-z]+)/$', TestView2.as_view()))
 
 class RestViewTest(HttpTestCase):
-    urls = 'wwwhisper_auth.tests.tests_rest_view'
+    urls = 'wwwhisper_auth.tests.tests_http'
 
     def test_method_dispatched(self):
         response = self.get('/testview/')
