@@ -9,10 +9,10 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth.backend import AssertionVerificationException
 from wwwhisper_auth.http import HttpResponseBadRequest
+from wwwhisper_auth.http import HttpResponseJson
 from wwwhisper_auth.http import RestView
 
 import django.contrib.auth as contrib_auth
-import json
 import logging
 import wwwhisper_auth.url_path as url_path
 
@@ -142,9 +142,7 @@ class CsrfToken(View):
         subsequent calls to CSRF protected methods.
         """
         csrf_token = csrf(request).values()[0]
-        json_response = json.dumps({'csrfToken': str(csrf_token)})
-        return HttpResponse(json_response, mimetype="application/json")
-
+        return HttpResponseJson({'csrfToken': str(csrf_token)})
 
 class Login(RestView):
     """Allows a user to authenticates with BrowserID."""

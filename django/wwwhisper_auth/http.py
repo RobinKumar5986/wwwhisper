@@ -16,17 +16,28 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
-class HttpResponseBadRequest(HttpResponse):
-    """Response returned when request was invalid."""
 
-    def __init__(self, message):
-        logger.debug('Bad request %s' % (message))
-        super(HttpResponseBadRequest, self).__init__(message, status=400)
+class HttpResponseJson(HttpResponse):
+    """"Request succeeded.
+
+    Response contains json representation of a resource.
+    """
+
+    def __init__(self, attributes_dict):
+        super(HttpResponseJson, self).__init__(json.dumps(attributes_dict),
+                                               mimetype="application/json",
+                                               status=200)
+
+class HttpResponseNoContent(HttpResponse):
+    """Request succeeded but response body is empty."""
+
+    def __init__(self):
+        super(HttpResponseNoContent, self).__init__(status=204)
 
 class HttpResponseCreated(HttpResponse):
     """Response returned when resource was created.
 
-    Contains representation of the created resource.
+    Contains json representation of the created resource.
     """
 
     def __init__(self, attributes_dict):
@@ -41,17 +52,19 @@ class HttpResponseCreated(HttpResponse):
                                                   mimetype="application/json",
                                                   status=201)
 
-class HttpResponseNoContent(HttpResponse):
-    """Request succeeded but response body is empty."""
 
-    def __init__(self):
-        super(HttpResponseNoContent, self).__init__(status=204)
+class HttpResponseBadRequest(HttpResponse):
+    """Response returned when request was invalid."""
+
+    def __init__(self, message):
+        logger.debug('Bad request %s' % (message))
+        super(HttpResponseBadRequest, self).__init__(message, status=400)
 
 class RestView(View):
     """A common base class for all REST style views.
 
     Makes sure a CSRF protection token is passed for each called
-    method.  Disables caching of responses. For POST and PUT methods,
+    method. Disables caching of responses. For POST and PUT methods,
     deserializes method arguments from a json encoded request body. If
     a specific method is not implemented in a subclass or if is does
     not accept arguments passed in the body, or if some arguments are

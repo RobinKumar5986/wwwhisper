@@ -5,12 +5,12 @@ from django.views.decorators.cache import cache_control
 
 from wwwhisper_auth.http import HttpResponseBadRequest
 from wwwhisper_auth.http import HttpResponseCreated
+from wwwhisper_auth.http import HttpResponseJson
 from wwwhisper_auth.http import HttpResponseNoContent
 from wwwhisper_auth.http import RestView
 from wwwhisper_auth.models import CreationException
 from wwwhisper_auth.models import full_url
 
-import json
 import logging
 import uuid
 
@@ -32,11 +32,10 @@ class CollectionView(RestView):
 
     def get(self, request):
         items_list = [item.attributes_dict() for item in self.collection.all()]
-        data = json.dumps({
+        return HttpResponseJson({
                 'self' : full_url(request.path),
                 self.collection.collection_name: items_list
                 })
-        return HttpResponse(data, mimetype="application/json")
 
     def _item_path(self, collection_url, uuid):
         return collection_url + uuid + "/"
@@ -49,8 +48,7 @@ class ItemView(RestView):
         if item is None:
             return HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())
-        return HttpResponse(json.dumps(item.attributes_dict()),
-                            mimetype="application/json")
+        return HttpResponseJson(item.attributes_dict())
 
     def delete(self, request, **kwargs):
         deleted = self.collection.delete_item(**kwargs)
@@ -66,11 +64,6 @@ class OpenAccessView(RestView):
     def _attributes_dict(request):
         return {'self' : full_url(request.path)}
 
-    # TODO: Move json serialization to http module.
-    @staticmethod
-    def _json_representation(request):
-        return json.dumps(OpenAccessView._attributes_dict(request))
-
     def get(self, request, location_uuid):
         location = self.locations_collection.find_item(location_uuid)
         if location is None:
@@ -78,16 +71,15 @@ class OpenAccessView(RestView):
         if location.open_access is False:
             return HttpResponseNotFound(
                 'Open access to location disallowed.')
-        return HttpResponse(self._json_representation(request),
-                            mimetype="application/json")
+        return HttpResponseJson(self._attributes_dict(request))
 
     def put(self, request, location_uuid):
         location = self.locations_collection.find_item(location_uuid)
         if location is None:
             return HttpResponseNotFound('Location not found.')
         if location.open_access:
-            return HttpResponse(self._json_representation(request),
-                                mimetype="application/json")
+            return HttpResponseJson(self._attributes_dict(request))
+
         location.grant_open_access()
         response =  HttpResponseCreated(self._attributes_dict(request))
         response['Location'] = full_url(request.path)
@@ -112,8 +104,7 @@ class AllowedUsersView(RestView):
             return HttpResponseNotFound('Location not found.')
         try:
             permission = location.get_permission(user_uuid)
-            return HttpResponse(json.dumps(permission.attributes_dict()),
-                                mimetype="application/json")
+            return HttpResponseJson(permission.attributes_dict())
         except LookupError, ex:
             return HttpResponseNotFound(ex)
 
@@ -139,8 +130,7 @@ class AllowedUsersView(RestView):
                 response =  HttpResponseCreated(attributes_dict)
                 response['Location'] = attributes_dict['self']
             else:
-                response = HttpResponse(json.dumps(attributes_dict),
-                                        mimetype="application/json")
+                response = HttpResponseJson(attributes_dict)
             return response
         except LookupError, ex:
             return HttpResponseNotFound(ex)
