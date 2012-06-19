@@ -25,7 +25,7 @@ class CollectionView(RestView):
         except CreationException as ex:
             return HttpResponseBadRequest(ex)
         attributes_dict = created_item.attributes_dict()
-        response = HttpResponseCreated(json.dumps(attributes_dict))
+        response = HttpResponseCreated(attributes_dict)
         response['Location'] = attributes_dict['self']
         response['Content-Location'] = attributes_dict['self']
         return response
@@ -62,8 +62,14 @@ class ItemView(RestView):
 class OpenAccessView(RestView):
     locations_collection = None
 
-    def _json_representation(self, request):
-        return json.dumps({'self' : full_url(request.path)})
+    @staticmethod
+    def _attributes_dict(request):
+        return {'self' : full_url(request.path)}
+
+    # TODO: Move json serialization to http module.
+    @staticmethod
+    def _json_representation(request):
+        return json.dumps(OpenAccessView._attributes_dict(request))
 
     def get(self, request, location_uuid):
         location = self.locations_collection.find_item(location_uuid)
@@ -83,7 +89,7 @@ class OpenAccessView(RestView):
             return HttpResponse(self._json_representation(request),
                                 mimetype="application/json")
         location.grant_open_access()
-        response =  HttpResponseCreated(self._json_representation(request))
+        response =  HttpResponseCreated(self._attributes_dict(request))
         response['Location'] = full_url(request.path)
         return response
 
@@ -130,7 +136,7 @@ class AllowedUsersView(RestView):
             (permission, created) = location.grant_access(user_uuid)
             attributes_dict = permission.attributes_dict()
             if created:
-                response =  HttpResponseCreated(json.dumps(attributes_dict))
+                response =  HttpResponseCreated(attributes_dict)
                 response['Location'] = attributes_dict['self']
             else:
                 response = HttpResponse(json.dumps(attributes_dict),

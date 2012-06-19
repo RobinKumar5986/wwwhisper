@@ -32,6 +32,11 @@ class RestViewTest(HttpTestCase):
         self.assertEqual(277, response.status_code)
         self.assertEqual('hello world', response.content)
 
+    def test_method_with_missing_json_argument_in_body_dispatched(self):
+        response = self.post('/testview/', {});
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content, 'Invalid request arguments')
+
     def test_method_with_incorrect_json_argument_in_body(self):
         response = self.post('/testview/', {'pong_message' : 'hello world'});
         self.assertEqual(400, response.status_code)
@@ -43,7 +48,8 @@ class RestViewTest(HttpTestCase):
                                     'text/json',
                                     HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(400, response.status_code)
-        self.assertRegexpMatches(response.content, 'Invalid request arguments')
+        self.assertRegexpMatches(
+            response.content, 'Failed to parse request body as json object.')
 
     def test_incorrect_method(self):
         response = self.delete('/testview/')
