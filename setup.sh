@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 virtualenv virtualenv
 source ./virtualenv/bin/activate
