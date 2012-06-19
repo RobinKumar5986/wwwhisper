@@ -15,6 +15,9 @@ class TestView2(RestView):
     def get(self, request, url_arg):
         return HttpResponse(url_arg, status=288)
 
+    def post(self, request, url_arg):
+        return HttpResponse(url_arg, status=298)
+
 urlpatterns = patterns(
     '',
     url(r'^testview/$', TestView.as_view()),
@@ -49,7 +52,7 @@ class RestViewTest(HttpTestCase):
                                     HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(
-            response.content, 'Failed to parse request body as json object.')
+            response.content, 'Failed to parse the request body as a json.')
 
     def test_incorrect_method(self):
         response = self.delete('/testview/')
@@ -63,3 +66,11 @@ class RestViewTest(HttpTestCase):
         response = self.get('/testview2/helloworld/');
         self.assertEqual(288, response.status_code)
         self.assertEqual('helloworld', response.content)
+
+
+    def test_argument_in_body_cannot_overwrite_argument_in_url(self):
+        response = self.post('/testview2/helloworld/',
+                             {'url_arg': 'hello-world'});
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(
+            response.content, 'Invalid argument passed in the request body.')

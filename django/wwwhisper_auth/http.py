@@ -66,7 +66,7 @@ class RestView(View):
     Makes sure a CSRF protection token is passed for each called
     method. Disables caching of responses. For POST and PUT methods,
     deserializes method arguments from a json encoded request body. If
-    a specific method is not implemented in a subclass or if is does
+    a specific method is not implemented in a subclass, or if it does
     not accept arguments passed in the body, or if some arguments are
     missing, an appropriate error is returned to the client.
     """
@@ -76,9 +76,9 @@ class RestView(View):
     def dispatch(self, request, *args, **kwargs):
         """Dispatches a method to a subclass.
 
-        args and kwargs contain arguments that are passed as a query
-        string, for PUT and POST these need to be updated with
-        arguments passed in a json body.
+        kwargs contains arguments that are passed as a query string,
+        for PUT and POST arguments passed in a json request body are
+        added to kwargs, conflicting names result in an error.
         """
 
         method = request.method.lower()
@@ -88,16 +88,20 @@ class RestView(View):
         if (method == 'post' or method == 'put') \
                 and len(request.body) != 0 and request.body[0] != '-':
             try:
-                # TODO: BUG AHEAD. arguments from the path need to
-                # take precedence over arguments from the body,
-                # otherwise access control for admin can be
-                # circumvented.
-                kwargs.update(json.loads(request.body))
+                json_args = json.loads(request.body)
+                for k in json_args:
+                    if kwargs.has_key(k):
+                        return HttpResponseBadRequest(
+                            'Invalid argument passed in the request body.')
+                    else:
+                        kwargs[k] = json_args[k]
+                kwargs.update()
             except ValueError, err:
                 logger.debug(
-                    'Failed to parse request body as json object: %s' % (err))
+                    'Failed to parse the request body a as json object: %s'
+                    % (err))
                 return HttpResponseBadRequest(
-                    'Failed to parse request body as json object.')
+                    'Failed to parse the request body as a json object.')
         try:
             return super(RestView, self).dispatch(request, *args, **kwargs)
         except TypeError, err:
