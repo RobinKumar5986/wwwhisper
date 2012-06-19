@@ -51,8 +51,8 @@ class RestViewTest(HttpTestCase):
                                     'text/json',
                                     HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(400, response.status_code)
-        self.assertRegexpMatches(
-            response.content, 'Failed to parse the request body as a json.')
+        self.assertRegexpMatches(response.content, 'Failed to parse the '
+                                 'request body as a json object.')
 
     def test_incorrect_method(self):
         response = self.delete('/testview/')
