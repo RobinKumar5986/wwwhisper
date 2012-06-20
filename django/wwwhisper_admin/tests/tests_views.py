@@ -133,7 +133,7 @@ class LocationTest(AdminViewTestCase):
       put_response = self.put(open_access_url)
       self.assertEqual(201, put_response.status_code)
       self.assertEqual(open_access_url,
-                       json.loads(put_response.content)['self']);
+                       json.loads(put_response.content)['self'])
       self.assertEqual(open_access_url, put_response['Location'])
 
       # Get location again and make sure openAccess attribute is now true.
@@ -147,7 +147,7 @@ class LocationTest(AdminViewTestCase):
       put_response2 = self.put(open_access_url)
       self.assertEqual(200, put_response2.status_code)
       self.assertFalse(put_response2.has_header('Location'))
-      self.assertEqual(put_response1.content, put_response2.content);
+      self.assertEqual(put_response1.content, put_response2.content)
 
    def test_check_open_access_to_location(self):
       location = self.add_location()
@@ -156,7 +156,7 @@ class LocationTest(AdminViewTestCase):
       get_response = self.get(open_access_url)
       self.assertEqual(200, get_response.status_code)
       self.assertEqual(open_access_url,
-                       json.loads(get_response.content)['self']);
+                       json.loads(get_response.content)['self'])
 
    def test_revoke_open_access_to_location(self):
       location = self.add_location()

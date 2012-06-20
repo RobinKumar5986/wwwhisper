@@ -31,17 +31,17 @@ class RestViewTest(HttpTestCase):
         self.assertEqual(267, response.status_code)
 
     def test_method_with_json_argument_in_body_dispatched(self):
-        response = self.post('/testview/', {'ping_message' : 'hello world'});
+        response = self.post('/testview/', {'ping_message' : 'hello world'})
         self.assertEqual(277, response.status_code)
         self.assertEqual('hello world', response.content)
 
     def test_method_with_missing_json_argument_in_body_dispatched(self):
-        response = self.post('/testview/', {});
+        response = self.post('/testview/', {})
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content, 'Invalid request arguments')
 
     def test_method_with_incorrect_json_argument_in_body(self):
-        response = self.post('/testview/', {'pong_message' : 'hello world'});
+        response = self.post('/testview/', {'pong_message' : 'hello world'})
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content, 'Invalid request arguments')
 
@@ -60,17 +60,17 @@ class RestViewTest(HttpTestCase):
         # 'The response MUST include an Allow header containing a list
         # of valid methods for the requested resource.' (rfc2616)
         self.assertItemsEqual(['get', 'post', 'head'],
-                              response['Allow'].split(', '));
+                              response['Allow'].split(', '))
 
     def test_method_with_argument_in_url_dispatched(self):
-        response = self.get('/testview2/helloworld/');
+        response = self.get('/testview2/helloworld/')
         self.assertEqual(288, response.status_code)
         self.assertEqual('helloworld', response.content)
 
 
     def test_argument_in_body_cannot_overwrite_argument_in_url(self):
         response = self.post('/testview2/helloworld/',
-                             {'url_arg': 'hello-world'});
+                             {'url_arg': 'hello-world'})
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(
             response.content, 'Invalid argument passed in the request body.')

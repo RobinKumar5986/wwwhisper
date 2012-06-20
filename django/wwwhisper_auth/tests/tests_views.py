@@ -16,7 +16,7 @@ class FakeAssertionVeryfingBackend(ModelBackend):
         try:
             if assertion == INCORRECT_ASSERTION:
                 raise backend.AssertionVerificationException(
-                    'Assertion verification failed.');
+                    'Assertion verification failed.')
             return User.objects.get(email=assertion)
         except User.DoesNotExist:
             return None
