@@ -1,3 +1,9 @@
+"""backend that verifies BrowserID assertion.
+
+Very similar backend is defined in django_browserid application. It is
+not used here, because it does not allow to distinguish between an
+assertion verification error and an unknown user.
+"""
 from django.contrib.auth.backends import ModelBackend
 from django_browserid.base import verify
 from wwwhisper_auth import models

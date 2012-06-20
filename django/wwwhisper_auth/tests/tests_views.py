@@ -3,15 +3,20 @@ from django.test import TestCase
 from django.test.client import Client
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
+from wwwhisper_auth import backend
 from wwwhisper_auth import models
 from wwwhisper_auth.tests.utils import HttpTestCase
 
 import json
 
+INCORRECT_ASSERTION="ThisAssertionIsFalse"
 
 class FakeAssertionVeryfingBackend(ModelBackend):
     def authenticate(self, assertion):
         try:
+            if assertion == INCORRECT_ASSERTION:
+                raise backend.AssertionVerificationException(
+                    'Assertion verification failed.');
             return User.objects.get(email=assertion)
         except User.DoesNotExist:
             return None
@@ -96,6 +101,13 @@ class LoginTest(AuthTestCase):
         response = self.post('/auth/api/login/',
                              {'assertion' : 'foo@example.com'})
         self.assertEqual(403, response.status_code)
+
+    def test_login_fails_if_incorrect_assertion(self):
+        response = self.post('/auth/api/login/',
+                             {'assertion' : INCORRECT_ASSERTION})
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(
+            response.content, 'Assertion verification failed')
 
     def test_login_succeeds_if_known_user(self):
         self.users_collection.create_item('foo@example.com')

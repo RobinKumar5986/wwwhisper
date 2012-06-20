@@ -1,11 +1,12 @@
+"""Urls exposed by the wwwhisper_admin application."""
+
 from django.conf.urls.defaults import patterns, url
-from django.contrib.auth.models import User
 from views import CollectionView, ItemView
 from views import OpenAccessView, AllowedUsersView
-from wwwhisper_auth.models import LocationsCollection, UsersCollection
+from wwwhisper_auth import models
 
-users_collection = UsersCollection()
-locations_collection = LocationsCollection()
+users_collection = models.UsersCollection()
+locations_collection = models.LocationsCollection()
 
 urlpatterns = patterns(
     'wwwhisper_admin.views',
