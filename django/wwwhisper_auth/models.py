@@ -118,7 +118,7 @@ class Location(ValidatedModel):
                          http_location=self.path) is not None)
 
     def grant_access(self, user_uuid):
-        """Allows access to the location by a given user.
+        """Grants access to the location to a given user.
 
         Args:
             user_uuid: string UUID of a user.
@@ -146,7 +146,7 @@ class Location(ValidatedModel):
         return (permission, created)
 
     def revoke_access(self, user_uuid):
-        """Disallows access to the location by a given user.
+        """Revokes access to the location from a given user.
 
         Args:
             user_uuid: string UUID of a user.
@@ -206,15 +206,24 @@ class Location(ValidatedModel):
         return "%s" % (self.path)
 
 class Permission(ValidatedModel):
+    """Connects a location with a user that can access the location.
+
+    Attributes:
+        http_location: The location to which the Permission object gives access.
+        user: The user that is given acces to the location.
+    """
+
     http_location = models.ForeignKey(Location)
     user = models.ForeignKey(User)
 
     def attributes_dict(self):
+        """Returns externally visible attributes of the permission resource."""
         return _add_common_attributes(
             self, {'user': self.user.attributes_dict()})
 
     @models.permalink
     def get_absolute_url(self):
+        """Constructs URL of the permission resource."""
         return ('wwwhisper_allowed_user', (),
                 {'location_uuid' : self.http_location.uuid,
                  'user_uuid': self.user.uuid})
@@ -223,27 +232,64 @@ class Permission(ValidatedModel):
         return "%s, %s" % (self.http_location, self.user.email)
 
 class Collection(object):
+    """A common base class for managing a collection of resources.
+
+    Resources in the collection are of the same type and need to be
+    identified by an UUID.
+
+    Attributes (Need to be defined in subclasses):
+        item_name: Name of a resource stored in the collection.
+        model_class: Class that manages storage of the resource.
+        uuid_column_name: Name of a column in model class that stores
+            a resource uuid.
+    """
+
     def all(self):
+        """Returns all items in the collection."""
         return self.model_class.objects.all()
 
     def find_item(self, uuid):
+        """Finds an item with a given UUID.
+
+        Returns:
+           The item or None if not found.
+        """
         filter_args = {self.uuid_column_name: uuid}
         return _find(self.model_class, **filter_args)
 
     def delete_item(self, uuid):
+        """Deletes an item with a given UUID.
+
+        Returns:
+           True if the item existed and was deleted, False if not found.
+        """
         item = self.find_item(uuid)
         if item is None:
             return False
         item.delete()
         return True
 
+    @property
+    def collection_name(self):
+        return self.item_name + 's'
+
 class UsersCollection(Collection):
-    collection_name = 'users'
+    """Collection of users resources."""
+
     item_name = 'user'
     model_class = User
     uuid_column_name = 'username'
 
     def create_item(self, email):
+        """Creates a new User object.
+
+        Args:
+            email: an email of the created user.
+
+        Raises:
+            CreationException if the email is not valid or if a user
+            with such email already exists.
+        """
         try:
             encoded_email = _encode_email(email)
         except ValidationError, ex:
@@ -255,6 +301,11 @@ class UsersCollection(Collection):
         return user
 
     def find_item_by_email(self, email):
+        """Finds user with a given email.
+
+        Returns:
+            User object or None if not found.
+        """
         try:
             encoded_email = _encode_email(email)
         except ValidationError, ex:
@@ -262,7 +313,6 @@ class UsersCollection(Collection):
         return _find(self.model_class, email=encoded_email);
 
 class LocationsCollection(Collection):
-    collection_name = 'locations'
     item_name = 'location'
     model_class = Location
     uuid_column_name = 'uuid'
