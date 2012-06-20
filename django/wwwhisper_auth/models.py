@@ -1,13 +1,16 @@
-"""Data model underlying access control mechanism.
+"""Data model fot the access control mechanism.
 
-Stores information about locations, users and permission. Provides
+Stores information about locations, users and permissions. Provides
 methods that map to REST operations that can be performed on users,
 locations and permissions resources. Allows to retrieve externally
 visible attributes of these resources, the attributes are returned as
 a resource representation by REST methods.
 
-Makes sure entered emails and paths are valid. Allows to determine if
-a user can access a given path.
+Resources are identified by an externally visible UUIDs. Standard
+primary key ids are not used for external identification purposes,
+because those ids can be reused after object is deleted.
+
+Makes sure entered emails and paths are valid.
 """
 
 from django.conf import settings
@@ -28,7 +31,7 @@ if SITE_URL is None:
         'WWWhisper requires SITE_URL to be set in django settings.py file')
 
 class CreationException(Exception):
-    """Raised when creation of a new location or user failed."""
+    """Raised when creation of a resource failed."""
     pass
 
 class ValidatedModel(models.Model):
@@ -53,9 +56,8 @@ class ValidatedModel(models.Model):
 """Externally visible UUID of a user.
 
 Allows to identify a REST resource representing a user. UUID is stored
-in the username field when User object is created. Standard primary
-key ids are not used for external identification purposes, because
-those ids can be reused after object is deleted."""
+in the username field when User object is created.
+"""
 User.uuid = property(lambda(self): self.username)
 
 # TODO: Check if a doc string can be dynamically added.
@@ -100,7 +102,7 @@ class Location(ValidatedModel):
         self.save()
 
     def revoke_open_access(self):
-        """Disallows access to the location without authentication."""
+        """Disallows not-authenticated access to the location."""
         self.open_access = False
         self.save()
 
@@ -241,8 +243,8 @@ class Collection(object):
 
     Attributes (Need to be defined in subclasses):
         item_name: Name of a resource stored in the collection.
-        model_class: Class that manages storage of the resource.
-        uuid_column_name: Name of a column in model class that stores
+        model_class: Class that manages storage of resources.
+        uuid_column_name: Name of a column in the model class that stores
             a resource uuid.
     """
 
@@ -286,7 +288,7 @@ class UsersCollection(Collection):
         """Creates a new User object.
 
         Args:
-            email: an email of the created user.
+            email: An email of the created user.
 
         Raises:
             CreationException if the email is invalid or if a user
@@ -325,11 +327,11 @@ class LocationsCollection(Collection):
         """Creates a new Location object.
 
         The location path should be canonical and should not contain
-        parts that are not used for access control mechanism (query,
-        fragment, parameters).
+        parts that are not used for access control (query, fragment,
+        parameters).
 
         Args:
-            path: a canonical path to the location.
+            path: A canonical path to the location.
 
         Raises:
             CreationException if the path is invalid or if a location
@@ -397,8 +399,8 @@ def _urn_from_uuid(uuid):
 def _add_common_attributes(item, attributes_dict):
     """Inserts common attributes of an item to a given dict.
 
-    Attributes that are currently common for different resource types
-    are a 'self' link and an 'id' field.
+    Attributes that are common for different resource types are a
+    'self' link and an 'id' field.
     """
     attributes_dict['self'] = full_url(item.get_absolute_url())
     if hasattr(item, 'uuid'):
