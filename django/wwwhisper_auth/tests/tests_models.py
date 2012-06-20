@@ -307,13 +307,13 @@ class LocationsCollectionTest(CollectionTestCase):
         location2.grant_access(user3.uuid)
 
         self.assertItemsEqual(['foo@example.com', 'bar@example.com'],
-                              [u['email'] for u in location1.allowed_users()])
+                              [u.email for u in location1.allowed_users()])
         self.assertItemsEqual(['baz@example.com'],
-                              [u['email'] for u in location2.allowed_users()])
+                              [u.email for u in location2.allowed_users()])
 
         location1.revoke_access(user1.uuid)
         self.assertItemsEqual(['bar@example.com'],
-                              [u['email'] for u in location1.allowed_users()])
+                              [u.email for u in location1.allowed_users()])
 
     def test_get_allowed_users_when_empty(self):
         location = self.locations_collection.create_item(TEST_LOCATION)

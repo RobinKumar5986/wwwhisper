@@ -1,3 +1,15 @@
+"""Data model underlying access control mechanism.
+
+Stores information about locations, users and permission. Provides
+methods that map to REST operations that can be perfomed on users,
+locations and permissions resources. Allows to retrieve externally
+visible attributes of these resources, the attributes are returned as
+a resource representation by REST methods.
+
+Makes sure entered emails and paths are valid. Allows to determine if
+a user can access a given path.
+"""
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
@@ -14,9 +26,16 @@ if SITE_URL is None:
         'WWWhisper requires SITE_URL to be set in django settings.py file');
 
 class CreationException(Exception):
+    """Raised when creation of a new location or user failed."""
     pass;
 
 class ValidatedModel(models.Model):
+    """Base class for all model classes.
+
+    Makes sure all constraints are preserved before changed data is
+    saved.
+    """
+
     def save(self, *args, **kwargs):
         self.full_clean()
         return super(ValidatedModel, self).save(*args, **kwargs)
@@ -25,32 +44,94 @@ class ValidatedModel(models.Model):
         # Do not create a DB table for ValidatedModel.
         abstract = True
 
+# Because Django authentication mechanism is used, users need to be
+# represented by a standard Django User class. But some additions are
+# needed:
+
+"""Externaly visible UUID of a user.
+
+Allows to identify a REST resource representing a user. UUID is stored
+in the username field when User object is created. Standard primary
+key ids are not used for external identification purposes, because
+those ids can be reused after object is deleted."""
 User.uuid = property(lambda(self): self.username)
+
+"""Returns externaly visible attributes of the user resource."""
 User.attributes_dict = lambda(self): \
     _add_common_attributes(self, {'email': self.email})
 
+
 class Location(ValidatedModel):
+    """A location for which access control rules are defined.
+
+    Location is uniquely identified by its canonical path. All access
+    control rules defined for a location apply also to sub-paths,
+    unless a more specific location exists. In such case the more
+    specific location takes precedence over the more generic one.
+
+    For example, if a location with a path /pub is defined and a user
+    foo@example.com is granted access to this location, the user can
+    access /pub and all sub path of /pub. But if a location with a
+    path /pub/beer is added, and the user foo@example.com is not
+    granted access to this location, the user won't be able to access
+    /pub/beer and all its sub-paths.
+
+    Attributes:
+      path: Canonical path of the location.
+      uuid: Externally visible UUID of the location, allows to identify a REST
+          resource representing the location.
+      open_access: If true, access to the location does not require
+          authentication.
+    """
+
     path = models.CharField(max_length=2000, null=False, primary_key=True)
     uuid = models.CharField(max_length=36, null=False, db_index=True,
                             editable=False)
-    # Not authenticated access allowed.
     open_access = models.BooleanField(default=False, null=False)
 
     def grant_open_access(self):
+        """Allows access to the location without authentication.
+
+        For authenticated users, access is also always allowed.
+        """
         self.open_access = True;
         self.save();
 
     def revoke_open_access(self):
+        """Disallows access to the location without authentication."""
         self.open_access= False
         self.save();
 
     def can_access(self, user_uuid):
+        """Determines if a user can access the location.
+
+        Args:
+            user_uuid: string UUID of a user.
+
+        Returns:
+            True if the user is granted permission to access the
+            location or it the location is open.
+        """
         return (self.open_access
                 or _find(Permission,
                          user__username=user_uuid,
                          http_location=self.path) is not None)
 
     def grant_access(self, user_uuid):
+        """Allows access to the location by a given user.
+
+        Args:
+            user_uuid: string UUID of a user.
+
+        Returns:
+            (new Permission object, True) if access to the location was
+                sucesfully granted.
+            (existing Permission object, False) if user already had
+                granted access to the location.
+
+        Raises:
+            LookupError: No user with a given UUID.
+        """
         user = _find(User, username=user_uuid)
         if user is None:
             raise LookupError('User not found')
@@ -65,11 +146,28 @@ class Location(ValidatedModel):
         return (permission, created)
 
     def revoke_access(self, user_uuid):
+        """Disallows access to the location by a given user.
+
+        Args:
+            user_uuid: string UUID of a user.
+
+        Raises:
+            LookupError: No user with a given UUID or the user can not
+                access the location.
+        """
         permission = self.get_permission(user_uuid)
         permission.delete()
 
-
     def get_permission(self, user_uuid):
+        """Gets Permission object for a given user.
+
+        Args:
+            user_uuid: string UUID of a user.
+
+        Raises:
+            LookupError: No user with a given UUID or the user can not
+                access the location.
+        """
         user = _find(User, username=user_uuid)
         if user is None:
             raise LookupError('User not found.')
@@ -80,18 +178,23 @@ class Location(ValidatedModel):
         return permission
 
     def allowed_users(self):
-        return [permission.user.attributes_dict() for permission in
+        """"Returns a list of users that can access the location."""
+        return [permission.user for permission in
                 Permission.objects.filter(http_location=self.path)]
 
     def attributes_dict(self):
+        """Returns externally visible attributes of the location resource."""
         return _add_common_attributes(self, {
                 'path': self.path,
                 'openAccess': self.open_access,
-                'allowedUsers': self.allowed_users(),
+                'allowedUsers': [
+                    user.attributes_dict() for user in self.allowed_users()
+                    ],
                 })
 
     @models.permalink
     def get_absolute_url(self):
+        """Constructs URL of the location resource."""
         return ('wwwhisper_location', (), {'uuid' : self.uuid})
 
     def save(self, *args, **kwargs):
