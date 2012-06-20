@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 class CollectionView(RestView):
     """Generic view over a collection of resources.
 
-    Allows to get json representation of all items in the collection
-    and to add new items.
+    Allows to get json representation of all resources in the
+    collection and to add new resources to the collection.
 
     Attributes:
         collection: The collection that view represents (extends
@@ -30,12 +30,12 @@ class CollectionView(RestView):
     collection = None
 
     def post(self, request, **kwargs):
-        """Ads a new item to the collection.
+        """Ads a new resource to the collection.
 
         Args:
             **kwargs: holds collection dependent arguments that are
-              used to create an item.
-        Returns json representation of the added item."""
+              used to create the resource.
+        Returns json representation of the added resource."""
         try:
             created_item = self.collection.create_item(**kwargs)
         except CreationException as ex:
@@ -47,7 +47,7 @@ class CollectionView(RestView):
         return response
 
     def get(self, request):
-        """Returns json representation of all elements in the collection."""
+        """Returns json representation of all resources in the collection."""
         items_list = [item.attributes_dict() for item in self.collection.all()]
         return HttpResponseJson({
                 'self' : full_url(request.path),
@@ -55,19 +55,20 @@ class CollectionView(RestView):
                 })
 
 class ItemView(RestView):
-    """Generic view over a single item stored in a collection.
+    """Generic view over a single resource stored in a collection.
 
-    Allows to get json representation of the item and to delete the item.
+    Allows to get json representation of the resource and to delete
+    the resource.
 
     Attributes:
-        collection: The collection that view uses to retrieve the item
+        collection: The collection that view uses to retrieve the resource
         (extends wwwhisper_auth.models.Collection).
     """
 
     collection = None
 
     def get(self, request, uuid):
-        """Returns json representation of the item with a given uuid."""
+        """Returns json representation of a resource with a given uuid."""
         item = self.collection.find_item(uuid)
         if item is None:
             return HttpResponseNotFound(
@@ -75,7 +76,7 @@ class ItemView(RestView):
         return HttpResponseJson(item.attributes_dict())
 
     def delete(self, request, uuid):
-        """Deletes the item with a given uuid."""
+        """Deletes a resource with a given uuid."""
         deleted = self.collection.delete_item(uuid)
         if not deleted:
             return HttpResponseNotFound(
@@ -96,18 +97,8 @@ class OpenAccessView(RestView):
         """Attributes representing a resource to which a request is related."""
         return {'self' : full_url(request.path)}
 
-    def get(self, request, location_uuid):
-        """Returns success if access to a given location is open."""
-        location = self.locations_collection.find_item(location_uuid)
-        if location is None:
-            return HttpResponseNotFound('Location not found.')
-        if location.open_access is False:
-            return HttpResponseNotFound(
-                'Open access to location disallowed.')
-        return HttpResponseJson(self._attributes_dict(request))
-
     def put(self, request, location_uuid):
-        """Enables open access to a given location."""
+        """Creates a resource that enables open access to a given location."""
         location = self.locations_collection.find_item(location_uuid)
         if location is None:
             return HttpResponseNotFound('Location not found.')
@@ -119,8 +110,21 @@ class OpenAccessView(RestView):
         response['Location'] = full_url(request.path)
         return response
 
+    def get(self, request, location_uuid):
+        """Check if a resource that enables open access to a location exists."""
+        location = self.locations_collection.find_item(location_uuid)
+        if location is None:
+            return HttpResponseNotFound('Location not found.')
+        if location.open_access is False:
+            return HttpResponseNotFound(
+                'Open access to location disallowed.')
+        return HttpResponseJson(self._attributes_dict(request))
+
     def delete(self, request, location_uuid):
-        """Revokes open access to a given location."""
+        """Deletes a resource.
+
+        Disables open access to a given location.
+        """
         location = self.locations_collection.find_item(location_uuid)
         if location is None:
             return HttpResponseNotFound('Location not found.')
@@ -140,7 +144,10 @@ class AllowedUsersView(RestView):
     locations_collection = None
 
     def put(self, request, location_uuid, user_uuid):
-        """Grants access to a given location by a given user."""
+        """Creates a resource.
+
+        Grants access to a given location by a given user.
+        """
         location = self.locations_collection.find_item(location_uuid)
         if not location:
             return HttpResponseNotFound('Location not found.')
@@ -157,11 +164,11 @@ class AllowedUsersView(RestView):
             return HttpResponseNotFound(ex)
 
     def get(self, request, location_uuid, user_uuid):
-        """Checks if a user is explicitly granted access to a location.
+        """Checks if a resource that grants access exists.
 
         This is not equivalent of checking if the user can access the
         location. If the location is open, but the user is not
-        explicitly granted access, failure code is returned.
+        explicitly granted access, not found failure is returned.
         """
         location = self.locations_collection.find_item(location_uuid)
         if location is None:
@@ -173,9 +180,10 @@ class AllowedUsersView(RestView):
             return HttpResponseNotFound(ex)
 
     def delete(self, request, location_uuid, user_uuid):
-        """Revokes access to a given location by a given user.
+        """Deletes a resource
 
-        If the location is open, the user will still be able to access the
+        Revokes access to a given location by a given user. If the
+        location is open, the user will still be able to access the
         location after this call succeeds.
         """
         location = self.locations_collection.find_item(location_uuid)
