@@ -1,5 +1,6 @@
 """Views that handle user authentication and authorization."""
 
+from django.contrib import auth
 from django.core.context_processors import csrf
 from django.http import HttpResponse
 from django.template import Context, loader
@@ -13,7 +14,6 @@ from wwwhisper_auth.http import HttpResponseBadRequest
 from wwwhisper_auth.http import HttpResponseJson
 from wwwhisper_auth.http import RestView
 
-import django.contrib.auth as contrib_auth
 import logging
 
 logger = logging.getLogger(__name__)
@@ -169,11 +169,11 @@ class Login(RestView):
         if assertion == None:
             return HttpResponseBadRequest('BrowserId assertion not set.')
         try:
-            user = contrib_auth.authenticate(assertion=assertion)
+            user = auth.authenticate(assertion=assertion)
         except AssertionVerificationException, ex:
             return HttpResponseBadRequest(ex)
         if user is not None:
-            contrib_auth.login(request, user)
+            auth.login(request, user)
             logger.debug('%s successfully logged.' % (user.email))
             return HttpResponse("Login successful.")
         else:
@@ -197,7 +197,7 @@ class Logout(RestView):
 
     def post(self, request):
         """Logs a user out (invalidates a session cookie)."""
-        contrib_auth.logout(request)
+        auth.logout(request)
         template = loader.get_template('auth/bye.html')
         return HttpResponse(template.render(Context({})))
 
