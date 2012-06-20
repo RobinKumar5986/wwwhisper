@@ -240,18 +240,19 @@ class LocationsCollectionTest(CollectionTestCase):
                                 location.revoke_access,
                                 FAKE_UUID)
 
-    def test_find_parent_location(self):
+    def test_find_location(self):
         collection = self.locations_collection
         location = collection.create_item('/foo/bar')
-        self.assertEqual(location, collection.find_parent('/foo/bar'))
-        self.assertEqual(location, collection.find_parent('/foo/bar/'))
-        self.assertEqual(location, collection.find_parent('/foo/bar/b'))
-        self.assertEqual(location, collection.find_parent('/foo/bar/baz'))
-        self.assertEqual(location, collection.find_parent('/foo/bar/baz/bar/'))
+        self.assertEqual(location, collection.find_location('/foo/bar'))
+        self.assertEqual(location, collection.find_location('/foo/bar/'))
+        self.assertEqual(location, collection.find_location('/foo/bar/b'))
+        self.assertEqual(location, collection.find_location('/foo/bar/baz'))
+        self.assertEqual(
+            location, collection.find_location('/foo/bar/baz/bar/'))
 
-        self.assertIsNone(collection.find_parent('/foo/ba'))
-        self.assertIsNone(collection.find_parent('/foo/barr'))
-        self.assertIsNone(collection.find_parent('/foo/foo/bar'))
+        self.assertIsNone(collection.find_location('/foo/ba'))
+        self.assertIsNone(collection.find_location('/foo/barr'))
+        self.assertIsNone(collection.find_location('/foo/foo/bar'))
 
     def test_more_specific_location_takes_precedence_over_generic(self):
         collection = self.locations_collection
@@ -260,18 +261,19 @@ class LocationsCollectionTest(CollectionTestCase):
         location1.grant_access(user.uuid)
 
         location2 = collection.create_item('/foo/bar/baz')
-        self.assertEqual(location1, collection.find_parent('/foo/bar'))
-        self.assertEqual(location1, collection.find_parent('/foo/bar/ba'))
-        self.assertEqual(location1, collection.find_parent('/foo/bar/bazz'))
+        self.assertEqual(location1, collection.find_location('/foo/bar'))
+        self.assertEqual(location1, collection.find_location('/foo/bar/ba'))
+        self.assertEqual(location1, collection.find_location('/foo/bar/bazz'))
 
-        self.assertEqual(location2, collection.find_parent('/foo/bar/baz'))
-        self.assertEqual(location2, collection.find_parent('/foo/bar/baz/'))
-        self.assertEqual(location2, collection.find_parent('/foo/bar/baz/bam'))
+        self.assertEqual(location2, collection.find_location('/foo/bar/baz'))
+        self.assertEqual(location2, collection.find_location('/foo/bar/baz/'))
+        self.assertEqual(
+            location2, collection.find_location('/foo/bar/baz/bam'))
         self.assertFalse(location2.can_access(user.uuid))
 
     def test_trailing_slash_respected(self):
         location = self.locations_collection.create_item('/foo/bar/')
-        self.assertIsNone(self.locations_collection.find_parent('/foo/bar'))
+        self.assertIsNone(self.locations_collection.find_location('/foo/bar'))
 
     def test_grant_access_to_root(self):
         location = self.locations_collection.create_item('/')
@@ -279,11 +281,11 @@ class LocationsCollectionTest(CollectionTestCase):
         location.grant_access(user.uuid)
 
         self.assertEqual(location,
-                         self.locations_collection.find_parent('/'))
+                         self.locations_collection.find_location('/'))
         self.assertEqual(location,
-                         self.locations_collection.find_parent('/f'))
-        self.assertEqual(location,
-                         self.locations_collection.find_parent('/foo/bar/baz'))
+                         self.locations_collection.find_location('/f'))
+        self.assertEqual(
+            location, self.locations_collection.find_location ('/foo/bar/baz'))
 
     def test_grant_open_access(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)

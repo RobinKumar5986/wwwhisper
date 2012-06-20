@@ -90,7 +90,7 @@ class Auth(View):
             return HttpResponseBadRequest(path_validation_error)
 
         user = request.user
-        location = self.locations_collection.find_parent(decoded_path)
+        location = self.locations_collection.find_location(decoded_path)
 
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)

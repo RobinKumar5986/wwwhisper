@@ -1,7 +1,7 @@
 """Data model underlying access control mechanism.
 
 Stores information about locations, users and permission. Provides
-methods that map to REST operations that can be perfomed on users,
+methods that map to REST operations that can be performed on users,
 locations and permissions resources. Allows to retrieve externally
 visible attributes of these resources, the attributes are returned as
 a resource representation by REST methods.
@@ -18,16 +18,18 @@ from django.forms import ValidationError
 from wwwhisper_auth import  url_path
 
 import re
-import uuid
+import uuid as uuidgen
+
+# TODO: Fix lint warning also for django-lint.
 
 SITE_URL = getattr(settings, 'SITE_URL', None)
 if SITE_URL is None:
     raise ImproperlyConfigured(
-        'WWWhisper requires SITE_URL to be set in django settings.py file');
+        'WWWhisper requires SITE_URL to be set in django settings.py file')
 
 class CreationException(Exception):
     """Raised when creation of a new location or user failed."""
-    pass;
+    pass
 
 class ValidatedModel(models.Model):
     """Base class for all model classes.
@@ -41,14 +43,14 @@ class ValidatedModel(models.Model):
         return super(ValidatedModel, self).save(*args, **kwargs)
 
     class Meta:
-        # Do not create a DB table for ValidatedModel.
+        """Disables creation of a DB table for ValidatedModel."""
         abstract = True
 
 # Because Django authentication mechanism is used, users need to be
 # represented by a standard Django User class. But some additions are
 # needed:
 
-"""Externaly visible UUID of a user.
+"""Externally visible UUID of a user.
 
 Allows to identify a REST resource representing a user. UUID is stored
 in the username field when User object is created. Standard primary
@@ -56,10 +58,10 @@ key ids are not used for external identification purposes, because
 those ids can be reused after object is deleted."""
 User.uuid = property(lambda(self): self.username)
 
-"""Returns externaly visible attributes of the user resource."""
+# TODO: Check if a doc string can be dynamically added.
+"""Returns externally visible attributes of the user resource."""
 User.attributes_dict = lambda(self): \
     _add_common_attributes(self, {'email': self.email})
-
 
 class Location(ValidatedModel):
     """A location for which access control rules are defined.
@@ -94,13 +96,13 @@ class Location(ValidatedModel):
 
         For authenticated users, access is also always allowed.
         """
-        self.open_access = True;
-        self.save();
+        self.open_access = True
+        self.save()
 
     def revoke_open_access(self):
         """Disallows access to the location without authentication."""
-        self.open_access= False
-        self.save();
+        self.open_access = False
+        self.save()
 
     def can_access(self, user_uuid):
         """Determines if a user can access the location.
@@ -125,7 +127,7 @@ class Location(ValidatedModel):
 
         Returns:
             (new Permission object, True) if access to the location was
-                sucesfully granted.
+                successfully granted.
             (existing Permission object, False) if user already had
                 granted access to the location.
 
@@ -199,7 +201,7 @@ class Location(ValidatedModel):
 
     def save(self, *args, **kwargs):
         if not self.uuid:
-            self.uuid = str(uuid.uuid4())
+            self.uuid = str(uuidgen.uuid4())
         return super(Location, self).save(*args, **kwargs)
 
     def __unicode__(self):
@@ -210,7 +212,7 @@ class Permission(ValidatedModel):
 
     Attributes:
         http_location: The location to which the Permission object gives access.
-        user: The user that is given acces to the location.
+        user: The user that is given access to the location.
     """
 
     http_location = models.ForeignKey(Location)
@@ -287,7 +289,7 @@ class UsersCollection(Collection):
             email: an email of the created user.
 
         Raises:
-            CreationException if the email is not valid or if a user
+            CreationException if the email is invalid or if a user
             with such email already exists.
         """
         try:
@@ -297,27 +299,43 @@ class UsersCollection(Collection):
         if _find(User, email=encoded_email) is not None:
             raise CreationException('User already exists.')
         user = User.objects.create(
-            username=str(uuid.uuid4()), email=encoded_email, is_active=True)
+            username=str(uuidgen.uuid4()), email=encoded_email, is_active=True)
         return user
 
     def find_item_by_email(self, email):
-        """Finds user with a given email.
+        """Finds a user with a given email.
 
         Returns:
-            User object or None if not found.
+            A User object or None if not found.
         """
         try:
             encoded_email = _encode_email(email)
-        except ValidationError, ex:
+        except ValidationError:
             return None
-        return _find(self.model_class, email=encoded_email);
+        return _find(self.model_class, email=encoded_email)
 
 class LocationsCollection(Collection):
+    """Collection of locations resources."""
+
     item_name = 'location'
     model_class = Location
     uuid_column_name = 'uuid'
 
     def create_item(self, path):
+        """Creates a new Location object.
+
+        The location path should be canonical and should not contain
+        parts that are not used for access control mechanism (query,
+        fragment, parameters).
+
+        Args:
+            path: a canonical path to the location.
+
+        Raises:
+            CreationException if the path is invalid or if a location
+            with such path already exists.
+        """
+
         if not url_path.is_canonical(path):
             raise CreationException(
                 'Path should be absolute and normalized (starting with / '\
@@ -338,8 +356,17 @@ class LocationsCollection(Collection):
         return location
 
 
-    def find_parent(self, normalized_path):
-        normalized_path_len = len(normalized_path)
+    def find_location(self, canonical_path):
+        """Finds a location that defines access to a given path.
+
+        Args:
+            canonical_path: The path for which matching location is searched.
+
+        Returns:
+            The most specific location with path matching a given path or None
+            if no matching location exists.
+        """
+        canonical_path_len = len(canonical_path)
         longest_matched_location = None
         longest_matched_location_len = -1
 
@@ -352,27 +379,41 @@ class LocationsCollection(Collection):
             else:
                 trailing_slash_index = probed_path_len
 
-            if (normalized_path.startswith(probed_path) and
+            if (canonical_path.startswith(probed_path) and
                 probed_path_len > longest_matched_location_len and
-                (probed_path_len == normalized_path_len or
-                 normalized_path[trailing_slash_index] == '/')) :
+                (probed_path_len == canonical_path_len or
+                 canonical_path[trailing_slash_index] == '/')) :
                 longest_matched_location_len = probed_path_len
                 longest_matched_location = location
         return longest_matched_location
 
 def full_url(absolute_path):
+    """Return full url of a resource with a given path."""
     return SITE_URL + absolute_path
 
 def _urn_from_uuid(uuid):
     return 'urn:uuid:' + uuid
 
 def _add_common_attributes(item, attributes_dict):
+    """Inserts common attributes of an item to a given dict.
+
+    Attributes that are currently common for different resource types
+    are a 'self' link and an 'id' field.
+    """
     attributes_dict['self'] = full_url(item.get_absolute_url())
     if hasattr(item, 'uuid'):
         attributes_dict['id'] = _urn_from_uuid(item.uuid)
     return attributes_dict
 
 def _find(model_class, **kwargs):
+    """Finds a single item satisfying a given expression.
+
+    Args:
+        model_class: Model that manages stored items.
+        **kwargs: Filtering expression, at most one element can satisfy it.
+    Returns:
+        An item that satisfies expression or None.
+    """
     item = model_class.objects.filter(**kwargs)
     count = item.count()
     assert count <= 1
@@ -381,13 +422,19 @@ def _find(model_class, **kwargs):
     return item.get()
 
 def _encode_email(email):
+    """Encodes and validates email address.
+
+    Email is converted to a lower case not to require emails to be added
+    to the access control list with the same capitalization that the
+    user signs-in with.
+    """
     encoded_email = email.lower()
     if not _is_email_valid(encoded_email):
         raise ValidationError('Invalid email format.')
     return encoded_email
 
 def _is_email_valid(email):
-    """Validates email with regexp defined by BrowserId:
+    """Validates email with a regexp defined by BrowserId:
     browserid/browserid/static/dialog/resources/validation.js
     """
     return re.match(
