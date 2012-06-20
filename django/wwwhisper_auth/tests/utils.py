@@ -1,3 +1,5 @@
+"""Utilities to simplify testing."""
+
 from django.test import TestCase
 from django.test.client import Client
 

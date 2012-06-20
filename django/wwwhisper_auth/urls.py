@@ -1,4 +1,4 @@
-"""Urls exposed by the wwwhisper_auth app.
+"""Urls exposed by the wwwhisper_auth application.
 
 is-authorized/ URL does not need to be exposed by the HTTP server to
 the outside world, other views need to be externally accessible.

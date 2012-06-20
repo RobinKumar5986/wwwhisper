@@ -1,6 +1,6 @@
 from django.contrib.auth.backends import ModelBackend
 from django_browserid.base import verify
-import wwwhisper_auth.models as models
+from wwwhisper_auth import models
 
 class AssertionVerificationException(Exception):
     pass;

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.forms import ValidationError
-import wwwhisper_auth.url_path as url_path
+from wwwhisper_auth import  url_path
 
 import re
 import uuid

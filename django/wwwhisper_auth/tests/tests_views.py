@@ -3,10 +3,11 @@ from django.test import TestCase
 from django.test.client import Client
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
+from wwwhisper_auth import models
 from wwwhisper_auth.tests.utils import HttpTestCase
 
 import json
-import wwwhisper_auth.models as models
+
 
 class FakeAssertionVeryfingBackend(ModelBackend):
     def authenticate(self, assertion):

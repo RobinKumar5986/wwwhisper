@@ -1,7 +1,7 @@
 from django.forms import ValidationError
 from django.test import TestCase
+from wwwhisper_auth import models
 from wwwhisper_auth.models import CreationException
-import wwwhisper_auth.models as models
 
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
 TEST_USER_EMAIL = 'foo@bar.com'

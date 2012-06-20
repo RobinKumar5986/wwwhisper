@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, include, url
+from django.conf.urls.defaults import patterns, url
 from django.contrib.auth.models import User
 from views import CollectionView, ItemView
 from views import OpenAccessView, AllowedUsersView

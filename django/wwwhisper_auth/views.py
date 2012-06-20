@@ -7,6 +7,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
+from wwwhisper_auth import url_path
 from wwwhisper_auth.backend import AssertionVerificationException
 from wwwhisper_auth.http import HttpResponseBadRequest
 from wwwhisper_auth.http import HttpResponseJson
@@ -14,7 +15,6 @@ from wwwhisper_auth.http import RestView
 
 import django.contrib.auth as contrib_auth
 import logging
-import wwwhisper_auth.url_path as url_path
 
 logger = logging.getLogger(__name__)
 
