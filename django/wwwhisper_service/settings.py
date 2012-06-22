@@ -95,8 +95,9 @@ MIDDLEWARE_CLASSES = (
 )
 
 CSRF_COOKIE_NAME = 'wwwhisper-csrftoken'
-# To avoid collision with apps running 
+# To avoid collision with apps running
 SESSION_COOKIE_NAME = 'wwwhisper-sessionid'
+SESSION_COOKIE_HTTPONLY = True
 
 ROOT_URLCONF = 'wwwhisper_service.urls'
 

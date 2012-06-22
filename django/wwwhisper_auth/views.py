@@ -1,5 +1,6 @@
 """Views that handle user authentication and authorization."""
 
+from django.conf import settings
 from django.contrib import auth
 from django.core.context_processors import csrf
 from django.http import HttpResponse
@@ -8,6 +9,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
+from functools import wraps
 from wwwhisper_auth import url_path
 from wwwhisper_auth.backend import AssertionVerificationException
 from wwwhisper_auth.http import HttpResponseBadRequest
@@ -126,10 +128,24 @@ class Auth(View):
             return None
         return args[len('?path='):]
 
+def csrf_cookie_http_only(decorated_function):
+    """Enables 'httponly' flag for CSRF protection cookie.
+
+    The flag protects the cookie from javascript access.
+    """
+    @wraps(decorated_function)
+    def wrapper(*args, **kwargs):
+        response = decorated_function(*args, **kwargs)
+        if response.cookies.has_key(settings.CSRF_COOKIE_NAME):
+            response.cookies[settings.CSRF_COOKIE_NAME]['httponly'] = True
+        return response
+    return wrapper
+
 class CsrfToken(View):
     """Establishes Cross Site Request Forgery protection token."""
 
     @never_cache
+    @method_decorator(csrf_cookie_http_only)
     @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         """Returns CSRF protection token in a cookie and a response body.
