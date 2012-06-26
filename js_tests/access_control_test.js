@@ -35,7 +35,12 @@
   }
 
   function MockUI(controller) {
+    this.lastError = null,
+
     this.refresh = function() {};
+    this.handleError = function(message) {
+      this.lastError = message;
+    }
   }
 
   QUnit.testStart = function() {
@@ -105,6 +110,14 @@
     deepEqual(array, []);
     utils.removeFromArray(null, array);
     deepEqual(array, []);
+  });
+
+  test('startsWith', function() {
+    ok(utils.startsWith('foobar', 'foo'));
+    ok(utils.startsWith('foo', 'foo'));
+    ok(utils.startsWith('', ''));
+    ok(!utils.startsWith('foo', 'foobar'));
+    ok(!utils.startsWith('barfoo', 'foo'));
   });
 
   test('urn2uuid', function() {
@@ -369,6 +382,15 @@
                              { id: '13', path: '/foo', allowedUsers: []});
     controller.addLocation('/foo');
     controller.addLocation('/foo');
+    mock_stub.verify();
+  });
+
+  test('addLocation refuses to add sublocations to admin', function() {
+    controller.adminPath = '/admin/';
+    controller.addLocation('/admin/api');
+    deepEqual(controller.locations, []);
+    ok(utils.startsWith(controller.errorHandler.lastError,
+                        'Adding sublocations to admin is not supported'))
     mock_stub.verify();
   });
 

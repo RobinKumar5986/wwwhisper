@@ -45,6 +45,10 @@
       array.splice(idx, 1);
     },
 
+    startsWith: function(stringA, stringB) {
+      return stringA.lastIndexOf(stringB, 0) === 0;
+    },
+
     urn2uuid: function(urn) {
       return urn.replace('urn:uuid:', '');
     },
@@ -67,6 +71,8 @@
 
     this.locations = [];
     this.users = [];
+    this.adminPath = window.location.pathname;
+    this.errorHandler = ui;
 
     this.canAccess = function(user, location) {
       return location.openAccess || utils.inArray(
@@ -132,6 +138,13 @@
         // 100% accurate.
         return;
       }
+      if (utils.startsWith(locationPath, that.adminPath)) {
+        this.errorHandler.handleError(
+          'Adding sublocations to admin is not supported '+
+            '(It could easily cut off access to the admin application.)');
+        return;
+      }
+      //if (locationPath.
       stub.ajax('POST', 'api/locations/', {path: locationPath},
                 function(newLocation) {
                   that.locations.push(newLocation);
