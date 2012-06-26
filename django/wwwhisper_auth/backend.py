@@ -31,7 +31,7 @@ class BrowserIDBackend(ModelBackend):
             AssertionVerificationException: verification failed.
         """
         result = verify(assertion=assertion, audience=models.SITE_URL)
-        if result is None:
+        if not result:
             raise AssertionVerificationException(
                 'BrowserID assertion verification failed.')
         return self.users_collection.find_item_by_email(result['email'])
