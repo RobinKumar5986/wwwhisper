@@ -155,7 +155,7 @@ AUTHENTICATION_BACKENDS = (
 )
 
 SITE_URL = 'https://localhost:8080'
-WWWHISPER_ADMINS = ['alice@example.com', 'wrr@mixedbit.org']
+WWWHISPER_ADMINS = ['wrr@mixedbit.org']
 
 #BROWSERID_CREATE_USER = False
 
