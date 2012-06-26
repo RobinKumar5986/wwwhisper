@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  function Stub(errorHandler) {
+  function Stub() {
     var csrfToken = null, errorHandler = null, that = this;
 
     function ajaxCommon(method, resource, params, headersDict,
@@ -23,7 +23,7 @@
         success: successCallback,
         error: function(jqXHR) {
           if (errorHandler !== null) {
-            errorHandler.handleError(jqXHR.responseText)
+            errorHandler.handleError(jqXHR.status, jqXHR.responseText)
           } else {
             // TODO: nice messages for user input related failures.
             $('body').html(jqXHR.responseText);

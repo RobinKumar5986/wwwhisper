@@ -4,7 +4,6 @@ from django.conf import settings
 from django.contrib import auth
 from django.core.context_processors import csrf
 from django.http import HttpResponse
-from django.template import Context, loader
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -14,6 +13,7 @@ from wwwhisper_auth import url_path
 from wwwhisper_auth.backend import AssertionVerificationException
 from wwwhisper_auth.http import HttpResponseBadRequest
 from wwwhisper_auth.http import HttpResponseJson
+from wwwhisper_auth.http import HttpResponseNoContent
 from wwwhisper_auth.http import RestView
 
 import logging
@@ -101,9 +101,7 @@ class Auth(View):
                 logger.debug('%s: access granted.' % (debug_msg))
                 return HttpResponse('Access granted.')
             logger.debug('%s: access denied.' % (debug_msg))
-            template = loader.get_template('auth/not_authorized.html')
-            context = Context({'email' : user.email})
-            return HttpResponse(template.render(context), status=403)
+            return HttpResponse('Not authorized', status=403)
 
         if location is not None and location.open_access:
             logger.debug('%s: authentication not required, access granted.'
@@ -160,21 +158,16 @@ class CsrfToken(View):
         csrf_token = csrf(request).values()[0]
         return HttpResponseJson({'csrfToken': str(csrf_token)})
 
-class Login(RestView):
-    """Allows a user to authenticates with BrowserID."""
-
+class WhoAmI(RestView):
     def get(self, request):
-        """Returns a login page."""
         user = request.user
         if user and user.is_authenticated():
-            # If a user is already logged in, show an info page with
-            # user's email and a logout link.
-            template = loader.get_template('auth/logout.html')
-            context = Context({'email' : user.email})
-        else:
-            template = loader.get_template('auth/login.html')
-            context = Context({})
-        return HttpResponse(template.render(context))
+            return HttpResponseJson({'email': user.email})
+        # TODO: remove error message?
+        return HttpResponse('Login required.', status=401)
+
+class Login(RestView):
+    """Allows a user to authenticates with BrowserID."""
 
     def post(self, request, assertion):
         """Logs a user in (establishes a session cookie).
@@ -191,30 +184,18 @@ class Login(RestView):
         if user is not None:
             auth.login(request, user)
             logger.debug('%s successfully logged.' % (user.email))
-            return HttpResponse("Login successful.")
+            return HttpResponseNoContent()
         else:
             # Return forbidden because request was well formed (400
             # doesn't seem appropriate).
-            template = loader.get_template('auth/nothing_shared.html')
-            return HttpResponse(template.render(Context({})), status=403)
+            return HttpResponse('Nothing shared with user', status=403)
 
 class Logout(RestView):
     """Allows a user to logout."""
 
-    def get(self, request):
-        """Returns a logout page."""
-        user = request.user
-        if not user.is_authenticated():
-            template = loader.get_template('auth/not_authenticated.html')
-            return HttpResponse(template.render(Context({})))
-        template = loader.get_template('auth/logout.html')
-        context = Context({'email' : user.email})
-        return HttpResponse(template.render(context))
-
     def post(self, request):
         """Logs a user out (invalidates a session cookie)."""
         auth.logout(request)
-        template = loader.get_template('auth/bye.html')
-        return HttpResponse(template.render(Context({})))
+        return HttpResponseNoContent()
 
 

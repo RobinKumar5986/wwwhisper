@@ -38,7 +38,7 @@
     this.lastError = null,
 
     this.refresh = function() {};
-    this.handleError = function(message) {
+    this.handleError = function(status, message) {
       this.lastError = message;
     }
   }
@@ -390,7 +390,7 @@
     controller.addLocation('/admin/api');
     deepEqual(controller.locations, []);
     ok(utils.startsWith(controller.errorHandler.lastError,
-                        'Adding sublocations to admin is not supported'))
+                        'Adding sublocations to /admin/ is not supported'))
     mock_stub.verify();
   });
 

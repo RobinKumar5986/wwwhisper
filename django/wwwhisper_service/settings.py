@@ -154,7 +154,7 @@ AUTHENTICATION_BACKENDS = (
     'wwwhisper_auth.backend.BrowserIDBackend',
 )
 
-SITE_URL = 'https://localhost:8080'
+SITE_URL = 'http://localhost:8080'
 WWWHISPER_ADMINS = ['wrr@mixedbit.org']
 
 #BROWSERID_CREATE_USER = False

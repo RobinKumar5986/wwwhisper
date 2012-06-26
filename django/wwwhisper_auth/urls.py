@@ -5,7 +5,7 @@ the outside world, other views need to be externally accessible.
 """
 
 from django.conf.urls.defaults import patterns, url
-from views import Auth, CsrfToken, Login, Logout
+from views import Auth, CsrfToken, Login, Logout, WhoAmI
 from wwwhisper_auth.models import LocationsCollection
 
 urlpatterns = patterns(
@@ -13,6 +13,7 @@ urlpatterns = patterns(
     url(r'^csrftoken/$', CsrfToken.as_view()),
     url(r'^login/$', Login.as_view()),
     url(r'^logout/$', Logout.as_view()),
+    url(r'^whoami/$', WhoAmI.as_view()),
     url(r'^is-authorized/$', Auth.as_view(
             locations_collection=LocationsCollection())),
     )

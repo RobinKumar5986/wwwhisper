@@ -14,15 +14,32 @@
 
   <body>
    <div class="container">
-     <header class="jumbotron subhead" id="message">
-     {% block message %} {% endblock %}
+
+     <header class="jumbotron subhead hidden" id="authenticated">
+     <h1>Access denied</h1>
+     <p class="lead">
+     <span id="email"></span> can not access this URL. </p>
+     Go somewhere else or <a href="#" id="logout">sign out</a>
      </header>
+
+     <header class="jumbotron subhead hidden" id="not-authenticated">
+     <h1>Not authenticated</h1>
+     <p class="lead">
+       You are signed out.
+     </p>
+     </header>
+
+     <header class="jumbotron subhead hidden" id="logged-out">
+     <h1>Goodbye</h1>
+     <p class="lead">
+       Signed out successfully.
+     </p>
+     </header>
+
    </div>
 
     <script src="/auth/assets/js/jquery.js" type="text/javascript"></script>
     <script src="/auth/assets/js/stub.js" type="text/javascript"></script>
-
-    {% block scripts %} {% endblock %}
+    <script src="/auth/logout.js"></script>
   </body>
 </html>
-

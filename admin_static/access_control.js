@@ -413,8 +413,10 @@
     }
 
     function showLocations() {
+      var locationView;
       utils.each(controller.locations, function(location) {
-        view.locationPath.clone(true)
+        locationView = view.locationPath.clone(true);
+        locationView
           .attr('id', locationPathId(location))
           .attr('location-urn', location.id)
           .find('.url').attr(
@@ -424,7 +426,8 @@
             // Do not show removed location info.
             event.preventDefault();
             controller.removeLocation(location);
-          }).end()
+          })
+          .end()
           .find('.notify').click(function() {
             showNotifyDialog(
               location.allowedUsers, [location.path]);
@@ -432,7 +435,12 @@
           .find('.view-page').click(function() {
             window.open(location.path,'_blank');
           }).end()
-          .appendTo('#location-list');
+
+        // Do not allow admin location to be removed.
+        if (location.path === controller.adminPath) {
+          locationView.find('.remove-location').css('visibility','hidden');
+        }
+        locationView.appendTo('#location-list');
         createLocationInfo(location);
       });
 
@@ -457,7 +465,7 @@
       $('.alert-error').alert('close');
     };
 
-    this.handleError = function(message) {
+    this.handleError = function(status, message) {
       var error = view.errorMessage.clone(true);
 
       $('#error-box').empty();
