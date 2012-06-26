@@ -186,7 +186,7 @@ class Login(RestView):
             return HttpResponseBadRequest('BrowserId assertion not set.')
         try:
             user = auth.authenticate(assertion=assertion)
-        except AssertionVerificationException, ex:
+        except AssertionVerificationException as ex:
             return HttpResponseBadRequest(ex)
         if user is not None:
             auth.login(request, user)

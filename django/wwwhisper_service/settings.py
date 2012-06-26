@@ -154,7 +154,9 @@ AUTHENTICATION_BACKENDS = (
     'wwwhisper_auth.backend.BrowserIDBackend',
 )
 
-SITE_URL = 'http://localhost:8080'
+SITE_URL = 'https://localhost:8080'
+WWWHISPER_ADMINS = ['alice@example.com', 'wrr@mixedbit.org']
+
 #BROWSERID_CREATE_USER = False
 
 ABSOLUTE_URL_OVERRIDES = {

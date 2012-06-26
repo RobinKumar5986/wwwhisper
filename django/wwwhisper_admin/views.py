@@ -160,7 +160,7 @@ class AllowedUsersView(RestView):
             else:
                 response = HttpResponseJson(attributes_dict)
             return response
-        except LookupError, ex:
+        except LookupError as ex:
             return HttpResponseNotFound(ex)
 
     def get(self, request, location_uuid, user_uuid):
@@ -176,7 +176,7 @@ class AllowedUsersView(RestView):
         try:
             permission = location.get_permission(user_uuid)
             return HttpResponseJson(permission.attributes_dict())
-        except LookupError, ex:
+        except LookupError as ex:
             return HttpResponseNotFound(ex)
 
     def delete(self, request, location_uuid, user_uuid):
@@ -192,5 +192,5 @@ class AllowedUsersView(RestView):
         try:
             location.revoke_access(user_uuid)
             return HttpResponseNoContent()
-        except LookupError, ex:
+        except LookupError as ex:
             return HttpResponseNotFound(ex)
