@@ -96,7 +96,7 @@ class RestView(View):
                     else:
                         kwargs[k] = json_args[k]
                 kwargs.update()
-            except ValueError, err:
+            except ValueError as err:
                 logger.debug(
                     'Failed to parse the request body a as json object: %s'
                     % (err))
@@ -104,7 +104,7 @@ class RestView(View):
                     'Failed to parse the request body as a json object.')
         try:
             return super(RestView, self).dispatch(request, *args, **kwargs)
-        except TypeError, err:
+        except TypeError as err:
             trace = "".join(traceback.format_exc())
             logger.debug('Invalid arguments, handler not found: %s\n%s'
                          % (err, trace))

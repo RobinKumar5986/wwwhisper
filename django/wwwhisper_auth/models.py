@@ -17,7 +17,6 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
-from django.forms import ValidationError
 from wwwhisper_auth import  url_path
 
 import re
@@ -294,10 +293,9 @@ class UsersCollection(Collection):
             CreationException if the email is invalid or if a user
             with such email already exists.
         """
-        try:
-            encoded_email = _encode_email(email)
-        except ValidationError, ex:
-            raise CreationException(ex)
+        encoded_email = _encode_email(email)
+        if encoded_email is None:
+            raise CreationException('Invalid email format.')
         if _find(User, email=encoded_email) is not None:
             raise CreationException('User already exists.')
         user = User.objects.create(
@@ -310,9 +308,8 @@ class UsersCollection(Collection):
         Returns:
             A User object or None if not found.
         """
-        try:
-            encoded_email = _encode_email(email)
-        except ValidationError:
+        encoded_email = _encode_email(email)
+        if encoded_email is None:
             return None
         return _find(self.model_class, email=encoded_email)
 
@@ -432,7 +429,7 @@ def _encode_email(email):
     """
     encoded_email = email.lower()
     if not _is_email_valid(encoded_email):
-        raise ValidationError('Invalid email format.')
+        return None
     return encoded_email
 
 def _is_email_valid(email):
