@@ -1,8 +1,10 @@
+from django.conf import settings
 from django.http import HttpResponse
 from django.test import TestCase
 from wwwhisper_auth.http import RestView
 from wwwhisper_auth.tests.utils import HttpTestCase
 from django.conf.urls.defaults import patterns, url
+from django.test.client import Client
 
 class TestView(RestView):
     def get(self, request):
@@ -74,3 +76,38 @@ class RestViewTest(HttpTestCase):
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(
             response.content, 'Invalid argument passed in the request body.')
+
+    def test_csrf_protection(self):
+        self.client = Client(enforce_csrf_checks=True)
+
+        # No CSRF tokens.
+        response = self.client.get('/testview/')
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'CSRF token missing or incorrect')
+
+
+
+        # Too short CSRF tokens.
+        self.client.cookies[settings.CSRF_COOKIE_NAME] = 'a'
+        response = self.client.get('/testview/', HTTP_X_CSRFTOKEN='a')
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'CSRF token missing or incorrect')
+
+        # Not matching CSRF tokens.
+        self.client.cookies[settings.CSRF_COOKIE_NAME] = \
+            'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+        response = self.client.get(
+            '/testview/', HTTP_X_CSRFTOKEN='xxxxxxxxxxxxxxxOxxxxxxxxxxxxxxxx')
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'CSRF token missing or incorrect')
+
+
+        # Matching CSRF tokens.
+        self.client.cookies[settings.CSRF_COOKIE_NAME] = \
+            'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+        response = self.client.get(
+            '/testview/', HTTP_X_CSRFTOKEN='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+        self.assertEqual(267, response.status_code)

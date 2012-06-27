@@ -9,7 +9,7 @@
 
         handleError: function(status, message) {
           if (status === 403) {
-            // Login failed because user is unkmown.
+            // Login failed because user is unknown.
             $('#sign-in').addClass('hidden');
             $('#nothing-shared').removeClass('hidden');
           } else {

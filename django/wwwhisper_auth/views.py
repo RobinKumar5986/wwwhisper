@@ -142,6 +142,7 @@ def csrf_cookie_http_only(decorated_function):
 class CsrfToken(View):
     """Establishes Cross Site Request Forgery protection token."""
 
+    # TODO: Prevent CSRF protection cookie expiration.
     @never_cache
     @method_decorator(csrf_cookie_http_only)
     @method_decorator(ensure_csrf_cookie)

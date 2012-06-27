@@ -113,7 +113,7 @@ class LoginTest(AuthTestCase):
         self.users_collection.create_item('foo@example.com')
         response = self.post('/auth/api/login/',
                              {'assertion' : 'foo@example.com'})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(204, response.status_code)
 
 
 class LogoutTest(AuthTestCase):
@@ -126,7 +126,7 @@ class LogoutTest(AuthTestCase):
         self.assertEqual(403, response.status_code)
 
         response = self.post('/auth/api/logout/', {})
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(204, response.status_code)
 
         response = self.get('/auth/api/is-authorized/?path=/bar/')
         # Not authenticated
