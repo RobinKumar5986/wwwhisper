@@ -7,7 +7,7 @@
       stub.setErrorHandler({
         cleanError: function() {},
 
-        handleError: function(status, message) {
+        handleError: function(message, status) {
           if (status === 403) {
             // Login failed because user is unknown.
             $('#sign-in').addClass('hidden');
@@ -33,7 +33,7 @@
     stub.setErrorHandler({
       cleanError: function() {},
 
-      handleError: function(status, message) {
+      handleError: function(message, status) {
         if (status === 401) {
           // Logget out.
           callback();

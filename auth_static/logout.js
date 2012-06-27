@@ -4,7 +4,7 @@
   stub.setErrorHandler({
     cleanError: function() {},
 
-    handleError: function(status, message) {
+    handleError: function(message, status) {
       if (status === 401) {
         $('#not-authenticated').removeClass('hidden');
       } else {

@@ -38,7 +38,7 @@
     this.lastError = null,
 
     this.refresh = function() {};
-    this.handleError = function(status, message) {
+    this.handleError = function(message, status) {
       this.lastError = message;
     }
   }

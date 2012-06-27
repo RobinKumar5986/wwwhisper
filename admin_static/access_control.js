@@ -69,6 +69,7 @@
   function Controller(UIConstructor, stub) {
     var that = this, ui = new UIConstructor(this);
 
+    this.adminUserEmail = null;
     this.locations = [];
     this.users = [];
     this.adminPath = window.location.pathname;
@@ -102,6 +103,27 @@
         return that.canAccess(user, location);
       });
     };
+
+    this.getAdminUser = function(nextCallback) {
+      stub.setErrorHandler({
+        cleanError: function() {},
+        handleError: function(message, status) {
+          if (status === 401) {
+            // TODO: clean this aler.
+            alert('Warning...');
+          } else {
+            // Other error.
+            $('body').html(message);
+          }
+        }
+      });
+
+      stub.ajax('GET', '/auth/api/whoami/', null, function(result) {
+        that.adminUserEmail = result.email;
+        stub.setErrorHandler(that.errorHandler);
+        nextCallback();
+      });
+    }
 
     this.getLocations = function(nextCallback) {
       stub.ajax('GET', 'api/locations/', null, function(result) {
@@ -256,7 +278,8 @@
     this.initialize = function() {
       ui.initialize();
       stub.setErrorHandler(ui);
-      that.buildCallbacksChain([that.getLocations,
+      that.buildCallbacksChain([that.getAdminUser,
+                                that.getLocations,
                                 that.getUsers,
                                 ui.refresh])();
     };
@@ -324,7 +347,9 @@
     }
 
     function createLocationInfo(location) {
-      var locationInfo, allowedUserList;
+      var locationInfo, allowedUserList, isAdminLocation, isAdminUser;
+      isAdminLocation = (location.path === controller.adminPath);
+
       locationInfo = view.locationInfo.clone(true)
         .attr('id', locationInfoId(location))
         .attr('location-urn', location.id)
@@ -355,11 +380,17 @@
           .appendTo(allowedUserList);
       } else {
         utils.each(location.allowedUsers, function(user) {
+          isAdminUser = (user.email === controller.adminUserEmail);
           view.allowedUser.clone(true)
             .find('.user-mail').text(user.email).end()
             .find('.unshare').click(function() {
               controller.revokeAccess(user, location);
-            }).end()
+            })
+             // Protect the current user from disalowing herself
+             // access to the admin application.
+            .css('visibility',
+                 isAdminLocation && isAdminUser ? 'hidden' : 'visible')
+            .end()
             .appendTo(allowedUserList);
         });
       }
@@ -413,10 +444,10 @@
     }
 
     function showLocations() {
-      var locationView;
+      var isAdminLocation;
       utils.each(controller.locations, function(location) {
-        locationView = view.locationPath.clone(true);
-        locationView
+        isAdminLocation = (location.path === controller.adminPath);
+        view.locationPath.clone(true)
           .attr('id', locationPathId(location))
           .attr('location-urn', location.id)
           .find('.url').attr(
@@ -427,6 +458,8 @@
             event.preventDefault();
             controller.removeLocation(location);
           })
+           // Do not allow admin location to be removed.
+          .css('visibility', isAdminLocation ? 'hidden' : 'visible')
           .end()
           .find('.notify').click(function() {
             showNotifyDialog(
@@ -435,12 +468,7 @@
           .find('.view-page').click(function() {
             window.open(location.path,'_blank');
           }).end()
-
-        // Do not allow admin location to be removed.
-        if (location.path === controller.adminPath) {
-          locationView.find('.remove-location').css('visibility','hidden');
-        }
-        locationView.appendTo('#location-list');
+          .appendTo('#location-list');
         createLocationInfo(location);
       });
 
@@ -465,7 +493,7 @@
       $('.alert-error').alert('close');
     };
 
-    this.handleError = function(status, message) {
+    this.handleError = function(message, status) {
       var error = view.errorMessage.clone(true);
 
       $('#error-box').empty();
