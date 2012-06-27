@@ -112,7 +112,7 @@ class Auth(View):
 
     @staticmethod
     def _extract_encoded_path_argument(request):
-        """Extracts an encoded value of request 'path' argument.
+        """Get 'path' argument or None.
 
         Standard Django mechanism for accessing arguments is not used
         because path is needed in a raw, encoded form. Django would
@@ -159,14 +159,6 @@ class CsrfToken(View):
         csrf_token = csrf(request).values()[0]
         return HttpResponseJson({'csrfToken': str(csrf_token)})
 
-class WhoAmI(RestView):
-    def get(self, request):
-        user = request.user
-        if user and user.is_authenticated():
-            return HttpResponseJson({'email': user.email})
-        # TODO: remove error message?
-        return HttpResponse('Login required.', status=401)
-
 class Login(RestView):
     """Allows a user to authenticates with BrowserID."""
 
@@ -200,3 +192,13 @@ class Logout(RestView):
         return HttpResponseNoContent()
 
 
+class WhoAmI(RestView):
+    """Allows to obtain an email of a currently logged in user."""
+
+    def get(self, request):
+        """Returns an email or an authentication required error."""
+        user = request.user
+        if user and user.is_authenticated():
+            return HttpResponseJson({'email': user.email})
+        # TODO: remove error message?
+        return HttpResponse('Login required.', status=401)

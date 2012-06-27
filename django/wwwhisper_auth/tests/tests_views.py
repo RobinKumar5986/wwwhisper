@@ -131,3 +131,19 @@ class LogoutTest(AuthTestCase):
         response = self.get('/auth/api/is-authorized/?path=/bar/')
         # Not authenticated
         self.assertEqual(401, response.status_code)
+
+
+class WhoAmITest(AuthTestCase):
+    def test_whoami_returns_email_of_logged_in_user(self):
+        self.users_collection.create_item('foo@example.com')
+
+        # Not authorized.
+        response = self.get('/auth/api/whoami/')
+        self.assertEqual(401, response.status_code)
+
+        self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
+
+        response = self.get('/auth/api/whoami/')
+        self.assertEqual(200, response.status_code)
+        parsed_response_body = json.loads(response.content)
+        self.assertEqual('foo@example.com', parsed_response_body['email'])
