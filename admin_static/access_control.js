@@ -109,8 +109,10 @@
         cleanError: function() {},
         handleError: function(message, status) {
           if (status === 401) {
-            // TODO: clean this aler.
-            alert('Warning...');
+            that.errorHandler.handleError(
+              'WWWhisper misconfigured: Admin application can ' +
+                'be accessed without authentication!');
+            stub.setErrorHandler(that.errorHandler);
             nextCallback();
           } else {
             // Other error.
@@ -279,9 +281,9 @@
     this.initialize = function() {
       ui.initialize();
       stub.setErrorHandler(ui);
-      that.buildCallbacksChain([that.getAdminUser,
-                                that.getLocations,
+      that.buildCallbacksChain([that.getLocations,
                                 that.getUsers,
+                                that.getAdminUser,
                                 ui.refresh])();
     };
   }
@@ -518,7 +520,7 @@
 
       window.setTimeout(function() {
         error.alert('close');
-      }, 5000);
+      }, 20000);
     };
 
     this.refresh = function() {

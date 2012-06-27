@@ -32,6 +32,8 @@
     this.verify = function() {
       ok(expectedCalls.length === 0, 'All expected ajax calls invoked.');
     };
+
+    this.setErrorHandler = function() {}
   }
 
   function MockUI(controller) {
@@ -390,7 +392,7 @@
     controller.addLocation('/admin/api');
     deepEqual(controller.locations, []);
     ok(utils.startsWith(controller.errorHandler.lastError,
-                        'Adding sublocations to /admin/ is not supported'))
+                        'Adding sublocations to admin is not supported'))
     mock_stub.verify();
   });
 
@@ -650,6 +652,22 @@
 
     controller.revokeOpenAccess(location);
     ok(!location.openAccess);
+    mock_stub.verify();
+  });
+
+  test('getAdminUser', function() {
+    var ajaxCallResult, callbackCalled;
+    ajaxCallResult = {
+      email: 'foo@example.com'
+    };
+    callbackCalled = false;
+    ok(controller.adminUserEmail === null);
+    mock_stub.expectAjaxCall('GET', '/auth/api/whoami/', null, ajaxCallResult);
+    controller.getAdminUser(function() {
+      callbackCalled = true;
+    });
+    deepEqual(controller.adminUserEmail, ajaxCallResult.email);
+    ok(callbackCalled);
     mock_stub.verify();
   });
 
