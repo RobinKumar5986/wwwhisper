@@ -111,6 +111,7 @@
           if (status === 401) {
             // TODO: clean this aler.
             alert('Warning...');
+            nextCallback();
           } else {
             // Other error.
             $('body').html(message);
@@ -295,6 +296,13 @@
       errorMessage : null
     }, that = this;
 
+    function userAnnotation(user) {
+      if (user.email === controller.adminUserEmail) {
+        return ' (you)';
+      }
+      return '';
+    }
+
     function focusedElement() {
       return $(document.activeElement);
     }
@@ -382,7 +390,7 @@
         utils.each(location.allowedUsers, function(user) {
           isAdminUser = (user.email === controller.adminUserEmail);
           view.allowedUser.clone(true)
-            .find('.user-mail').text(user.email).end()
+            .find('.user-mail').text(user.email + userAnnotation(user)).end()
             .find('.unshare').click(function() {
               controller.revokeAccess(user, location);
             })
@@ -414,7 +422,7 @@
     }
 
     function showUsers(selectLocation) {
-      var userView;
+      var userView, isAdminUser;
       utils.each(controller.users, function(user) {
         userView = view.user.clone(true);
         if (selectLocation !== null &&
@@ -425,10 +433,15 @@
               controller.grantAccess(user.email, selectLocation);
             });
         }
-        userView.find('.user-mail').text(user.email).end()
+        isAdminUser = (user.email === controller.adminUserEmail);
+        userView.find('.user-mail')
+          .text(user.email + userAnnotation(user))
+          .end()
           .find('.remove-user').click(function() {
             controller.removeUser(user);
-          }).end()
+          })
+          .css('visibility', isAdminUser ? 'hidden' : 'visible')
+          .end()
           .find('.highlight').hover(function() {
             highlightAccessibleLocations(user);
           }, highlighLocationsOff).end()
