@@ -1,3 +1,10 @@
+/*!
+ * wwwhisper - web access control.
+ * Copyright (C) 2012 Jan Wrobel
+ *
+ * Licensed under the AGPL License version 3 or any later version:
+ * https://www.gnu.org/licenses/agpl-3.0.html
+ */
 (function () {
   'use strict';
 
@@ -104,6 +111,20 @@
       });
     };
 
+    this.getLocations = function(nextCallback) {
+      stub.ajax('GET', 'api/locations/', null, function(result) {
+        that.locations = result.locations;
+        nextCallback();
+      });
+    };
+
+    this.getUsers = function(nextCallback) {
+      stub.ajax('GET', 'api/users/', null, function(result) {
+        that.users = result.users;
+        nextCallback();
+      });
+    };
+
     this.getAdminUser = function(nextCallback) {
       stub.setErrorHandler({
         cleanError: function() {},
@@ -127,20 +148,6 @@
         nextCallback();
       });
     }
-
-    this.getLocations = function(nextCallback) {
-      stub.ajax('GET', 'api/locations/', null, function(result) {
-        that.locations = result.locations;
-        nextCallback();
-      });
-    };
-
-    this.getUsers = function(nextCallback) {
-      stub.ajax('GET', 'api/users/', null, function(result) {
-        that.users = result.users;
-        nextCallback();
-      });
-    };
 
     this.buildCallbacksChain = function(callbacks) {
       if (callbacks.length === 1) {
