@@ -107,9 +107,10 @@ class RestViewTest(HttpTestCase):
         self.assertRegexpMatches(response.content,
                                  'Invalid Content-Type')
 
+        # Content-Type header should be case-insensitive.
         response = self.client.post(
             '/testview/', '{"ping_message" : "hello world"}',
-            'application/json; charset=UTF-8')
+            'application/JSON; charset=UTF-8')
         self.assertEqual(277, response.status_code)
 
     def test_csrf_protection(self):

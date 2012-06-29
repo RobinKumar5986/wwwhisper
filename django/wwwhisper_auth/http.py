@@ -46,7 +46,7 @@ class HttpResponseJson(HttpResponse):
     def __init__(self, attributes_dict):
         super(HttpResponseJson, self).__init__(
             json.dumps(attributes_dict),
-            mimetype="application/json; charset=UTF-8",
+            mimetype="application/json; charset=utf-8",
             status=200)
 
 class HttpResponseNoContent(HttpResponse):
@@ -71,7 +71,7 @@ class HttpResponseCreated(HttpResponse):
 
         super(HttpResponseCreated, self).__init__(
             json.dumps(attributes_dict),
-            mimetype="application/json; charset=UTF-8",
+            mimetype="application/json; charset=utf-8",
             status=201)
 
 
@@ -137,7 +137,7 @@ class RestView(View):
                 if not _utf8_encoded_json(request):
                     return HttpResponseBadRequest(
                         "Invalid Content-Type (only "
-                        "'application/json; charset=UTF-8' is acceptable).");
+                        "'application/json; charset=utf-8' is acceptable).");
 
                 json_args = json.loads(request.body)
                 for k in json_args:
@@ -204,15 +204,16 @@ def _csrf_token_valid(request):
     return True
 
 def _utf8_encoded_json(request):
-    """Checks if content of the request is defined to be utf8 encoded json.
+    """Checks if content of the request is defined to be utf-8 encoded json.
 
-    'Content-type' header should be set to 'application/json; charset=UTF-8',
-    the function allows whitespaces around the two segments.
+    'Content-type' header should be set to 'application/json;
+    charset=utf-8'.  The function allows whitespaces around the two
+    segments an is case-insensitive.
     """
     content_type = request.META.get('CONTENT_TYPE', '')
     parts = content_type.split(';')
     if (len(parts) != 2 or
-        parts[0].strip() != 'application/json' or
-        parts[1].strip() != 'charset=UTF-8'):
+        parts[0].strip().lower() != 'application/json' or
+        parts[1].strip().lower() != 'charset=utf-8'):
         return False
     return True
