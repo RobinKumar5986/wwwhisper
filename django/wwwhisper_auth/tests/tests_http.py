@@ -66,7 +66,7 @@ class RestViewTest(HttpTestCase):
     def test_method_with_incorrectly_formated_json_argument_in_body(self):
         response = self.client.post('/testview/',
                                     "{{ 'ping_message' : 'hello world' }",
-                                    'text/json',
+                                    'application/json ;  charset=UTF-8',
                                     HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content, 'Failed to parse the '
@@ -93,6 +93,25 @@ class RestViewTest(HttpTestCase):
         self.assertRegexpMatches(
             response.content, 'Invalid argument passed in the request body.')
 
+    def test_content_type_validation(self):
+        response = self.client.post(
+            '/testview/', '{"ping_message" : "hello world"}', 'text/json')
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'Invalid Content-Type')
+
+        response = self.client.post(
+            '/testview/', '{"ping_message" : "hello world"}',
+            'application/json; charset=UTF-16')
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'Invalid Content-Type')
+
+        response = self.client.post(
+            '/testview/', '{"ping_message" : "hello world"}',
+            'application/json; charset=UTF-8')
+        self.assertEqual(277, response.status_code)
+
     def test_csrf_protection(self):
         self.client = Client(enforce_csrf_checks=True)
 
@@ -101,8 +120,6 @@ class RestViewTest(HttpTestCase):
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'CSRF token missing or incorrect')
-
-
 
         # Too short CSRF tokens.
         self.client.cookies[settings.CSRF_COOKIE_NAME] = 'a'
@@ -119,7 +136,6 @@ class RestViewTest(HttpTestCase):
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'CSRF token missing or incorrect')
-
 
         # Matching CSRF tokens.
         self.client.cookies[settings.CSRF_COOKIE_NAME] = \

@@ -26,7 +26,8 @@ class HttpTestCase(TestCase):
         self.client = Client()
 
     def post(self, url, args):
-        return self.client.post(url, json.dumps(args), 'text/json')
+        return self.client.post(
+            url, json.dumps(args), 'application/json; charset=UTF-8')
 
     def get(self, url):
         return self.client.get(url)
@@ -34,7 +35,8 @@ class HttpTestCase(TestCase):
     def put(self, url, args=None):
         if args is None:
             return self.client.put(url)
-        return self.client.put(url, json.dumps(args), 'text/json')
+        return self.client.put(
+            url, json.dumps(args), 'application/json;  charset=UTF-8')
 
 
     def delete(self, url):
