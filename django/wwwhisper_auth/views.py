@@ -153,6 +153,8 @@ def csrf_cookie_http_only(decorated_function):
         response = decorated_function(*args, **kwargs)
         if response.cookies.has_key(settings.CSRF_COOKIE_NAME):
             response.cookies[settings.CSRF_COOKIE_NAME]['httponly'] = True
+            # TODO: enable this:
+            # response.cookies[settings.CSRF_COOKIE_NAME]['secure'] = True
         return response
     return wrapper
 
@@ -163,15 +165,21 @@ class CsrfToken(View):
     @never_cache
     @method_decorator(csrf_cookie_http_only)
     @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
+    def post(self, request):
         """Returns CSRF protection token in a cookie and a response body.
 
-        The GET must be called before any CSRF protected HTTP method
-        is called (all HTTP methods of views that extend
+        The method must be called before any CSRF protected HTTP
+        method is called (all HTTP methods of views that extend
         RestView). Returned token must be set in 'X-CSRFToken' header
         when the protected method is called, otherwise the call
         fails. It is enough to get the token once and reuse it for all
         subsequent calls to CSRF protected methods.
+
+        POST is used instead of GET as an extra precaution against
+        token leakage to sites from different origin. The token could
+        possibly leak if a browser interpreted returned json as
+        script, css or image and for example invoked js error handler
+        with part of the response body .
         """
         csrf_token = csrf(request).values()[0]
         return HttpResponseJson({'csrfToken': str(csrf_token)})

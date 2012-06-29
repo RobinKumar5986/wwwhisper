@@ -53,7 +53,7 @@
     }
 
     function getCsrfToken(nextCallback) {
-      ajaxCommon('GET', '/auth/api/csrftoken/', null, null,
+      ajaxCommon('POST', '/auth/api/csrftoken/', null, null,
                  function(result) {
                    csrfToken = result.csrfToken;
                    nextCallback();

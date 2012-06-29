@@ -97,6 +97,12 @@ MIDDLEWARE_CLASSES = (
 CSRF_COOKIE_NAME = 'wwwhisper-csrftoken'
 # To avoid collision with apps running
 SESSION_COOKIE_NAME = 'wwwhisper-sessionid'
+# Make session cookie valid for a one day.
+#SESSION_COOKIE_AGE = 86400
+# Or until a browser close.
+#SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# TODO: change this:
+SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_HTTPONLY = True
 
 ROOT_URLCONF = 'wwwhisper_service.urls'
