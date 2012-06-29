@@ -44,9 +44,10 @@ class HttpResponseJson(HttpResponse):
     """
 
     def __init__(self, attributes_dict):
-        super(HttpResponseJson, self).__init__(json.dumps(attributes_dict),
-                                               mimetype="application/json",
-                                               status=200)
+        super(HttpResponseJson, self).__init__(
+            json.dumps(attributes_dict),
+            mimetype="application/json; charset=UTF-8",
+            status=200)
 
 class HttpResponseNoContent(HttpResponse):
     """Request succeeded but response body is empty."""
@@ -68,9 +69,10 @@ class HttpResponseCreated(HttpResponse):
                 json and returned in the response body
         """
 
-        super(HttpResponseCreated, self).__init__(json.dumps(attributes_dict),
-                                                  mimetype="application/json",
-                                                  status=201)
+        super(HttpResponseCreated, self).__init__(
+            json.dumps(attributes_dict),
+            mimetype="application/json; charset=UTF-8",
+            status=201)
 
 
 class HttpResponseBadRequest(HttpResponse):

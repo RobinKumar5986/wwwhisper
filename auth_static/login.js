@@ -54,7 +54,7 @@
     stub.ajax('GET', '/auth/api/whoami/', null,
               function(result) {
                 // Logged in, go to the logout page.
-                window.location = '/auth/logout.html';
+                window.location = '/auth/logout';
               });
   }
 
