@@ -30,6 +30,7 @@ from wwwhisper_auth.backend import AssertionVerificationException
 from wwwhisper_auth.http import HttpResponseBadRequest
 from wwwhisper_auth.http import HttpResponseJson
 from wwwhisper_auth.http import HttpResponseNoContent
+from wwwhisper_auth.http import HttpResponseNotAuthenticated
 from wwwhisper_auth.http import RestView
 
 import logging
@@ -124,7 +125,7 @@ class Auth(View):
                          % (debug_msg))
             return HttpResponse('Access granted.')
         logger.debug('%s: user not authenticated.' % (debug_msg))
-        return HttpResponse('Login required.', status=401)
+        return HttpResponseNotAuthenticated()
 
     @staticmethod
     def _extract_encoded_path_argument(request):

@@ -79,7 +79,7 @@
     this.adminUserEmail = null;
     this.locations = [];
     this.users = [];
-    this.adminPath = window.location.pathname;
+    this.adminPath = null;
     this.errorHandler = ui;
 
     this.canAccess = function(user, location) {
@@ -286,6 +286,12 @@
     };
 
     this.initialize = function() {
+      this.adminPath = window.location.pathname;
+      // Strip trailing slash.
+      if (this.adminPath !== null &&
+          this.adminPath.charAt(this.adminPath.length - 1) === '/') {
+        this.adminPath = this.adminPath.slice(0, this.adminPath.length - 1);
+      }
       ui.initialize();
       stub.setErrorHandler(ui);
       that.buildCallbacksChain([that.getLocations,

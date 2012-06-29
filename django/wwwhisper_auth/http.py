@@ -75,6 +75,16 @@ class HttpResponseCreated(HttpResponse):
             status=201)
 
 
+class HttpResponseNotAuthenticated(HttpResponse):
+    """User is not authenticated.
+
+    Request can be retried after successul authentication.
+    """
+    def __init__(self):
+        """Sets WWW-Authenticate header required by the HTTP standard."""
+        super(HttpResponseNotAuthenticated, self).__init__(status=401)
+        self['WWW-Authenticate'] = 'VerifiedEmail'
+
 class HttpResponseBadRequest(HttpResponse):
     """Response returned when request was invalid."""
 

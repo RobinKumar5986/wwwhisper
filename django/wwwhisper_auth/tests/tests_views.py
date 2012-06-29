@@ -54,6 +54,8 @@ class AuthTest(AuthTestCase):
     def test_is_authorized_for_not_authenticated_user(self):
         response = self.get('/auth/api/is-authorized/?path=/bar/')
         self.assertEqual(401, response.status_code)
+        self.assertTrue(response.has_header('WWW-Authenticate'))
+        self.assertEqual('VerifiedEmail', response['WWW-Authenticate'])
 
     def test_is_authorized_for_not_authorized_user(self):
         self.users_collection.create_item('foo@example.com')

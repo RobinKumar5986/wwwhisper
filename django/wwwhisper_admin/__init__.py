@@ -40,7 +40,7 @@ def enable_access_to_admin(app, created_models, *args, **kwargs):
             return
         users_collection = auth_models.UsersCollection()
         locations_collection = auth_models.LocationsCollection()
-        admin_location = locations_collection.create_item('/admin/')
+        admin_location = locations_collection.create_item('/admin')
 
         for email in admins_emails:
             try:
