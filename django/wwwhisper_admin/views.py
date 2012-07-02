@@ -60,7 +60,7 @@ class CollectionView(http.RestView):
     def get(self, request):
         """Returns json representation of all resources in the collection."""
         items_list = [item.attributes_dict() for item in self.collection.all()]
-        return http.HttpResponseJson({
+        return http.HttpResponseOKJson({
                 'self' : full_url(request.path),
                 self.collection.collection_name: items_list
                 })
@@ -84,7 +84,7 @@ class ItemView(http.RestView):
         if item is None:
             return http.HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())
-        return http.HttpResponseJson(item.attributes_dict())
+        return http.HttpResponseOKJson(item.attributes_dict())
 
     def delete(self, request, uuid):
         """Deletes a resource with a given uuid."""
@@ -114,7 +114,7 @@ class OpenAccessView(http.RestView):
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
         if location.open_access:
-            return http.HttpResponseJson(self._attributes_dict(request))
+            return http.HttpResponseOKJson(self._attributes_dict(request))
 
         location.grant_open_access()
         response =  http.HttpResponseCreated(self._attributes_dict(request))
@@ -129,7 +129,7 @@ class OpenAccessView(http.RestView):
         if location.open_access is False:
             return http.HttpResponseNotFound(
                 'Open access to location disallowed.')
-        return http.HttpResponseJson(self._attributes_dict(request))
+        return http.HttpResponseOKJson(self._attributes_dict(request))
 
     def delete(self, request, location_uuid):
         """Deletes a resource.
@@ -169,7 +169,7 @@ class AllowedUsersView(http.RestView):
                 response =  http.HttpResponseCreated(attributes_dict)
                 response['Location'] = attributes_dict['self']
             else:
-                response = http.HttpResponseJson(attributes_dict)
+                response = http.HttpResponseOKJson(attributes_dict)
             return response
         except LookupError as ex:
             return http.HttpResponseNotFound(str(ex))
@@ -186,7 +186,7 @@ class AllowedUsersView(http.RestView):
             return http.HttpResponseNotFound('Location not found.')
         try:
             permission = location.get_permission(user_uuid)
-            return http.HttpResponseJson(permission.attributes_dict())
+            return http.HttpResponseOKJson(permission.attributes_dict())
         except LookupError as ex:
             return http.HttpResponseNotFound(str(ex))
 

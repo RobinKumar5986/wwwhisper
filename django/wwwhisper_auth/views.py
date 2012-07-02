@@ -111,14 +111,14 @@ class Auth(View):
 
             if location is not None and location.can_access(user.uuid):
                 logger.debug('%s: access granted.' % (debug_msg))
-                return http.HttpResponsePlain('Access granted.')
+                return http.HttpResponseOK('Access granted.')
             logger.debug('%s: access denied.' % (debug_msg))
             return http.HttpResponseNotAuthorized()
 
         if location is not None and location.open_access:
             logger.debug('%s: authentication not required, access granted.'
                          % (debug_msg))
-            return http.HttpResponsePlain('Access granted.')
+            return http.HttpResponseOK('Access granted.')
         logger.debug('%s: user not authenticated.' % (debug_msg))
         return http.HttpResponseNotAuthenticated()
 
@@ -177,7 +177,7 @@ class CsrfToken(View):
         with part of the response body .
         """
         csrf_token = csrf(request).values()[0]
-        return http.HttpResponseJson({'csrfToken': str(csrf_token)})
+        return http.HttpResponseOKJson({'csrfToken': str(csrf_token)})
 
 class Login(http.RestView):
     """Allows a user to authenticates with BrowserID."""
@@ -220,5 +220,5 @@ class WhoAmI(http.RestView):
         """Returns an email or an authentication required error."""
         user = request.user
         if user and user.is_authenticated():
-            return http.HttpResponseJson({'email': user.email})
+            return http.HttpResponseOKJson({'email': user.email})
         return http.HttpResponseNotAuthenticated()
