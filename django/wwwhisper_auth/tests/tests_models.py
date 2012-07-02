@@ -1,3 +1,5 @@
+# coding=utf-8
+
 # wwwhisper - web access control.
 # Copyright (C) 2012 Jan Wrobel <wrr@mixedbit.org>
 #
@@ -354,6 +356,10 @@ class LocationsCollectionTest(CollectionTestCase):
                                 'should not contain fragment',
                                 self.locations_collection.create_item,
                                 '/foo#bar')
+        self.assertRaisesRegexp(CreationException,
+                                'should contain only ascii',
+                                self.locations_collection.create_item,
+                                u'/żbik')
 
     def create_location(self, path):
         return self.locations_collection.create_item(path)

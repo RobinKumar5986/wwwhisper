@@ -341,7 +341,7 @@ class LocationsCollection(Collection):
 
         The location path should be canonical and should not contain
         parts that are not used for access control (query, fragment,
-        parameters).
+        parameters). Location should not contain non-ascii characters.
 
         Args:
             path: A canonical path to the location.
@@ -364,6 +364,13 @@ class LocationsCollection(Collection):
         if url_path.contains_params(path):
             raise CreationException(
                 "Path should not contain parameters (';' part).")
+        try:
+            if path.encode('utf-8', 'strict') != path:
+                raise CreationException(
+                    'Path should contain only ascii characters.')
+        except UnicodeError, er:
+            raise CreationException('Invalid path encoding')
+
         if _find(Location, path=path) is not None:
             raise CreationException('Location already exists.')
         location = Location.objects.create(path=path)
