@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Utils to simplify writing of REST style views.
+"""Utils to simplify REST style views.
 
-Contains classes representing commonly used HTTP response codes
-(similarly to HttpResponseNotFound already available in Django).
+Contains classes representing commonly used HTTP responses with
+appropriate content types and encoding.
 """
 
 from django.conf import settings
@@ -36,6 +36,8 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
+TEXT_MIME_TYPE = "text/plain; charset=utf-8"
+JSON_MIME_TYPE = "application/json; charset=utf-8"
 
 class HttpResponseJson(HttpResponse):
     """"Request succeeded.
@@ -46,17 +48,29 @@ class HttpResponseJson(HttpResponse):
     def __init__(self, attributes_dict):
         super(HttpResponseJson, self).__init__(
             json.dumps(attributes_dict),
-            mimetype="application/json; charset=utf-8",
+            mimetype=JSON_MIME_TYPE,
+            status=200)
+
+class HttpResponsePlain(HttpResponse):
+    """"Request succeeded.
+
+    Response contains plain text.
+    """
+
+    def __init__(self, message):
+        super(HttpResponsePlain, self).__init__(
+            message,
+            mimetype=TEXT_MIME_TYPE,
             status=200)
 
 class HttpResponseNoContent(HttpResponse):
-    """Request succeeded but response body is empty."""
+    """Request succeeded, response body is empty."""
 
     def __init__(self):
         super(HttpResponseNoContent, self).__init__(status=204)
 
 class HttpResponseCreated(HttpResponse):
-    """Response returned when resource was created.
+    """Request succeeded, a resource was created.
 
     Contains json representation of the created resource.
     """
@@ -71,7 +85,7 @@ class HttpResponseCreated(HttpResponse):
 
         super(HttpResponseCreated, self).__init__(
             json.dumps(attributes_dict),
-            mimetype="application/json; charset=utf-8",
+            mimetype=JSON_MIME_TYPE,
             status=201)
 
 
@@ -80,17 +94,39 @@ class HttpResponseNotAuthenticated(HttpResponse):
 
     Request can be retried after successul authentication.
     """
+
     def __init__(self):
         """Sets WWW-Authenticate header required by the HTTP standard."""
-        super(HttpResponseNotAuthenticated, self).__init__(status=401)
+        super(HttpResponseNotAuthenticated, self).__init__(
+            'Authentication required.', mimetype=JSON_MIME_TYPE, status=401)
         self['WWW-Authenticate'] = 'VerifiedEmail'
 
+class HttpResponseNotAuthorized(HttpResponse):
+    """User is authenticated but is not authorized to access a resource."""
+
+    def __init__(self):
+        super(HttpResponseNotAuthorized, self).__init__(
+            'User not authorized.', mimetype=JSON_MIME_TYPE, status=403)
+
 class HttpResponseBadRequest(HttpResponse):
-    """Response returned when request was invalid."""
+    """Request invalid.
+
+    The most generic error status, returned when none of the more
+    specific statuses is appropriate.
+    """
 
     def __init__(self, message):
         logger.debug('Bad request %s' % (message))
-        super(HttpResponseBadRequest, self).__init__(message, status=400)
+        super(HttpResponseBadRequest, self).__init__(
+            message, mimetype=TEXT_MIME_TYPE, status=400)
+
+class HttpResponseNotFound(HttpResponse):
+    """Resource not found."""
+
+    def __init__(self, message):
+        logger.debug('Not found %s' % (message))
+        super(HttpResponseNotFound, self).__init__(
+            message, mimetype=TEXT_MIME_TYPE, status=404)
 
 class RestView(View):
     """A common base class for all REST style views.
@@ -136,8 +172,8 @@ class RestView(View):
             try:
                 if not _utf8_encoded_json(request):
                     return HttpResponseBadRequest(
-                        "Invalid Content-Type (only "
-                        "'application/json; charset=utf-8' is acceptable).");
+                        "Invalid Content-Type (only '%s' is acceptable)."
+                        % (JSON_MIME_TYPE));
 
                 json_args = json.loads(request.body)
                 for k in json_args:

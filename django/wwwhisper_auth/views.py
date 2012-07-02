@@ -19,19 +19,14 @@
 from django.conf import settings
 from django.contrib import auth
 from django.core.context_processors import csrf
-from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from functools import wraps
+from wwwhisper_auth import http
 from wwwhisper_auth import url_path
 from wwwhisper_auth.backend import AssertionVerificationException
-from wwwhisper_auth.http import HttpResponseBadRequest
-from wwwhisper_auth.http import HttpResponseJson
-from wwwhisper_auth.http import HttpResponseNoContent
-from wwwhisper_auth.http import HttpResponseNotAuthenticated
-from wwwhisper_auth.http import RestView
 
 import logging
 
@@ -91,7 +86,7 @@ class Auth(View):
        """
         encoded_path = self._extract_encoded_path_argument(request)
         if encoded_path is None:
-            return HttpResponseBadRequest(
+            return http.HttpResponseBadRequest(
                 "Auth request should have 'path' argument.")
         debug_msg = "Auth request to '%s'" % (encoded_path)
 
@@ -106,7 +101,7 @@ class Auth(View):
                     'normalized (starting with / without /../ or /./ or //).'
         if path_validation_error is not None:
             logger.debug('%s: incorrect path.' % (debug_msg))
-            return HttpResponseBadRequest(path_validation_error)
+            return http.HttpResponseBadRequest(path_validation_error)
 
         user = request.user
         location = self.locations_collection.find_location(decoded_path)
@@ -116,16 +111,16 @@ class Auth(View):
 
             if location is not None and location.can_access(user.uuid):
                 logger.debug('%s: access granted.' % (debug_msg))
-                return HttpResponse('Access granted.')
+                return http.HttpResponsePlain('Access granted.')
             logger.debug('%s: access denied.' % (debug_msg))
-            return HttpResponse('Not authorized', status=403)
+            return http.HttpResponseNotAuthorized()
 
         if location is not None and location.open_access:
             logger.debug('%s: authentication not required, access granted.'
                          % (debug_msg))
-            return HttpResponse('Access granted.')
+            return http.HttpResponsePlain('Access granted.')
         logger.debug('%s: user not authenticated.' % (debug_msg))
-        return HttpResponseNotAuthenticated()
+        return http.HttpResponseNotAuthenticated()
 
     @staticmethod
     def _extract_encoded_path_argument(request):
@@ -182,9 +177,9 @@ class CsrfToken(View):
         with part of the response body .
         """
         csrf_token = csrf(request).values()[0]
-        return HttpResponseJson({'csrfToken': str(csrf_token)})
+        return http.HttpResponseJson({'csrfToken': str(csrf_token)})
 
-class Login(RestView):
+class Login(http.RestView):
     """Allows a user to authenticates with BrowserID."""
 
     def post(self, request, assertion):
@@ -194,36 +189,36 @@ class Login(RestView):
         email verified by the BrowserID is known (added to users
         list)."""
         if assertion == None:
-            return HttpResponseBadRequest('BrowserId assertion not set.')
+            return http.HttpResponseBadRequest('BrowserId assertion not set.')
         try:
             user = auth.authenticate(assertion=assertion)
         except AssertionVerificationException as ex:
-            return HttpResponseBadRequest(ex)
+            return http.HttpResponseBadRequest(str(ex))
         if user is not None:
             auth.login(request, user)
             logger.debug('%s successfully logged.' % (user.email))
-            return HttpResponseNoContent()
+            return http.HttpResponseNoContent()
         else:
-            # Return forbidden because request was well formed (400
+            # Unkown user.
+            # Return not authorized because request was well formed (400
             # doesn't seem appropriate).
-            return HttpResponse('Nothing shared with user', status=403)
+            return http.HttpResponseNotAuthorized()
 
-class Logout(RestView):
+class Logout(http.RestView):
     """Allows a user to logout."""
 
     def post(self, request):
         """Logs a user out (invalidates a session cookie)."""
         auth.logout(request)
-        return HttpResponseNoContent()
+        return http.HttpResponseNoContent()
 
 
-class WhoAmI(RestView):
+class WhoAmI(http.RestView):
     """Allows to obtain an email of a currently logged in user."""
 
     def get(self, request):
         """Returns an email or an authentication required error."""
         user = request.user
         if user and user.is_authenticated():
-            return HttpResponseJson({'email': user.email})
-        # TODO: remove error message?
-        return HttpResponse('Login required.', status=401)
+            return http.HttpResponseJson({'email': user.email})
+        return http.HttpResponseNotAuthenticated()
