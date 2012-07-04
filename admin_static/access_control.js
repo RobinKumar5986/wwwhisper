@@ -8,8 +8,14 @@
 (function () {
   'use strict';
 
+  /**
+   * Utility functions.
+   */
   var utils = {
 
+    /**
+     * Throws an assertion if condition is false.
+     */
     assert: function(condition, message) {
       function AssertionError(message) {
         this.message = message;
@@ -23,12 +29,23 @@
       }
     },
 
+    /**
+     * Calls callback for each element of an iterable.
+     */
     each: function(iterable, callback) {
       $.each(iterable, function(id, value) {
         callback(value);
       });
     },
 
+    /**
+     * Finds an element in an array that satisfies a given
+     * filter. Returns null if no such element exists.
+     *
+     * Filtering condition must be satisfied by at most one element,
+     * if multiple elements satisfy the filter, AssertionError is
+     * thrown.
+     */
     findOnly: function(array, filterCallback) {
       var result;
       result = $.grep(array, filterCallback);
@@ -40,10 +57,17 @@
       return result[0];
     },
 
+    /**
+     * Returns true if a value is in an array.
+     */
     inArray: function(value, array) {
       return ($.inArray(value, array) >= 0);
     },
 
+    /**
+     * Removes a value from an array, has no effect if the value is not
+     * in an array.
+     */
     removeFromArray: function(value, array) {
       var idx = $.inArray(value, array);
       if (idx === -1) {
@@ -52,20 +76,36 @@
       array.splice(idx, 1);
     },
 
+    /**
+     * Returns true if stringB is a prefix of stringA.
+     */
     startsWith: function(stringA, stringB) {
       return stringA.lastIndexOf(stringB, 0) === 0;
     },
 
+    /**
+     * Extracts uuid from urn
+     * (e.g. urn2uuid('urn:uuid:6e8bc430-9c3a-11d9-9669-0800200c9a66')
+     * === '6e8bc430-9c3a-11d9-9669-0800200c9a66').
+     */
     urn2uuid: function(urn) {
       return urn.replace('urn:uuid:', '');
     },
 
+    /**
+     * Returns an array of paths (strings) of each location from a
+     * given array of locations.
+     */
     extractLocationsPaths: function(locations) {
       return $.map(locations, function(item) {
         return item.path;
       });
     },
 
+    /**
+     * Returns an array of ids (urns) of users that can access a given
+     * location.
+     */
     allowedUsersIds: function(location) {
       return $.map(location.allowedUsers, function(user) {
         return user.id;
@@ -73,44 +113,80 @@
     }
   };
 
-  function Controller(UIConstructor, stub) {
-    var that = this, ui = new UIConstructor(this);
+  /**
+   * Communicates with the server. Retrieves current access control
+   * list and exposes operations to modify it (add/remove locations
+   * and users, grant/revoke access to a location). Requests UI
+   * updates when data to be displayed changes.
+   */
+  function Controller(ui, stub) {
+    var that = this;
 
-    this.adminUserEmail = null;
     this.locations = [];
     this.users = [];
+
+    // An email of a currently signed in user that accesses the admin
+    // application. This is kept to prevent the user from deleting a
+    // permission that allows him to access the admin application.
+    // Such operation is not illegal in itself and the back-end allows
+    // it, but it is unlikely what the user would like to do (after
+    // deleting the permission the admin application becomes unusable
+    // for the user and only other admin user can fix it).
+    this.adminUserEmail = null;
+    // Path to the admin application
     this.adminPath = null;
     this.errorHandler = ui;
 
+    /**
+     * Returns true if a user can access a location.
+     */
     this.canAccess = function(user, location) {
       return location.openAccess || utils.inArray(
         user.id, utils.allowedUsersIds(location));
     };
 
+    /**
+     * Removes a user from an array of users that can access a given
+     * location (this affect only a local representation of the
+     * location object, nothing is sent to the server).
+     */
     this.removeAllowedUser = function(user, location) {
       location.allowedUsers = $.grep(location.allowedUsers, function(u) {
         return u.id !== user.id;
       });
     };
 
+    /**
+     * Returns a user object with a given email or null.
+     */
     this.findUserWithEmail = function(email) {
       return utils.findOnly(that.users, function(user) {
         return user.email === email;
       });
     };
 
+    /**
+     * Returns a location object with a given id or null.
+     */
     this.findLocationWithId = function(id) {
       return utils.findOnly(that.locations, function(location) {
         return location.id === id;
       });
     };
 
+    /**
+     * Returns an array of locations that a given user can access.
+     */
     this.accessibleLocations = function(user) {
       return $.grep(that.locations, function(location) {
         return that.canAccess(user, location);
       });
     };
 
+    /**
+     * Retrieves an array of locations from the server, invokes
+     * nextCallback when successfully done.
+     */
     this.getLocations = function(nextCallback) {
       stub.ajax('GET', 'api/locations/', null, function(result) {
         that.locations = result.locations;
@@ -118,6 +194,10 @@
       });
     };
 
+    /**
+     * Retrieves an array of users from the server, invokes
+     * nextCallback when successfully done.
+     */
     this.getUsers = function(nextCallback) {
       stub.ajax('GET', 'api/users/', null, function(result) {
         that.users = result.users;
@@ -125,13 +205,19 @@
       });
     };
 
+    /**
+     * Retrieves an email of currently signed in user, invokes
+     * nextCallback when successfully done. Displays warning if no user
+     * is sign in, which means the admin interface is likely
+     * misconfigured (can be accessed without authentication).
+     */
     this.getAdminUser = function(nextCallback) {
       stub.setErrorHandler({
         cleanError: function() {},
         handleError: function(message, status) {
           if (status === 401) {
             that.errorHandler.handleError(
-              'WWWhisper misconfigured: Admin application can ' +
+              'wwwhisper misconfigured: Admin application can ' +
                 'be accessed without authentication!');
             stub.setErrorHandler(that.errorHandler);
             nextCallback();
@@ -147,8 +233,14 @@
         stub.setErrorHandler(that.errorHandler);
         nextCallback();
       });
-    }
+    };
 
+    /**
+     * Returns a callback that, when invoked, executes all callbacks
+     * from a callbacks array in sequence. Each callback from the
+     * array needs to accept a single argument: the next callback to
+     * be invoked.
+     */
     this.buildCallbacksChain = function(callbacks) {
       if (callbacks.length === 1) {
         return callbacks[0];
@@ -160,23 +252,21 @@
       };
     };
 
+    /**
+     * Adds a location with a given path.
+     *
+     * Refuses to add sub location to the admin application (this is
+     * just a client side check to prevent the user from shooting
+     * himself in the foot).
+     */
     this.addLocation = function(locationPathArg) {
-      // TODO: do not trim. Spaces are significant.
       var locationPath = $.trim(locationPathArg);
-      if (locationPath.length === 0 || utils.inArray(
-        locationPath, utils.extractLocationsPaths(that.locations))) {
-        // TODO: Should existence check be done by client? Path is
-        // encoded anyway on the server site, so this check is not
-        // 100% accurate.
-        return;
-      }
-      if (utils.startsWith(locationPath, that.adminPath)) {
+      if (utils.startsWith(locationPath, that.adminPath + '/')) {
         this.errorHandler.handleError(
           'Adding sublocations to admin is not supported '+
             '(It could easily cut off access to the admin application.)');
         return;
       }
-      //if (locationPath.
       stub.ajax('POST', 'api/locations/', {path: locationPath},
                 function(newLocation) {
                   that.locations.push(newLocation);
@@ -192,6 +282,9 @@
         });
     };
 
+    /**
+     * Adds a user with a given email. Invokes a callback on success.
+     */
     this.addUser = function(emailArg, nextCallback) {
       stub.ajax('POST', 'api/users/', {email: emailArg},
                 function(user) {
@@ -213,6 +306,9 @@
                 });
     };
 
+    /**
+     * Allows not authenticated access to a location.
+     */
     this.grantOpenAccess = function(location) {
       if (location.openAccess) {
         return;
@@ -228,6 +324,9 @@
       );
     };
 
+    /**
+     * Disallows not authenticated access to a location.
+     */
     this.revokeOpenAccess = function(location) {
       if (!location.openAccess) {
         return;
@@ -243,6 +342,11 @@
       );
     };
 
+    /**
+     * Grants a user with a given email access to a given location.
+     *
+     * Is user with such email does not exist, adds the user first.
+     */
     this.grantAccess = function(email, location) {
       var cleanedEmail, user, grantPermissionCallback;
       cleanedEmail = $.trim(email);
@@ -252,7 +356,7 @@
 
       user = that.findUserWithEmail(cleanedEmail);
       if (user !== null && that.canAccess(user, location)) {
-        // User already can access location.
+        // User already can access the location.
         return;
       }
 
@@ -274,6 +378,9 @@
       }
     };
 
+    /**
+     * Revokes access to a given location by a given user.
+     */
     this.revokeAccess = function(user, location) {
       stub.ajax(
         'DELETE',
@@ -285,14 +392,17 @@
         });
     };
 
-    this.initialize = function() {
+    /**
+     * Activates the admin application (retrieves all dynamic data
+     * from the server and refreshes the UI).
+     */
+    this.activate = function() {
       this.adminPath = window.location.pathname;
       // Strip trailing slash.
       if (this.adminPath !== null &&
           this.adminPath.charAt(this.adminPath.length - 1) === '/') {
         this.adminPath = this.adminPath.slice(0, this.adminPath.length - 1);
       }
-      ui.initialize();
       stub.setErrorHandler(ui);
       that.buildCallbacksChain([that.getLocations,
                                 that.getUsers,
@@ -301,16 +411,45 @@
     };
   }
 
-  function UI(controller) {
-    var view = {
-      locationPath : null,
-      locationInfo : null,
-      allowedUser : null,
-      addLocation : null,
-      user : null,
-      errorMessage : null
-    }, that = this;
+  /**
+   * Handles user interface. Reacts to the user input and dispatches
+   * appropriate access management operations to the Controller
+   * object.
+   */
+  function UI() {
 
+    // Cloned parts of a DOM tree, responsible for displaying and
+    // manipulating access control list. The structure is defined in
+    // the html file, this way js code does not need to create complex
+    // DOM 'manually'.
+    var view = {
+      // A path to a location + controls to remove and visit a location.
+      locationPath : $('#location-list-item').clone(true),
+      // A list of users that can access a location (contains
+      // view.allowedUser elements) + input box for adding a new user.
+      locationInfo : $('#location-info-list-item').clone(true),
+      // A single user that is allowed to access a location + control
+      // to revoke access.
+      allowedUser : $('#allowed-user-list-item').clone(true),
+      // An input box for adding a new location.
+      addLocation : $('#add-location').clone(true),
+      // User that is on contact list (was granted access to some
+      // location at some point) + controls to remove the user (along
+      // with access to all locations), check which locations a user
+      // can access, notify a user and grant access to currently
+      // active location.
+      user : $('.user-list-item').clone(true),
+      // Box for displaying error messages.
+      errorMessage : $('.alert-error').clone(true)
+    },
+    that = this,
+    controller = null;
+
+    /**
+     * Annotates currently signed in user to make it clearer that this
+     * user is treated a little specially (can not be removed, can not
+     * be revoked access to the admin location).
+     */
     function userAnnotation(user) {
       if (user.email === controller.adminUserEmail) {
         return ' (you)';
@@ -322,19 +461,36 @@
       return $(document.activeElement);
     }
 
+    /**
+     * Returns id of a DOM element responsible for displaying a given
+     * location path (clone of the view.locationPath).
+     */
     function locationPathId(location) {
       return 'location-' + utils.urn2uuid(location.id);
     }
 
+    /**
+     * Returns id of a DOM element responsible for displaying a list
+     * of users allowed to access a given location (clone of the
+     * view.locationInfo).
+     */
     function locationInfoId(location) {
-      return 'resource-info-' + utils.urn2uuid(location.id);
+      return 'location-info-' + utils.urn2uuid(location.id);
     }
 
+    /**
+     * Returns id of an input box responsible for adding emails of
+     * users allowed to access a given location.
+     */
     function addAllowedUserInputId(location) {
       return 'add-allowed-user-input-' + utils.urn2uuid(location.id);
     }
 
-    function findSelectLocation() {
+    /**
+     * Returns an active location (the one for which a list of allowed
+     * users is currently displayed) or null.
+     */
+    function findActiveLocation() {
       var activeElement, urn;
       activeElement = $('#location-list').find('.active');
       if (activeElement.length === 0) {
@@ -346,7 +502,11 @@
       });
     }
 
+    /**
+     * Displays a dialog to compose a notification about shared resources.
+     */
     function showNotifyDialog(to, locations) {
+      // TODO: finalize this dialog.
       var body, website, locationsString, delimiter;
       if (locations.length === 0) {
         body = 'I have shared nothing with you. Enjoy.';
@@ -356,19 +516,26 @@
           website = 'websites';
         }
         locationsString = $.map(locations, function(locationPath) {
-          delimiter = (locationPath[0] !== '/') ? '/' : '';
-          return 'https://' + location.host + delimiter + locationPath;
+          return 'https://' + window.location.host + locationPath;
         }).join('\n');
 
         body = 'I have shared ' + website + ' with you.\n'
           + 'Please visit:\n' + locationsString;
       }
       $('#notify-modal')
-        .find('#notify-to').attr('value', to.join(', ')).end()
-        .find('#notify-body').text(body).end()
+        .find('#notify-to').attr('value', to.join(', '))
+        .end()
+        .find('#notify-body').text(body)
+        .end()
         .modal('show');
     }
 
+    /**
+     * Creates a DOM subtree to handle a given location. The subtree
+     * contains a list of emails of allowed users, an input box to
+     * grant access to a new user, controls to revoke access from a
+     * particular user.
+     */
     function createLocationInfo(location) {
       var locationInfo, allowedUserList, isAdminLocation, isAdminUser;
       isAdminLocation = (location.path === controller.adminPath);
@@ -379,38 +546,36 @@
         .find('.add-allowed-user')
         .attr('id', addAllowedUserInputId(location))
         .change(function() {
-          var userId = $.trim($(this).val())
+          var userId = $.trim($(this).val());
           if (userId === '*') {
             controller.grantOpenAccess(location);
           } else {
             controller.grantAccess(userId, location);
           }
         })
-      // TODO: fix of remove.
-      // .typeahead({
-      //   'source': model.users
-      // })
         .end();
 
       allowedUserList = locationInfo.find('.allowed-user-list');
       if (location.openAccess) {
-        // TODO: remove mail icon
         view.allowedUser.clone(true)
-          .find('.user-mail').text('*').end()
+          .find('.user-mail').text('*')
+          .end()
           .find('.unshare').click(function() {
             controller.revokeOpenAccess(location);
-          }).end()
+          })
+          .end()
           .appendTo(allowedUserList);
       } else {
         utils.each(location.allowedUsers, function(user) {
           isAdminUser = (user.email === controller.adminUserEmail);
           view.allowedUser.clone(true)
-            .find('.user-mail').text(user.email + userAnnotation(user)).end()
+            .find('.user-mail').text(user.email + userAnnotation(user))
+            .end()
             .find('.unshare').click(function() {
               controller.revokeAccess(user, location);
             })
-             // Protect the current user from disalowing herself
-             // access to the admin application.
+             // Protect the currently signed-in user from disallowing
+             // herself access to the admin application.
             .css('visibility',
                  isAdminLocation && isAdminUser ? 'hidden' : 'visible')
             .end()
@@ -420,57 +585,14 @@
       locationInfo.appendTo('#location-info-list');
     }
 
-    function highlightAccessibleLocations(user) {
-      utils.each(controller.locations, function(location) {
-        var id = '#' + locationPathId(location);
-        if (controller.canAccess(user, location)) {
-          $(id + ' a').addClass('accessible');
-        } else {
-          $(id + ' a').addClass('not-accessible');
-        }
-      });
-    }
-
-    function highlighLocationsOff() {
-      $('#location-list a').removeClass('accessible');
-      $('#location-list a').removeClass('not-accessible');
-    }
-
-    function showUsers(selectLocation) {
-      var userView, isAdminUser;
-      utils.each(controller.users, function(user) {
-        userView = view.user.clone(true);
-        if (selectLocation !== null &&
-            !controller.canAccess(user, selectLocation)) {
-          userView.find('.share')
-            .removeClass('hide')
-            .click(function() {
-              controller.grantAccess(user.email, selectLocation);
-            });
-        }
-        isAdminUser = (user.email === controller.adminUserEmail);
-        userView.find('.user-mail')
-          .text(user.email + userAnnotation(user))
-          .end()
-          .find('.remove-user').click(function() {
-            controller.removeUser(user);
-          })
-          .css('visibility', isAdminUser ? 'hidden' : 'visible')
-          .end()
-          .find('.highlight').hover(function() {
-            highlightAccessibleLocations(user);
-          }, highlighLocationsOff).end()
-          .find('.notify').click(function() {
-            showNotifyDialog(
-              [user.email],
-              utils.extractLocationsPaths(
-                controller.accessibleLocations(user))
-            );
-          }).end()
-          .appendTo('#user-list');
-      });
-    }
-
+    /**
+     * Creates a DOM subtree to handle a list of all defined
+     * locations. The subtree contains locations paths, controls to
+     * add/remove a location and to compose notification about a
+     * shared location, a link to visit a location with a
+     * browser. When location is clicked, more details become visible
+     * (created with the createLocationInfo function).
+     */
     function showLocations() {
       var isAdminLocation;
       utils.each(controller.locations, function(location) {
@@ -479,8 +601,10 @@
           .attr('id', locationPathId(location))
           .attr('location-urn', location.id)
           .find('.url').attr(
-            'href', '#' + locationInfoId(location)).end()
-          .find('.path').text(location.path).end()
+            'href', '#' + locationInfoId(location))
+          .end()
+          .find('.path').text(location.path)
+          .end()
           .find('.remove-location').click(function(event) {
             // Do not show removed location info.
             event.preventDefault();
@@ -492,35 +616,114 @@
           .find('.notify').click(function() {
             showNotifyDialog(
               location.allowedUsers, [location.path]);
-          }).end()
+          })
+          .end()
           .find('.view-page').click(function() {
             window.open(location.path,'_blank');
-          }).end()
+          })
+          .end()
           .appendTo('#location-list');
         createLocationInfo(location);
       });
 
       view.addLocation.clone(true)
         .find('#add-location-input')
-      // TODO: fix or remove.
-      // .typeahead({
-      //   'source': utils.allLocationsPaths()
-      // })
         .change(function() {
           controller.addLocation($(this).val());
-        }).end()
+        })
+        .end()
         .appendTo('#location-list');
     }
 
-    function showLocationInfo(location) {
+    /**
+     * Activates a location. Active location is the one for which
+     * detailed information and controls are displayed.
+     */
+    function activateLocation(location) {
       $('#' + locationPathId(location)).addClass('active');
       $('#' + locationInfoId(location)).addClass('active');
     }
 
+    /**
+     * Highlights locations a user can access.
+     */
+    function highlightAccessibleLocations(user) {
+      utils.each(controller.locations, function(location) {
+        var id = '#' + locationPathId(location);
+        if (controller.canAccess(user, location)) {
+          $(id + ' a').addClass('accessible');
+        } else {
+          $(id + ' a').addClass('not-accessible');
+        }
+      });
+    }
+
+    /**
+     * Turns off location highlighting.
+     */
+    function highlighLocationsOff() {
+      $('#location-list a').removeClass('accessible');
+      $('#location-list a').removeClass('not-accessible');
+    }
+
+    /**
+     * Creates a DOM subtree to handle a list of known users. The
+     * subtree contains an email of each user and controls to remove a
+     * user, highlight which locations a user can access, notify a
+     * user about shared locations. It also contains a control to
+     * grant a user access to a currently active location (this
+     * control is visible only if the user can not already access the
+     * location).
+     */
+    function showUsers(activeLocation) {
+      var userView, isAdminUser;
+      utils.each(controller.users, function(user) {
+        userView = view.user.clone(true);
+        if (activeLocation !== null &&
+            !controller.canAccess(user, activeLocation)) {
+          userView.find('.share')
+            .removeClass('hide')
+            .click(function() {
+              controller.grantAccess(user.email, activeLocation);
+            });
+        }
+        isAdminUser = (user.email === controller.adminUserEmail);
+        userView.find('.user-mail')
+          .text(user.email + userAnnotation(user))
+          .end()
+          .find('.remove-user').click(function() {
+            controller.removeUser(user);
+          })
+           // Do not allow currently signed-in user to delete herself
+           // (this is only UI enforced, from a server perspective such
+           // operation is OK).
+          .css('visibility', isAdminUser ? 'hidden' : 'visible')
+          .end()
+          .find('.highlight').hover(function() {
+            highlightAccessibleLocations(user);
+          }, highlighLocationsOff)
+          .end()
+          .find('.notify').click(function() {
+            showNotifyDialog(
+              [user.email],
+              utils.extractLocationsPaths(
+                controller.accessibleLocations(user))
+            );
+          })
+          .end()
+          .appendTo('#user-list');
+      });
+    }
+
+    // TODO: remove this?
     this.cleanError = function() {
       $('.alert-error').alert('close');
     };
 
+    /**
+     * Displays an error and registers callback to hide it after some
+     * time elapses.
+     */
     this.handleError = function(message, status) {
       var error = view.errorMessage.clone(true);
 
@@ -536,13 +739,23 @@
       }, 20000);
     };
 
+    /**
+     * Refreshes all controls. Displayed data (with the exception of
+     * an error message) is never updated partially. All UI elements
+     * are cleared and recreated.
+     */
     this.refresh = function() {
-      var focusedElementId, selectLocation;
-      selectLocation = findSelectLocation();
+      var focusedElementId, activeLocation;
+      // DOM subtrees representing a currently focused input box and
+      // an active location will be removed, corresponding elements in
+      // a new DOM structure need to be focused and activated.
+      activeLocation = findActiveLocation();
       focusedElementId = focusedElement().attr('id');
 
-      if (selectLocation === null && controller.locations.length > 0) {
-        selectLocation = controller.locations[0];
+      // Active location was probably just removed, activate the first
+      // location on the list.
+      if (activeLocation === null && controller.locations.length > 0) {
+        activeLocation = controller.locations[0];
       }
 
       $('#location-list').empty();
@@ -550,35 +763,48 @@
       $('#user-list').empty();
 
       showLocations();
-      showUsers(selectLocation);
+      showUsers(activeLocation);
 
-      if (selectLocation !== null) {
-        showLocationInfo(selectLocation);
+      if (activeLocation !== null) {
+        activateLocation(activeLocation);
       }
       if (focusedElementId) {
         $('#' + focusedElementId).focus();
       }
     };
 
-    this.initialize = function() {
-      view.locationPath = $('#location-list-item').clone(true);
-      view.locationInfo = $('#location-info-list-item').clone(true);
-      view.allowedUser = $('#allowed-user-list-item').clone(true);
-      view.locationInfo.find('#allowed-user-list-item').remove();
-      view.addLocation = $('#add-location').clone(true);
-      view.user = $('.user-list-item').clone(true);
-      view.errorMessage = $('.alert-error').clone(true);
-      $('.locations-root').text(location.host);
+    /**
+     * Must be called before the first call to refresh().
+     */
+    this.setController = function(controllerArg) {
+      controller = controllerArg;
+    };
 
+    /**
+     * Initializes the UI.
+     */
+    function initialize() {
+      // locationInfo contains a single allowed user element from the
+      // html document. Remove it.
+      view.locationInfo.find('#allowed-user-list-item').remove();
+
+      // Refreshes the UI when new location is activated (to update
+      // the user list, so only users that can not access the location
+      // have active 'share' icon).
       view.locationPath.find('a').click(function(e) {
         e.preventDefault();
         $(this).tab('show');
         that.refresh();
       });
 
-      // TODO: this is only needed if alert is to be removed programatically.
+      // Displays for which host the admin interface manages access
+      // (in a future may need to be configurable).
+      $('.locations-root').text(location.host);
+
+      // TODO: this is only needed if alert is to be removed programmatically.
       $(".alert").alert();
 
+      // Configure static help messages.
       $('.help').click(function() {
         if ($('.help-message').hasClass('hide')) {
           $('.help-message').removeClass('hide');
@@ -588,13 +814,25 @@
           $('.help').text('Show help');
         }
       });
-    };
+    }
+    initialize();
+  }
+
+  function initialize() {
+    var ui, stub, controller;
+    // UI depends on controller, but can be created without it.
+    ui = new UI();
+    stub = new wwwhisper.Stub(ui);
+    controller = new Controller(ui, stub);
+    ui.setController(controller);
+    controller.activate();
   }
 
   if (window.ExposeForTests) {
+    // For qunit tests, expose objects to be tested.
     window.utils = utils;
     window.Controller = Controller;
   } else {
-    (new Controller(UI, new wwwhisper.Stub())).initialize();
+    initialize();
   }
 }());

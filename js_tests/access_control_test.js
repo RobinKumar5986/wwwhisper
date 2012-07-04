@@ -54,7 +54,7 @@
 
   QUnit.testStart = function() {
     mock_stub = new MockStub();
-    controller = new Controller(MockUI, mock_stub);
+    controller = new Controller(new MockUI(), mock_stub);
   };
 
   module('Utility functions');
@@ -179,16 +179,6 @@
   });
 
   module('Controller');
-
-  test('Controller creates UI object with itself as parameter', function(){
-    var passedControlled, UIConstructor;
-    passedControlled = null;
-    UIConstructor = function(controllerArg)  {
-      passedControlled = controllerArg;
-    };
-    controller = new Controller(UIConstructor, null);
-    deepEqual(controller, passedControlled);
-  });
 
   test('canAccess', function() {
     ok(controller.canAccess(
@@ -384,18 +374,8 @@
     mock_stub.verify();
   });
 
-  test('addLocation not invoked when location already exists', function() {
-    deepEqual(controller.locations, []);
-    // Only single ajax call is expected.
-    mock_stub.expectAjaxCall('POST', 'api/locations/', {path: '/foo'},
-                             { id: '13', path: '/foo', allowedUsers: []});
-    controller.addLocation('/foo');
-    controller.addLocation('/foo');
-    mock_stub.verify();
-  });
-
   test('addLocation refuses to add sublocations to admin', function() {
-    controller.adminPath = '/admin/';
+    controller.adminPath = '/admin';
     controller.addLocation('/admin/api');
     deepEqual(controller.locations, []);
     ok(utils.startsWith(controller.errorHandler.lastError,
