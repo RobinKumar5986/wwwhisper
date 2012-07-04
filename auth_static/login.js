@@ -9,6 +9,10 @@
   'use strict';
   var stub = new wwwhisper.Stub();
 
+  /**
+   * Sends an assertion from a BrowserID sign-in window to the
+   * authentication backend. Reloads the page if login succeeded.
+   */
   function login(assertion) {
     if (assertion) {
       stub.setErrorHandler({
@@ -16,7 +20,7 @@
 
         handleError: function(message, status) {
           if (status === 403) {
-            // Login failed because user is unknown.
+            // Login failed because the user is unknown.
             $('#sign-in').addClass('hidden');
             $('#nothing-shared').removeClass('hidden');
           } else {
@@ -36,6 +40,10 @@
     }
   }
 
+  /**
+   * Executes callback if the user is not authenticated, otherwise
+   * takes the user to the logout page.
+   */
   function executeIfLoggedOut(callback) {
     stub.setErrorHandler({
       cleanError: function() {},
@@ -51,6 +59,7 @@
       }
     });
 
+    // Whoami succeeds only for authenticated users.
     stub.ajax('GET', '/auth/api/whoami/', null,
               function(result) {
                 // Logged in, go to the logout page.
@@ -62,6 +71,7 @@
     $('#sign-in').removeClass('hidden');
     $('#browserid').removeClass('hidden');
     $('#nothing-shared').addClass('hidden');
+    // Register a callback to process a BrowserID assertion.
     $('#browserid').click(function() {
       navigator.id.get(login);
       return false;
