@@ -36,7 +36,7 @@
                   window.location.reload(true);
                 });
     } else {
-      alert('BrowserID assertion not set');
+      alert('BrowserID assertion not set. Login failed.');
     }
   }
 
@@ -61,7 +61,7 @@
 
     // Whoami succeeds only for authenticated users.
     stub.ajax('GET', '/auth/api/whoami/', null,
-              function(result) {
+              function() {
                 // Logged in, go to the logout page.
                 window.location = '/auth/logout';
               });

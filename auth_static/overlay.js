@@ -17,8 +17,8 @@
      * because all content below the iframe does not receive user's
      * input (e.g. links are non-clickable).
      */
-    handleError: function(message, status) {
-      $('#wwwhisper-iframe', window.parent.document).remove()
+    handleError: function() {
+      $('#wwwhisper-iframe', window.parent.document).remove();
     }
   });
 
@@ -35,7 +35,7 @@
                 // the iframe.
                 email = email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
               }
-              $('#email').text(email)
+              $('#email').text(email);
               $('#wwwhisper-overlay').removeClass('hidden');
             });
 }());

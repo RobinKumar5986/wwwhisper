@@ -24,7 +24,7 @@
     function ajaxCommon(method, resource, params, headersDict,
                         successCallback) {
       if (errorHandler !== null) {
-        errorHandler.cleanError()
+        errorHandler.cleanError();
       }
 
       if (params === null) {
@@ -35,7 +35,7 @@
           success: successCallback,
           error: function(jqXHR) {
             if (errorHandler !== null) {
-              errorHandler.handleError(jqXHR.responseText, jqXHR.status)
+              errorHandler.handleError(jqXHR.responseText, jqXHR.status);
             } else {
               // TODO: nice messages for user input related failures.
               $('body').html(jqXHR.responseText);
@@ -52,7 +52,7 @@
           success: successCallback,
           error: function(jqXHR) {
             if (errorHandler !== null) {
-              errorHandler.handleError(jqXHR.responseText, jqXHR.status)
+              errorHandler.handleError(jqXHR.responseText, jqXHR.status);
             } else {
               // TODO: nice messages for user input related failures.
               $('body').html(jqXHR.responseText);
