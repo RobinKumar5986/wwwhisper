@@ -11,7 +11,7 @@
 
   /**
    * Sends an assertion from a BrowserID sign-in window to the
-   * authentication backend. Reloads the page if login succeeded.
+   * authentication back-end. Reloads the page if login succeeded.
    */
   function login(assertion) {
     if (assertion) {

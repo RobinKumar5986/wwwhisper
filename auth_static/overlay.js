@@ -11,12 +11,21 @@
   stub.setErrorHandler({
     cleanError: function() {},
 
+    /**
+     * User is not authenticated or some other error occurred. Remove
+     * the overlay iframe. Keeping overlay hidden is not enough,
+     * because all content below the iframe does not receive user's
+     * input (e.g. links are non-clickable).
+     */
     handleError: function(message, status) {
-      // Remove iframe:
       $('#wwwhisper-iframe', window.parent.document).remove()
     }
   });
 
+  /**
+   * Checks if a user is authenticates and if so, shows an overlay
+   * with the user's email and 'sign-out' button.
+   */
   stub.ajax('GET', '/auth/api/whoami/', null,
             function(result) {
               var email;
