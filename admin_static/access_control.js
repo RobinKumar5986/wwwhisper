@@ -475,7 +475,8 @@
       errorMessage : $('.alert-error').clone(true)
     },
     that = this,
-    controller = null;
+    controller = null,
+    ENTER_KEY = 13;
 
     /**
      * Annotates currently signed in user to make it clearer that this
@@ -578,18 +579,28 @@
         .attr('location-urn', location.id)
         .find('.add-allowed-user')
         .attr('id', addAllowedUserInputId(location))
-        .change(function() {
-          var userId = $.trim($(this).val());
-          if (userId === '*') {
-            controller.grantOpenAccess(location);
-          } else {
-            controller.grantAccess(userId, location);
+        .keydown(function(event) {
+          var userId;
+          if (event.which === ENTER_KEY) {
+            userId = $.trim($(this).val());
+            if (userId === '*') {
+              controller.grantOpenAccess(location);
+            } else if (userId !== '') {
+              controller.grantAccess(userId, location);
+            }
+            $(this).val('');
           }
         })
         .end();
 
       allowedUserList = locationInfo.find('.allowed-user-list');
       if (location.openAccess) {
+        // Disable input box for entering email addresses of allowed user.
+        locationInfo.find('.add-allowed-user')
+          .addClass('disabled')
+          .attr('placeholder', 'Location does not require authentication.')
+          .attr('disabled', true);
+
         view.allowedUser.clone(true)
           .find('.user-mail').text('*')
           .end()
@@ -617,6 +628,8 @@
           });
       }
       locationInfo.appendTo('#location-info-list');
+      // Break circular references.
+      locationInfo = null;
     }
 
     /**
@@ -663,11 +676,18 @@
 
       view.addLocation.clone(true)
         .find('#add-location-input')
-        .change(function() {
-          controller.addLocation($(this).val(), function(newLocation) {
-            // Activate the newly added location.
-            activateLocation(newLocation);
-          });
+        .keydown(function(event) {
+          var path;
+          if (event.which === ENTER_KEY) {
+            path = $.trim($(this).val());
+            if (path !== '') {
+              controller.addLocation($(this).val(), function(newLocation) {
+                // Activate the newly added location.
+                activateLocation(newLocation);
+              });
+            }
+            $(this).val('');
+          }
         })
         .end()
         .appendTo('#location-list');
@@ -756,6 +776,8 @@
           .end()
           .appendTo('#user-list');
       });
+      // Break circular reference.
+      userView = null;
     }
 
     // TODO: remove this?
