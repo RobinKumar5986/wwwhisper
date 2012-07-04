@@ -121,6 +121,27 @@
     deepEqual(array, []);
   });
 
+  test('sort', function() {
+    var array = ['b', 'aa', 'a', 'z'];
+    deepEqual(utils.sort(array), ['a', 'aa', 'b', 'z']);
+    // Sort should not modify the input array.
+    deepEqual(array, ['b', 'aa', 'a', 'z']);
+    deepEqual(utils.sort([]), []);
+  });
+
+  test('sortByProperty', function() {
+    var array = [{f1: 'a', f2: 'b'},
+                 {f1: 'b', f2: 'aa'},
+                 {f1: 'c', f2: 'a'},
+                 {f1: 'd', f2: 'z'}];
+    deepEqual(utils.sortByProperty(array, 'f2'),
+             [{f1: 'c', f2: 'a'},
+              {f1: 'b', f2: 'aa'},
+              {f1: 'a', f2: 'b'},
+              {f1: 'd', f2: 'z'}]);
+    deepEqual(utils.sortByProperty(array, 'f1'), array);
+  });
+
   test('startsWith', function() {
     ok(utils.startsWith('foobar', 'foo'));
     ok(utils.startsWith('foo', 'foo'));
@@ -354,8 +375,8 @@
         }
       ]
     };
-    callbackCalled = false;
     mock_stub.expectAjaxCall('GET', 'api/locations/', null, ajaxCallResult);
+    callbackCalled = false;
     controller.getLocations(function() {
       callbackCalled = true;
     });
@@ -365,12 +386,18 @@
   });
 
   test('addLocation', function() {
+    var callbackCalled;
     deepEqual(controller.locations, []);
     var newLocation = {id: '13', path: '/foo', allowedUsers: []};
     mock_stub.expectAjaxCall('POST', 'api/locations/', {path: '/foo'},
                              newLocation);
-    controller.addLocation('/foo');
+    callbackCalled = false;
+    controller.addLocation('/foo', function(location) {
+      deepEqual(location, newLocation);
+      callbackCalled = true;
+    });
     deepEqual(controller.locations, [newLocation]);
+    ok(callbackCalled);
     mock_stub.verify();
   });
 

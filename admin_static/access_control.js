@@ -77,6 +77,35 @@
     },
 
     /**
+     * Returns array sorted in order defined by a given comparator (or
+     * alphabetical if comparator is not passed). Does not modify the
+     * input array.
+     */
+    sort: function(array, comparator) {
+      var arrayCopy = array.slice(0, array.length);
+      arrayCopy.sort(comparator);
+      return arrayCopy;
+    },
+
+    /**
+     * Returns array of object sorted by a property which name (a
+     * string) is passed as an argument. Sort order is ascending. Each
+     * object in the input array needs to have a property on which
+     * sorting is done. Does not modify the input array.
+     */
+    sortByProperty: function(array, propertyName) {
+      return utils.sort(array, function(a, b) {
+        if (a[propertyName] < b[propertyName]) {
+          return -1;
+        }
+        if (a[propertyName] > b[propertyName]) {
+          return 1;
+        }
+        return 0;
+      });
+    },
+
+    /**
      * Returns true if stringB is a prefix of stringA.
      */
     startsWith: function(stringA, stringB) {
@@ -137,6 +166,7 @@
     this.adminPath = null;
     this.errorHandler = ui;
 
+
     /**
      * Returns true if a user can access a location.
      */
@@ -185,33 +215,33 @@
 
     /**
      * Retrieves an array of locations from the server, invokes
-     * nextCallback when successfully done.
+     * successCallback when successfully done.
      */
-    this.getLocations = function(nextCallback) {
+    this.getLocations = function(successCallback) {
       stub.ajax('GET', 'api/locations/', null, function(result) {
         that.locations = result.locations;
-        nextCallback();
+        successCallback();
       });
     };
 
     /**
      * Retrieves an array of users from the server, invokes
-     * nextCallback when successfully done.
+     * successCallback when successfully done.
      */
-    this.getUsers = function(nextCallback) {
+    this.getUsers = function(successCallback) {
       stub.ajax('GET', 'api/users/', null, function(result) {
         that.users = result.users;
-        nextCallback();
+        successCallback();
       });
     };
 
     /**
      * Retrieves an email of currently signed in user, invokes
-     * nextCallback when successfully done. Displays warning if no user
+     * successCallback when successfully done. Displays warning if no user
      * is sign in, which means the admin interface is likely
      * misconfigured (can be accessed without authentication).
      */
-    this.getAdminUser = function(nextCallback) {
+    this.getAdminUser = function(successCallback) {
       stub.setErrorHandler({
         cleanError: function() {},
         handleError: function(message, status) {
@@ -220,7 +250,7 @@
               'wwwhisper misconfigured: Admin application can ' +
                 'be accessed without authentication!');
             stub.setErrorHandler(that.errorHandler);
-            nextCallback();
+            successCallback();
           } else {
             // Other error.
             $('body').html(message);
@@ -231,7 +261,7 @@
       stub.ajax('GET', '/auth/api/whoami/', null, function(result) {
         that.adminUserEmail = result.email;
         stub.setErrorHandler(that.errorHandler);
-        nextCallback();
+        successCallback();
       });
     };
 
@@ -253,13 +283,14 @@
     };
 
     /**
-     * Adds a location with a given path.
+     * Adds a location with a given path. Invokes a callback on
+     * success, passing to it the newly created location.
      *
      * Refuses to add sub location to the admin application (this is
      * just a client side check to prevent the user from shooting
      * himself in the foot).
      */
-    this.addLocation = function(locationPathArg) {
+    this.addLocation = function(locationPathArg, successCallback) {
       var locationPath = $.trim(locationPathArg);
       if (utils.startsWith(locationPath, that.adminPath + '/')) {
         this.errorHandler.handleError(
@@ -271,6 +302,7 @@
                 function(newLocation) {
                   that.locations.push(newLocation);
                   ui.refresh();
+                  successCallback(newLocation);
                 });
     };
 
@@ -285,11 +317,11 @@
     /**
      * Adds a user with a given email. Invokes a callback on success.
      */
-    this.addUser = function(emailArg, nextCallback) {
+    this.addUser = function(emailArg, successCallback) {
       stub.ajax('POST', 'api/users/', {email: emailArg},
                 function(user) {
                   that.users.push(user);
-                  nextCallback(user);
+                  successCallback(user);
                 });
     };
 
@@ -538,6 +570,7 @@
      */
     function createLocationInfo(location) {
       var locationInfo, allowedUserList, isAdminLocation, isAdminUser;
+
       isAdminLocation = (location.path === controller.adminPath);
 
       locationInfo = view.locationInfo.clone(true)
@@ -566,21 +599,22 @@
           .end()
           .appendTo(allowedUserList);
       } else {
-        utils.each(location.allowedUsers, function(user) {
-          isAdminUser = (user.email === controller.adminUserEmail);
-          view.allowedUser.clone(true)
-            .find('.user-mail').text(user.email + userAnnotation(user))
-            .end()
-            .find('.unshare').click(function() {
-              controller.revokeAccess(user, location);
-            })
-             // Protect the currently signed-in user from disallowing
-             // herself access to the admin application.
-            .css('visibility',
-                 isAdminLocation && isAdminUser ? 'hidden' : 'visible')
-            .end()
-            .appendTo(allowedUserList);
-        });
+        utils.each(
+          utils.sortByProperty(location.allowedUsers, 'email'), function(user) {
+            isAdminUser = (user.email === controller.adminUserEmail);
+            view.allowedUser.clone(true)
+              .find('.user-mail').text(user.email + userAnnotation(user))
+              .end()
+              .find('.unshare').click(function() {
+                controller.revokeAccess(user, location);
+              })
+              // Protect the currently signed-in user from disallowing
+              // herself access to the admin application.
+              .css('visibility',
+                   isAdminLocation && isAdminUser ? 'hidden' : 'visible')
+              .end()
+              .appendTo(allowedUserList);
+          });
       }
       locationInfo.appendTo('#location-info-list');
     }
@@ -594,8 +628,9 @@
      * (created with the createLocationInfo function).
      */
     function showLocations() {
-      var isAdminLocation;
-      utils.each(controller.locations, function(location) {
+      var isAdminLocation, sortedLocations;
+      sortedLocations = utils.sortByProperty(controller.locations, 'path');
+      utils.each(sortedLocations, function(location) {
         isAdminLocation = (location.path === controller.adminPath);
         view.locationPath.clone(true)
           .attr('id', locationPathId(location))
@@ -610,7 +645,7 @@
             event.preventDefault();
             controller.removeLocation(location);
           })
-           // Do not allow admin location to be removed.
+          // Do not allow admin location to be removed.
           .css('visibility', isAdminLocation ? 'hidden' : 'visible')
           .end()
           .find('.notify').click(function() {
@@ -629,7 +664,10 @@
       view.addLocation.clone(true)
         .find('#add-location-input')
         .change(function() {
-          controller.addLocation($(this).val());
+          controller.addLocation($(this).val(), function(newLocation) {
+            // Activate the newly added location.
+            activateLocation(newLocation);
+          });
         })
         .end()
         .appendTo('#location-list');
@@ -640,6 +678,10 @@
      * detailed information and controls are displayed.
      */
     function activateLocation(location) {
+      // If any location is already active, deactivate it:
+      $('#location-list').find('.active').removeClass('active');
+      $('#location-info-list').find('.active').removeClass('active');
+
       $('#' + locationPathId(location)).addClass('active');
       $('#' + locationInfoId(location)).addClass('active');
     }
@@ -676,8 +718,9 @@
      * location).
      */
     function showUsers(activeLocation) {
-      var userView, isAdminUser;
-      utils.each(controller.users, function(user) {
+      var userView, isAdminUser, sortedUsers;
+      sortedUsers = utils.sortByProperty(controller.users, 'email');
+      utils.each(sortedUsers, function(user) {
         userView = view.user.clone(true);
         if (activeLocation !== null &&
             !controller.canAccess(user, activeLocation)) {
@@ -694,9 +737,9 @@
           .find('.remove-user').click(function() {
             controller.removeUser(user);
           })
-           // Do not allow currently signed-in user to delete herself
-           // (this is only UI enforced, from a server perspective such
-           // operation is OK).
+          // Do not allow currently signed-in user to delete herself
+          // (this is only UI enforced, from a server perspective such
+          // operation is OK).
           .css('visibility', isAdminUser ? 'hidden' : 'visible')
           .end()
           .find('.highlight').hover(function() {
@@ -755,7 +798,7 @@
       // Active location was probably just removed, activate the first
       // location on the list.
       if (activeLocation === null && controller.locations.length > 0) {
-        activeLocation = controller.locations[0];
+        activeLocation = utils.sortByProperty(controller.locations, 'path')[0];
       }
 
       $('#location-list').empty();
