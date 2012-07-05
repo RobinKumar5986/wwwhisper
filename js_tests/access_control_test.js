@@ -8,7 +8,7 @@
 (function() {
   'use strict';
 
-  var mock_stub, controller;
+  var mock_stub, mock_ui, controller;
 
   function MockStub() {
     var expectedCalls = [];
@@ -44,17 +44,19 @@
   }
 
   function MockUI(controller) {
-    this.lastError = null,
+    var that = this;
+    this.lastError = null;
 
     this.refresh = function() {};
     this.handleError = function(message, status) {
-      this.lastError = message;
-    }
+      that.lastError = message;
+    };
   }
 
   QUnit.testStart = function() {
     mock_stub = new MockStub();
-    controller = new Controller(new MockUI(), mock_stub);
+    mock_ui = new MockUI();
+    controller = new Controller(mock_ui, mock_stub);
   };
 
   module('Utility functions');
@@ -408,7 +410,7 @@
     controller.adminPath = '/admin';
     controller.addLocation('/admin/api');
     deepEqual(controller.locations, []);
-    ok(utils.startsWith(controller.errorHandler.lastError,
+    ok(utils.startsWith(mock_ui.lastError,
                         'Adding sublocations to admin is not supported'))
     mock_stub.verify();
   });

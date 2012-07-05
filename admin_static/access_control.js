@@ -174,8 +174,8 @@
     this.adminUserEmail = null;
     // Path to the admin application
     this.adminPath = null;
-    this.errorHandler = ui;
-
+    // Delegate errors to the UI.
+    this.errorHandler = ui.handleError;
 
     /**
      * Returns true if a user can access a location.
@@ -252,27 +252,23 @@
      * misconfigured (can be accessed without authentication).
      */
     this.getAdminUser = function(successCallback) {
-      stub.setErrorHandler({
-        cleanError: function() {},
-        handleError: function(message, status) {
-          if (status === 401) {
-            that.errorHandler.handleError(
-              'wwwhisper misconfigured: Admin application can ' +
-                'be accessed without authentication!');
-            stub.setErrorHandler(that.errorHandler);
-            successCallback();
-          } else {
-            // Other error.
-            $('body').html(message);
-          }
-        }
-      });
-
-      stub.ajax('GET', '/auth/api/whoami/', null, function(result) {
-        that.adminUserEmail = result.email;
-        stub.setErrorHandler(that.errorHandler);
-        successCallback();
-      });
+      // Do not use the default error handler, display a more
+      // meaningful error message.
+      stub.ajax('GET', '/auth/api/whoami/', null,
+                function(result) {
+                  that.adminUserEmail = result.email;
+                  successCallback();
+                },
+                function(errorMessage, errorStatus) {
+                  if (errorStatus === 401) {
+                    that.errorHandler(
+                      'wwwhisper likely misconfigured: Admin application can ' +
+                        'be accessed without authentication!');
+                    successCallback();
+                  } else {
+                    that.errorHandler(errorMessage, errorStatus);
+                  }
+                });
     };
 
     /**
@@ -302,7 +298,7 @@
     this.addLocation = function(locationPathArg, successCallback) {
       var locationPath = $.trim(locationPathArg);
       if (utils.startsWith(locationPath, that.adminPath + '/')) {
-        this.errorHandler.handleError(
+        that.errorHandler(
           'Adding sublocations to admin is not supported '+
             '(It could easily cut off access to the admin application.)');
         return;
@@ -437,9 +433,9 @@
      * from the server and refreshes the UI).
      */
     this.activate = function() {
-      this.adminPath = utils.stripTrailingIndexHtmlAndSlash(
+      that.adminPath = utils.stripTrailingIndexHtmlAndSlash(
         window.location.pathname);
-      stub.setErrorHandler(ui);
+      stub.setErrorHandler(that.errorHandler);
       that.buildCallbacksChain([that.getLocations,
                                 that.getUsers,
                                 that.getAdminUser,
@@ -782,28 +778,31 @@
       userView = null;
     }
 
-    // TODO: remove this?
-    this.cleanError = function() {
-      $('.alert-error').alert('close');
-    };
-
     /**
-     * Displays an error and registers callback to hide it after some
-     * time elapses.
+     * Handles errors. Not network related errors (status undefined) or
+     * client induced HTTP errors (HTTP status codes 400-499) are
+     * displayed and automatically hidden after some time.
+     *
+     * Other errors (server related status codes 5XX) are considered
+     * fatal - received error message replaces the current document.
      */
     this.handleError = function(message, status) {
-      var error = view.errorMessage.clone(true);
+      if (typeof status !== 'undefined' && status >= 400 && status < 500) {
+        var error = view.errorMessage.clone(true);
 
-      $('#error-box').empty();
-      error.removeClass('hide')
-        .find('.alert-message')
-        .text(message)
-        .end()
-        .appendTo('#error-box');
+        error.removeClass('hide')
+          .find('.alert-message')
+          .text(message)
+          .end()
+          .appendTo('#error-box');
 
-      window.setTimeout(function() {
-        error.alert('close');
-      }, 20000);
+        window.setTimeout(function() {
+          error.alert('close');
+        }, 15000);
+      } else {
+        // Fatal error.
+        $('html').html(message);
+      }
     };
 
     /**
