@@ -199,6 +199,15 @@
       }), []);
   });
 
+  test('stripTrailingIndexHtmlAndSlash', function() {
+    deepEqual(utils.stripTrailingIndexHtmlAndSlash('/foo/index.html'), '/foo');
+    deepEqual(utils.stripTrailingIndexHtmlAndSlash('/index.html/bar'),
+              '/index.html/bar');
+    deepEqual(utils.stripTrailingIndexHtmlAndSlash('/foo/'), '/foo');
+    deepEqual(utils.stripTrailingIndexHtmlAndSlash('/foo'), '/foo');
+    deepEqual(utils.stripTrailingIndexHtmlAndSlash('/foo/bar'), '/foo/bar');
+  });
+
   module('Controller');
 
   test('canAccess', function() {

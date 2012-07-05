@@ -139,6 +139,16 @@
       return $.map(location.allowedUsers, function(user) {
         return user.id;
       });
+    },
+
+    /**
+     * Strips trailing /index.html or / from a given path. E.g:
+     *   /foo/index.html -> /foo
+     *   /foo/           -> /foo
+     *   /foo            -> /foo
+     */
+    stripTrailingIndexHtmlAndSlash: function(path) {
+      return path.replace(new RegExp('(/index.html$)|(/$)'), '');
     }
   };
 
@@ -429,12 +439,8 @@
      * from the server and refreshes the UI).
      */
     this.activate = function() {
-      this.adminPath = window.location.pathname;
-      // Strip trailing slash.
-      if (this.adminPath !== null &&
-          this.adminPath.charAt(this.adminPath.length - 1) === '/') {
-        this.adminPath = this.adminPath.slice(0, this.adminPath.length - 1);
-      }
+      this.adminPath = utils.stripTrailingIndexHtmlAndSlash(
+        window.location.pathname);
       stub.setErrorHandler(ui);
       that.buildCallbacksChain([that.getLocations,
                                 that.getUsers,
@@ -595,7 +601,8 @@
 
       allowedUserList = locationInfo.find('.allowed-user-list');
       if (location.openAccess) {
-        // Disable input box for entering email addresses of allowed user.
+        // Disable entering email addresses of allowed user: everyone
+        // is allowed.
         locationInfo.find('.add-allowed-user')
           .addClass('disabled')
           .attr('placeholder', 'Location does not require authentication.')
