@@ -395,18 +395,12 @@
   });
 
   test('addLocation', function() {
-    var callbackCalled;
     deepEqual(controller.locations, []);
     var newLocation = {id: '13', path: '/foo', allowedUsers: []};
     mock_stub.expectAjaxCall('POST', 'api/locations/', {path: '/foo'},
                              newLocation);
-    callbackCalled = false;
-    controller.addLocation('/foo', function(location) {
-      deepEqual(location, newLocation);
-      callbackCalled = true;
-    });
+    controller.addLocation('/foo');
     deepEqual(controller.locations, [newLocation]);
-    ok(callbackCalled);
     mock_stub.verify();
   });
 

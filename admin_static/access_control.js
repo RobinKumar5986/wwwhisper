@@ -293,8 +293,7 @@
     };
 
     /**
-     * Adds a location with a given path. Invokes a callback on
-     * success, passing to it the newly created location.
+     * Adds a location with a given path.
      *
      * Refuses to add sub location to the admin application (this is
      * just a client side check to prevent the user from shooting
@@ -311,8 +310,7 @@
       stub.ajax('POST', 'api/locations/', {path: locationPath},
                 function(newLocation) {
                   that.locations.push(newLocation);
-                  ui.refresh();
-                  successCallback(newLocation);
+                  ui.refresh(newLocation);
                 });
     };
 
@@ -688,10 +686,7 @@
           if (event.which === ENTER_KEY) {
             path = $.trim($(this).val());
             if (path !== '') {
-              controller.addLocation($(this).val(), function(newLocation) {
-                // Activate the newly added location.
-                activateLocation(newLocation);
-              });
+              controller.addLocation($(this).val());
             }
             $(this).val('');
           }
@@ -814,21 +809,26 @@
     /**
      * Refreshes all controls. Displayed data (with the exception of
      * an error message) is never updated partially. All UI elements
-     * are cleared and recreated.
+     * are cleared and recreated. If locationToActivate is given, it
+     * becomes activated, otherwise currently active location stays
+     * active or if none, the first location in alphabetical order.
      */
-    this.refresh = function() {
-      var focusedElementId, activeLocation;
-      // DOM subtrees representing a currently focused input box and
-      // an active location will be removed, corresponding elements in
-      // a new DOM structure need to be focused and activated.
-      activeLocation = findActiveLocation();
-      focusedElementId = focusedElement().attr('id');
+    this.refresh = function(locationToActivate) {
+      var focusedElementId, activeLocation = locationToActivate;
 
+      if (typeof locationToActivate === 'undefined') {
+        // DOM subtrees representing a currently focused input box and
+        // an active location will be removed, corresponding elements in
+        // a new DOM structure need to be focused and activated.
+        activeLocation = findActiveLocation();
+      }
       // Active location was probably just removed, activate the first
       // location on the list.
       if (activeLocation === null && controller.locations.length > 0) {
         activeLocation = utils.sortByProperty(controller.locations, 'path')[0];
       }
+
+      focusedElementId = focusedElement().attr('id');
 
       $('#location-list').empty();
       $('#location-info-list').empty();
