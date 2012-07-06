@@ -7,7 +7,8 @@
  */
 (function () {
   'use strict';
-  var MAX_EMAIL_LENGTH = 30;
+  var stub = new wwwhisper.Stub(), MAX_EMAIL_LENGTH = 30;
+
   /**
    * Checks if a user is authenticated and if a parent of a current
    * frame is the top level frame (to avoid having several overlays on
@@ -25,24 +26,34 @@
     $('#wwwhisper-iframe', window.parent.document).remove();
   }
 
+  /**
+   * Invoked when user is authenticated. Shows the overlay and
+   * activates the 'sign-out' button.
+   */
+  function authenticated(result) {
+    var email = result.email;
+    if (email.length > MAX_EMAIL_LENGTH) {
+      // Trim very long emails so 'sign out' button fits in
+      // the iframe.
+      email = email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
+    }
+    $('#email').text(email);
+    $('#wwwhisper-overlay').removeClass('hidden');
+    $('#logout').click(function() {
+      stub.ajax('POST', '/auth/api/logout/', {}, function() {
+        window.top.location.reload(true);
+      });
+    });
+  }
+
   if (window.parent.parent !== window.parent) {
     // Parent is not top level frame.
     removeOverlay();
   } else {
-    (new wwwhisper.Stub())
-      .ajax('GET', '/auth/api/whoami/', null,
-            function(result) {
-              var email;
-              email = result.email;
-              if (email.length > MAX_EMAIL_LENGTH) {
-                // Trim very long emails so 'sign out' button fits in
-                // the iframe.
-                email = email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
-              }
-              $('#email').text(email);
-              $('#wwwhisper-overlay').removeClass('hidden');
-            },
-            // User is not authenticated or some other error occurred.
-            removeOverlay);
+    stub.ajax('GET', '/auth/api/whoami/', null,
+              // User is authenticated.
+              authenticated,
+              // User is not authenticated or some other error occurred.
+              removeOverlay);
   }
 }());
