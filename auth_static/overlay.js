@@ -8,31 +8,41 @@
 (function () {
   'use strict';
   var MAX_EMAIL_LENGTH = 30;
+  /**
+   * Checks if a user is authenticated and if a parent of a current
+   * frame is the top level frame (to avoid having several overlays on
+   * the screen). If both conditions are true, shows an overlay with
+   * the user's email and a 'sign-out' button.
+   */
+
 
   /**
-   * Checks if a user is authenticates and if so, shows an overlay
-   * with the user's email and 'sign-out' button.
+   * Removes the overlay. Keeping overlay hidden is not enough,
+   * because all content below the iframe does not receive
+   * user's input (e.g. links are non-clickable).
    */
-  (new wwwhisper.Stub())
-    .ajax('GET', '/auth/api/whoami/', null,
-          function(result) {
-            var email;
-            email = result.email;
-            if (email.length > MAX_EMAIL_LENGTH) {
-              // Trim very long emails so 'sign out' button fits in
-              // the iframe.
-              email = email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
-            }
-            $('#email').text(email);
-            $('#wwwhisper-overlay').removeClass('hidden');
-          },
-          /**
-           * User is not authenticated or some other error occurred. Remove
-           * the overlay iframe. Keeping overlay hidden is not enough,
-           * because all content below the iframe does not receive user's
-           * input (e.g. links are non-clickable).
-           */
-          function() {
-            $('#wwwhisper-iframe', window.parent.document).remove();
-          });
+  function removeOverlay() {
+    $('#wwwhisper-iframe', window.parent.document).remove();
+  }
+
+  if (window.parent.parent !== window.parent) {
+    // Parent is not top level frame.
+    removeOverlay();
+  } else {
+    (new wwwhisper.Stub())
+      .ajax('GET', '/auth/api/whoami/', null,
+            function(result) {
+              var email;
+              email = result.email;
+              if (email.length > MAX_EMAIL_LENGTH) {
+                // Trim very long emails so 'sign out' button fits in
+                // the iframe.
+                email = email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
+              }
+              $('#email').text(email);
+              $('#wwwhisper-overlay').removeClass('hidden');
+            },
+            // User is not authenticated or some other error occurred.
+            removeOverlay);
+  }
 }());
