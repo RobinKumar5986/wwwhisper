@@ -166,7 +166,6 @@ class RestView(View):
         method = request.method.lower()
         # Parse body as json object if it is not empty (empty body
         # contains '--BoUnDaRyStRiNg--')
-        # TODO: make sure mime type is set to json.
         if (method == 'post' or method == 'put') \
                 and len(request.body) != 0 and request.body[0] != '-':
             try:
