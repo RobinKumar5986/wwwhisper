@@ -1,5 +1,4 @@
 Django==1.4
 git+git://github.com/mozilla/django-browserid.git#egg=django-browserid
-flup
 uwsgi
 
