@@ -8,7 +8,9 @@ setup(
     package_dir = { '': 'django_wwwhisper'},
     packages = [
         'wwwhisper_admin',
+        'wwwhisper_admin.tests',
         'wwwhisper_auth',
+        'wwwhisper_auth.tests',
         'wwwhisper_service',
         ],
     author = 'Jan Wrobel',
@@ -19,7 +21,7 @@ setup(
         'Environment :: Web Environment',
         'Intended Audience :: End Users/Desktop',
         'Intended Audience :: System Administrators',
-        'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)'
+        'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)'
         'Operating System :: OS Independent',
         'Programming Language :: JavaScript',
         'Programming Language :: Python',
