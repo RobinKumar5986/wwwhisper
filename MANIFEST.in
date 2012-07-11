@@ -1,5 +1,4 @@
 include COPYING
 include README.md
 include requirements.txt
-recursive-include auth_static *.js *.html *.css *.png
-recursive-include admin_static *.js *.html *.css
+recursive-include www_static *.js *.html *.css *.png
