@@ -1,6 +1,7 @@
 # Django settings for wwwhisper_service project.
 
-from custom_settings import *
+from site_settings import *
+
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 

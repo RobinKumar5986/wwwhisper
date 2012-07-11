@@ -30,5 +30,7 @@ setup(
         ],
 
 #    install_requires = '',
-#    package_data = {'wwwhisper': ['auth_static']},
+    include_package_data = True,
+    package_data = {'': ['www_static/admin/access_control.js']},
+#   data_files = [('www_static', ['www_static/admin/access_control.js'])]
 )

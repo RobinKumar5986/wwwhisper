@@ -1,11 +1,12 @@
 *.pyc
 *.pyo
 .installed.cfg
-bin
-develop-eggs
+build
 dist
-downloads
-eggs
-parts
 src/*.egg-info
 *~
+bin
+lib
+local
+include
+virtualenv
