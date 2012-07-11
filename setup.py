@@ -1,19 +1,20 @@
 from distutils.core import setup
 
 setup(
-    name='wwwhisper',
-    description='Access control for HTTP resources using Persona '\
+    name = 'wwwhisper',
+    description = 'Access control for HTTP resources using Persona '\
         '(aka BrowserID).',
-    version='0.1',
-    packages=[
-        'django_wwwhisper/wwwhisper_admin',
-        'django_wwwhisper/wwwhisper_auth',
-        'django_wwwhisper/wwwhisper_service',
+    version = '0.1',
+    package_dir = { '': 'django_wwwhisper'},
+    packages = [
+        'wwwhisper_admin',
+        'wwwhisper_auth',
+        'wwwhisper_service',
         ],
-    author='Jan Wrobel',
-    author_email='wrr@mixedbit.org',
-    url='https://github.com/wrr/wwwhisper',
-    classifiers = [
+    author = 'Jan Wrobel',
+    author_email = 'wrr@mixedbit.org',
+    url = 'https://github.com/wrr/wwwhisper',
+    classifiers  =  [
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',
         'Intended Audience :: End Users/Desktop',
@@ -26,6 +27,6 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Site Management',
         ],
 
-#    install_requires='',
-#    package_data={'wwwhisper': ['auth_static']},
+#    install_requires = '',
+#    package_data = {'wwwhisper': ['auth_static']},
 )
