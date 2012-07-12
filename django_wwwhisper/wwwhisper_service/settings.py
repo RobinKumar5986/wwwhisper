@@ -2,8 +2,8 @@
 
 from site_settings import *
 
-DEBUG = True
-#TEMPLATE_DEBUG = DEBUG
+DEBUG = False
+TEMPLATE_DEBUG = DEBUG
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -58,6 +58,7 @@ WSGI_APPLICATION = 'wwwhisper_service.wsgi.application'
 
 INSTALLED_APPS = (
     'django.contrib.auth',
+    'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django_browserid',
     'wwwhisper_auth',
