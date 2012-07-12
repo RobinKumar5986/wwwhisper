@@ -4,6 +4,8 @@ import getopt
 import os
 import sys
 import random
+import subprocess
+
 from urlparse import urlparse
 
 SITES_DIR = 'sites'
@@ -111,10 +113,11 @@ def parse_url(url):
 
     err_prefix = 'Invalid site address - '
     parsed_url = urlparse(url)
-    if parsed_url.scheme == '' or parsed_url.scheme not in ('https', 'http'):
+    scheme = parsed_url.scheme.lower()
+    if scheme == '' or scheme not in ('https', 'http'):
         err_quit(err_prefix + 'scheme missing. '
                  'URL schould start with https:// (recommended) or http://')
-    if parsed_url.netloc == '':
+    if parsed_url.hostname is None:
         err_quit(err_prefix + 'domain name missing.'
                  'URL should include full domain name (like https://foo.org).')
     if parsed_url.path  != '':
@@ -128,12 +131,20 @@ def parse_url(url):
         err_quit(err_prefix + 'URL should not include query (#foo).')
     if parsed_url.username != None:
         err_quit(err_prefix + 'URL should not include username (foo@).')
-    return (parsed_url.scheme.lower(), parsed_url.netloc.lower())
+
+    port = parsed_url.port
+    if port is None:
+        if scheme == 'https':
+            port = 443
+        else:
+            port = 80
+
+    return (scheme, parsed_url.hostname.lower(), str(port))
 
 def main():
     site_url = None
     admin_email = None
-    virtualenv_root_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    root_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
     try:
         optlist, _ = getopt.gnu_getopt(sys.argv[1:],
@@ -159,22 +170,30 @@ def main():
     if admin_email is None:
         err_quit('--admin_email is missing.')
 
-    (scheme, netloc) = parse_url(site_url)
-    config_dir = os.path.join(virtualenv_root_dir, SITES_DIR, scheme, netloc)
+    (scheme, hostname, port) = parse_url(site_url)
+    config_dir = os.path.join(
+        root_dir, SITES_DIR, '.'.join([scheme, hostname, port]))
     settings_dir = os.path.join(config_dir, SETTINGS_DIR)
     db_dir = os.path.join(config_dir, DB_DIR)
+    log_dir = os.path.join(config_dir, LOG_DIR)
     try:
         os.umask(077)
         os.makedirs(config_dir)
         os.makedirs(settings_dir)
         os.makedirs(db_dir)
-        os.makedirs(os.path.join(config_dir, LOG_DIR))
+        os.makedirs(log_dir)
     except OSError as ex:
         err_quit('Failed to initialize configuration directory %s: %s.'
                  % (config_dir, ex))
 
-    create_django_settings_file(scheme + "://" + netloc, admin_email,
-                                settings_dir, db_dir)
+    create_django_settings_file(scheme + '://' + hostname + ':' + port,
+                                admin_email, settings_dir, db_dir)
 
-if __name__ == "__main__":
+    manage_path = os.path.join(root_dir, 'django_wwwhisper', 'manage.py')
+    exit_status = subprocess.call(
+        [manage_path, 'syncdb', '--pythonpath=' + settings_dir])
+    if exit_status != 0:
+        err_quit('Failed to initialize wwwhisper database.');
+
+if __name__ == '__main__':
     main()
