@@ -1,4 +1,0 @@
-include COPYING
-include README.md
-include requirements.txt
-recursive-include www_static *.js *.html *.css *.png

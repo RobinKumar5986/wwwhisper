@@ -13,7 +13,6 @@ SETTINGS_DIR = 'settings'
 SETTINGS_FILE = 'site_settings.py'
 DB_DIR = 'db'
 DB_NAME = 'wwwhisper_db'
-LOG_DIR = 'log'
 
 def err_quit(errmsg):
     """Prints an error message and quits."""
@@ -175,13 +174,12 @@ def main():
         root_dir, SITES_DIR, '.'.join([scheme, hostname, port]))
     settings_dir = os.path.join(config_dir, SETTINGS_DIR)
     db_dir = os.path.join(config_dir, DB_DIR)
-    log_dir = os.path.join(config_dir, LOG_DIR)
     try:
+        os.umask(067)
+        os.makedirs(config_dir, 0710)
         os.umask(077)
-        os.makedirs(config_dir)
         os.makedirs(settings_dir)
         os.makedirs(db_dir)
-        os.makedirs(log_dir)
     except OSError as ex:
         err_quit('Failed to initialize configuration directory %s: %s.'
                  % (config_dir, ex))
