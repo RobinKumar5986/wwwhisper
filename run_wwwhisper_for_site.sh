@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
 SCRIPT_DIR="$(cd "$( dirname "$0" )" && pwd)"
 # TODO: change this.
@@ -66,6 +65,6 @@ exec uwsgi --chdir="${SCRIPT_DIR}/django_wwwhisper"\
  --chmod-socket=660\
  --harakiri 20\
  --plugins=python\
- --python-path="${SITE_DIR}/settings/"\
+ --python-path="${SITE_DIR}/django/"\
  --virtualenv="${VIRTUALENV_DIR}"\
     || err_quit "Failed to start uwsgi."

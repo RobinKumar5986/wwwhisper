@@ -9,10 +9,15 @@ import subprocess
 from urlparse import urlparse
 
 SITES_DIR = 'sites'
-SETTINGS_DIR = 'settings'
-SETTINGS_FILE = 'site_settings.py'
+DJANGO_CONFIG_DIR = 'django'
+DJANGO_CONFIG_FILE = 'site_settings.py'
+SUPERVISOR_CONFIG_DIR = 'supervisor'
+SUPERVISOR_CONFIG_FILE= 'site.conf'
 DB_DIR = 'db'
-DB_NAME = 'wwwhisper_db'
+DB_NAME = 'acl_db'
+
+WWWHISPER_USER = 'wwwhisper'
+WWWHISPER_GROUP = 'www-data'
 
 def err_quit(errmsg):
     """Prints an error message and quits."""
@@ -62,15 +67,22 @@ def generate_secret_key():
                 'unpredictable secret string (at least 50 characters).')
 
 
-def create_django_settings_file(site_url, admin_email, settings_dir, db_dir):
-    """Creates a site specific Django settings file.
+def write_to_file(dir_name, file_name, file_content):
+    file_path = os.path.join(dir_name, file_name)
+    try:
+        with open(file_path, 'w') as destination:
+            destination.write(file_content)
+    except IOError as ex:
+        err_quit('Failed to create file %s: %s.' % (file_path, ex))
+
+def create_django_config_file(site_url, admin_email, django_config_dir, db_dir):
+    """Creates a site specific Django configuration file.
 
     Settings that are common for all sites reside in the
     wwwhisper_service module.
     """
 
-    settings = """
-# Don't share this with anybody.
+    settings = """# Don't share this with anybody.
 SECRET_KEY = '%s'
 
 DATABASES = {
@@ -86,21 +98,22 @@ WWWHISPER_ADMINS = ['%s']
        os.path.join(db_dir, DB_NAME),
        site_url,
        admin_email)
-    init_file_path = os.path.join(settings_dir, '__init__.py')
-    settings_file_path = os.path.join(settings_dir, SETTINGS_FILE)
-    try:
-        with open(init_file_path, 'w') as init_file:
-            pass
-    except IOError as ex:
-        err_quit('Failed to create __init__ file %s: %s.'
-                 % (settings_file_path, ex))
+    write_to_file(django_config_dir, '__init__.py', '')
+    write_to_file(django_config_dir, DJANGO_CONFIG_FILE, settings)
 
-    try:
-        with open(settings_file_path, 'w') as settings_file:
-            settings_file.write(settings)
-    except IOError as ex:
-        err_quit('Failed to create settings file %s: %s.'
-                 % (settings_file_path, ex))
+def create_supervisor_config_file(
+    site_name, root_dir, site_config_dir, supervisor_config_dir):
+    settings = """[program:wwwhisper-%s]
+command=%s/run_wwwhisper_for_site.sh -d %s
+user=%s
+group=%s
+autorestart=true
+stopwaitsecs=16
+stopsignal=INT
+stopasgroup=true
+""" % (site_name, root_dir, site_config_dir, WWWHISPER_USER, WWWHISPER_GROUP)
+    write_to_file(
+        supervisor_config_dir, SUPERVISOR_CONFIG_FILE, settings)
 
 def parse_url(url):
     """Parses and validates a URL.
@@ -170,26 +183,31 @@ def main():
         err_quit('--admin_email is missing.')
 
     (scheme, hostname, port) = parse_url(site_url)
-    config_dir = os.path.join(
-        root_dir, SITES_DIR, '.'.join([scheme, hostname, port]))
-    settings_dir = os.path.join(config_dir, SETTINGS_DIR)
-    db_dir = os.path.join(config_dir, DB_DIR)
+    formated_site_name = '.'.join([scheme, hostname, port])
+    site_config_dir = os.path.join(root_dir, SITES_DIR, formated_site_name)
+    django_config_dir = os.path.join(site_config_dir, DJANGO_CONFIG_DIR)
+    db_dir = os.path.join(site_config_dir, DB_DIR)
+    supervisor_config_dir = os.path.join(site_config_dir, SUPERVISOR_CONFIG_DIR)
     try:
         os.umask(067)
-        os.makedirs(config_dir, 0710)
+        os.makedirs(site_config_dir, 0710)
         os.umask(077)
-        os.makedirs(settings_dir)
+        os.makedirs(django_config_dir)
         os.makedirs(db_dir)
+        os.makedirs(supervisor_config_dir)
     except OSError as ex:
         err_quit('Failed to initialize configuration directory %s: %s.'
-                 % (config_dir, ex))
+                 % (site_config_dir, ex))
 
-    create_django_settings_file(scheme + '://' + hostname + ':' + port,
-                                admin_email, settings_dir, db_dir)
+    create_django_config_file(scheme + '://' + hostname + ':' + port,
+                                admin_email, django_config_dir, db_dir)
+
+    create_supervisor_config_file(
+        formated_site_name, root_dir, site_config_dir, supervisor_config_dir)
 
     manage_path = os.path.join(root_dir, 'django_wwwhisper', 'manage.py')
     exit_status = subprocess.call(
-        [manage_path, 'syncdb', '--pythonpath=' + settings_dir])
+        [manage_path, 'syncdb', '--pythonpath=' + django_config_dir])
     if exit_status != 0:
         err_quit('Failed to initialize wwwhisper database.');
 
