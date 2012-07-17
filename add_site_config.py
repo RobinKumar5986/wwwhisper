@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!./virtualenv/bin/python
 
 # wwwhisper - web access control.
 # Copyright (C) 2012 Jan Wrobel <wrr@mixedbit.org>
@@ -251,8 +251,10 @@ def main():
         site_dir_name, root_path, site_config_path, supervisor_config_path)
 
     manage_path = os.path.join(root_path, 'django_wwwhisper', 'manage.py')
+    # Use Python from the virtual environment to run syncdb.
     exit_status = subprocess.call(
-        [manage_path, 'syncdb', '--pythonpath=' + django_config_path])
+        ['./virtualenv/bin/python', manage_path, 'syncdb',
+         '--pythonpath=' + django_config_path])
     if exit_status != 0:
         err_quit('Failed to initialize wwwhisper database.');
 
