@@ -1,5 +1,29 @@
 #!/usr/bin/env python
 
+# wwwhisper - web access control.
+# Copyright (C) 2012 Jan Wrobel <wrr@mixedbit.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Configures wwwhisper for a given site.
+
+Creates site-specific Django settings files. Creates configuration
+file for supervisor (http://supervisord.org/), which allows to
+start wwwhisper application under the control of the supervisor
+deamon. Initializes database with access control list.
+"""
+
 import getopt
 import os
 import sys
@@ -27,7 +51,8 @@ def err_quit(errmsg):
 def usage():
     print """
 
-Generates site-specific configuration files. Usage:
+Generates site-specific configuration files and initializes wwwhisper database.
+Usage:
 
   %(prog)s
       -s, --site_url A URL of a site to protect in a form
@@ -67,15 +92,20 @@ def generate_secret_key():
                 'unpredictable secret string (at least 50 characters).')
 
 
-def write_to_file(dir_name, file_name, file_content):
-    file_path = os.path.join(dir_name, file_name)
+def write_to_file(dir_path, file_name, file_content):
+    """Writes a string to a file with a given name in a given directory.
+
+    If the file does not exist it is created. Dies on error.
+    """
+    file_path = os.path.join(dir_path, file_name)
     try:
         with open(file_path, 'w') as destination:
             destination.write(file_content)
     except IOError as ex:
         err_quit('Failed to create file %s: %s.' % (file_path, ex))
 
-def create_django_config_file(site_url, admin_email, django_config_dir, db_dir):
+def create_django_config_file(site_url, admin_email, django_config_path,
+                              db_path):
     """Creates a site specific Django configuration file.
 
     Settings that are common for all sites reside in the
@@ -95,14 +125,18 @@ DATABASES = {
 SITE_URL = '%s'
 WWWHISPER_ADMINS = ['%s']
 """ % (generate_secret_key(),
-       os.path.join(db_dir, DB_NAME),
+       os.path.join(db_path, DB_NAME),
        site_url,
        admin_email)
-    write_to_file(django_config_dir, '__init__.py', '')
-    write_to_file(django_config_dir, DJANGO_CONFIG_FILE, settings)
+    write_to_file(django_config_path, '__init__.py', '')
+    write_to_file(django_config_path, DJANGO_CONFIG_FILE, settings)
 
 def create_supervisor_config_file(
-    site_name, root_dir, site_config_dir, supervisor_config_dir):
+    site_dir_name, root_path, site_config_path, supervisor_config_path):
+    """Creates site-specific supervisor config file.
+
+    The file allows to start the wwwhisper application for the site.
+    """
     settings = """[program:wwwhisper-%s]
 command=%s/run_wwwhisper_for_site.sh -d %s
 user=%s
@@ -111,15 +145,17 @@ autorestart=true
 stopwaitsecs=16
 stopsignal=INT
 stopasgroup=true
-""" % (site_name, root_dir, site_config_dir, WWWHISPER_USER, WWWHISPER_GROUP)
+""" % (site_dir_name, root_path, site_config_path, WWWHISPER_USER,
+       WWWHISPER_GROUP)
     write_to_file(
-        supervisor_config_dir, SUPERVISOR_CONFIG_FILE, settings)
+        supervisor_config_path, SUPERVISOR_CONFIG_FILE, settings)
 
 def parse_url(url):
     """Parses and validates a URL.
 
-    URLs need to have scheme://domain:port format, scheme and domain
-    are mandatory, port is optional. Terminates the script when URL is
+    URL needs to have scheme://domain:port format, scheme and domain
+    are mandatory, port is optional. If the URL is valid, returns it
+    with all characters converted to lower case. Dies if the URL is
     invalid.
     """
 
@@ -144,19 +180,25 @@ def parse_url(url):
     if parsed_url.username != None:
         err_quit(err_prefix + 'URL should not include username (foo@).')
 
+    hostname = parsed_url.hostname.lower()
     port = parsed_url.port
-    if port is None:
-        if scheme == 'https':
-            port = 443
-        else:
-            port = 80
+    if port is not None:
+        return scheme + '://' + hostname + ':' + str(port)
+    else:
+        return scheme + '://' + hostname
 
-    return (scheme, parsed_url.hostname.lower(), str(port))
+def url2dirname(url):
+    """Converts a site URL to a directory name.
+
+    The directory will be used to store configuration for the site.
+    """
+    # '/' is forbidden in file names, ':' is not handled properply by nginx.
+    return url.replace('://', '.').replace(':', '.')
 
 def main():
     site_url = None
     admin_email = None
-    root_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    root_path = os.path.dirname(os.path.abspath(sys.argv[0]))
 
     try:
         optlist, _ = getopt.gnu_getopt(sys.argv[1:],
@@ -182,34 +224,39 @@ def main():
     if admin_email is None:
         err_quit('--admin_email is missing.')
 
-    (scheme, hostname, port) = parse_url(site_url)
-    formated_site_name = '.'.join([scheme, hostname, port])
-    site_config_dir = os.path.join(root_dir, SITES_DIR, formated_site_name)
-    django_config_dir = os.path.join(site_config_dir, DJANGO_CONFIG_DIR)
-    db_dir = os.path.join(site_config_dir, DB_DIR)
-    supervisor_config_dir = os.path.join(site_config_dir, SUPERVISOR_CONFIG_DIR)
+    site_url = parse_url(site_url)
+    site_dir_name = url2dirname(site_url)
+
+    # TODO: dir->path
+    site_config_path = os.path.join(root_path, SITES_DIR, site_dir_name)
+    django_config_path = os.path.join(site_config_path, DJANGO_CONFIG_DIR)
+    db_path = os.path.join(site_config_path, DB_DIR)
+    supervisor_config_path = os.path.join(
+        site_config_path, SUPERVISOR_CONFIG_DIR)
     try:
         os.umask(067)
-        os.makedirs(site_config_dir, 0710)
+        os.makedirs(site_config_path, 0710)
         os.umask(077)
-        os.makedirs(django_config_dir)
-        os.makedirs(db_dir)
-        os.makedirs(supervisor_config_dir)
+        os.makedirs(django_config_path)
+        os.makedirs(db_path)
+        os.makedirs(supervisor_config_path)
     except OSError as ex:
         err_quit('Failed to initialize configuration directory %s: %s.'
-                 % (site_config_dir, ex))
+                 % (site_config_path, ex))
 
-    create_django_config_file(scheme + '://' + hostname + ':' + port,
-                                admin_email, django_config_dir, db_dir)
+    create_django_config_file(
+        site_url, admin_email, django_config_path, db_path)
 
     create_supervisor_config_file(
-        formated_site_name, root_dir, site_config_dir, supervisor_config_dir)
+        site_dir_name, root_path, site_config_path, supervisor_config_path)
 
-    manage_path = os.path.join(root_dir, 'django_wwwhisper', 'manage.py')
+    manage_path = os.path.join(root_path, 'django_wwwhisper', 'manage.py')
     exit_status = subprocess.call(
-        [manage_path, 'syncdb', '--pythonpath=' + django_config_dir])
+        [manage_path, 'syncdb', '--pythonpath=' + django_config_path])
     if exit_status != 0:
         err_quit('Failed to initialize wwwhisper database.');
+
+    print 'Site configuration successfully created.'
 
 if __name__ == '__main__':
     main()
