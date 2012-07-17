@@ -106,6 +106,17 @@
     },
 
     /**
+     * Extracts a given property from each item of the input array and
+     * returns these properties in the result array. Each item in the
+     * input array needs to have the extracted property.
+     */
+    extractProperty: function(array, propertyName) {
+      return $.map(array, function(item) {
+        return item[propertyName];
+      })
+    },
+
+    /**
      * Returns true if stringB is a prefix of stringA.
      */
     startsWith: function(stringA, stringB) {
@@ -119,26 +130,6 @@
      */
     urn2uuid: function(urn) {
       return urn.replace('urn:uuid:', '');
-    },
-
-    /**
-     * Returns an array of paths (strings) of each location from a
-     * given array of locations.
-     */
-    extractLocationsPaths: function(locations) {
-      return $.map(locations, function(item) {
-        return item.path;
-      });
-    },
-
-    /**
-     * Returns an array of ids (urns) of users that can access a given
-     * location.
-     */
-    allowedUsersIds: function(location) {
-      return $.map(location.allowedUsers, function(user) {
-        return user.id;
-      });
     },
 
     /**
@@ -182,7 +173,7 @@
      */
     this.canAccess = function(user, location) {
       return location.openAccess || utils.inArray(
-        user.id, utils.allowedUsersIds(location));
+        user.id, utils.extractProperty(location.allowedUsers, 'id'));
     };
 
     /**
@@ -539,8 +530,7 @@
      * Displays a dialog to compose a notification about shared resources.
      */
     function showNotifyDialog(to, locations) {
-      // TODO: finalize this dialog.
-      var body, website, locationsString, delimiter;
+      var body, website, locationsString, delimiter, recipent = '', bcc = '';
       if (locations.length === 0) {
         body = 'I have shared nothing with you. Enjoy.';
       } else {
@@ -549,16 +539,27 @@
           website = 'websites';
         }
         locationsString = $.map(locations, function(locationPath) {
-          return 'https://' + window.location.host + locationPath;
+          return window.location.protocol + '://' + window.location.host +
+            locationPath;
         }).join('\n');
 
         body = 'I have shared ' + website + ' with you.\n'
           + 'Please visit:\n' + locationsString;
       }
+      if (to.length != 0) {
+        recipent = to[0];
+        bcc = to.slice(1).join(',');
+      }
+
       $('#notify-modal')
         .find('#notify-to').attr('value', to.join(', '))
         .end()
         .find('#notify-body').text(body)
+        .end()
+        .find('#send')
+        .attr('href', 'mailto:' + encodeURIComponent(recipent) +
+              '?subject=Invitation&bcc=' + encodeURIComponent(bcc)
+              + '&body=' + encodeURIComponent(body))
         .end()
         .modal('show');
     }
@@ -664,7 +665,8 @@
           .end()
           .find('.notify').click(function() {
             showNotifyDialog(
-              location.allowedUsers, [location.path]);
+              utils.extractProperty(location.allowedUsers, 'email'),
+              [location.path]);
           })
           .end()
           .find('.view-page').click(function() {
@@ -767,8 +769,8 @@
           .find('.notify').click(function() {
             showNotifyDialog(
               [user.email],
-              utils.extractLocationsPaths(
-                controller.accessibleLocations(user))
+              utils.extractProperty(
+                controller.accessibleLocations(user), 'path')
             );
           })
           .end()

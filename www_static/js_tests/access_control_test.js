@@ -144,6 +144,15 @@
     deepEqual(utils.sortByProperty(array, 'f1'), array);
   });
 
+  test('extractProperty', function() {
+    var array = [{f1: 'a', f2: 'b'},
+                 {f1: 'b', f2: 'aa'},
+                 {f1: 'c', f2: 'a'},
+                 {f1: 'd', f2: 'z'}];
+    deepEqual(utils.extractProperty(array, 'f2'),
+              ['b', 'aa', 'a', 'z']);
+  });
+
   test('startsWith', function() {
     ok(utils.startsWith('foobar', 'foo'));
     ok(utils.startsWith('foo', 'foo'));
@@ -156,49 +165,6 @@
     deepEqual(
       utils.urn2uuid('urn:uuid:41be0192-0fcc-4a9c-935d-69243b75533c'),
       '41be0192-0fcc-4a9c-935d-69243b75533c');
-  });
-
-  test('extractLocationsPaths', function() {
-    var result = utils.extractLocationsPaths([
-      {
-        id: '12',
-        path: '/foo'
-      },
-      {
-        id: '13',
-        path: '/foo/bar'
-      },
-      {
-        path: '/baz',
-        id: 14
-      }
-    ]);
-    deepEqual(result, ['/foo', '/foo/bar', '/baz']);
-  });
-
-  test('allowedUsersIds', function() {
-    deepEqual(utils.allowedUsersIds(
-      {
-        id: '12',
-        path: '/foo',
-        allowedUsers: [
-          {
-            email: 'foo@example.com',
-            id: 'userA'
-          },
-          {
-            email: 'bar@example.com',
-            id: 'userB'
-          }
-        ]
-      }), ['userA', 'userB']);
-
-    deepEqual(utils.allowedUsersIds(
-      {
-        id: '12',
-        path: '/foo',
-        allowedUsers: []
-      }), []);
   });
 
   test('stripTrailingIndexHtmlAndSlash', function() {
