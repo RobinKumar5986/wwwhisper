@@ -11,7 +11,7 @@ echo "Adding the user ${WWWHISPER_USER}, member of a group ${NGINX_USER}."
 sudo adduser --system --ingroup ${NGINX_USER} ${WWWHISPER_USER}
 
 echo "Executing configuration steps as the user ${WWWHISPER_USER}."
-#sudo -H -g ${NGINX_USER} -u ${WWWHISPER_USER} ${SCRIPT_DIR}/deploy_sudoed.sh
+sudo -H -g ${NGINX_USER} -u ${WWWHISPER_USER} ${SCRIPT_DIR}/deploy_sudoed.sh
 
 cd "/home/${WWWHISPER_USER}/${NGINX_SRC_DIR}/${NGINX_VERSION}";
 

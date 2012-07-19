@@ -39,12 +39,11 @@ access to a given path.
 
 wwwhisper utilizes auth-request nginx module created by Maxim Dounin.
 The module allows to specify which locations require authorization.
-Each time the request is made to a protected location, the
-auth-request module sends a sub-request to the wwwhisper process to
-determines if the original request should be allowed. The sub-request
-carries a path and all headers of the original request (including
-cookies).  wwwhisper responds to the sub-request in three possible
-ways:
+Each time a request is made to a protected location, the auth-request
+module sends a sub-request to the wwwhisper process to determines if
+the original request should be allowed. The sub-request carries a path
+and all headers of the original request (including cookies).
+wwwhisper responds to the sub-request in one of three possible ways:
 
 1. If a user is not authenticated (authentication cookie not set or
    invalid), HTTP status code 401 is returned. HTTP server intercepts
@@ -74,4 +73,71 @@ to the user and a session cookie is not set.
 nginx sub_filter module is used to insert a small iframe at the bottom
 of every protected html document. The iframe contains the user's email
 address and a 'sign out' button.
+
+
+Installation
+------------
+
+Following steps demonstrate how to setup nginx with wwwhisper on
+Debian-derivative Linux distribution (including Ubuntu). The steps
+should be easy to adjust to work on other POSIX systems, if you do so,
+please share your experience.
+
+It is strongly recommended to use SSL for protected sites, unless you
+are protecting access to something very non-sensitive.
+
+    # Install required packages/
+    sudo apt-get install git python-virtualenv libssl-dev supervisor
+    # Add a system user to run the wwwhisper service.
+    sudo adduser --system --ingroup www-data wwwhisper;
+    # Become the user.
+    sudo su --shell /bin/bash wwwhisper;
+    # Clone wwwhisper project to the wwwhisper home dir.
+    cd ${HOME}; git clone https://github.com/wrr/wwwhisper.git .
+    # Install wwwhisper dependencies, compile and install nginx with
+    # all required modules:
+    ./deploy/setup.sh
+
+    # Generate configurations files for a given site. You need to specify
+    # your email as admin_email, to be able to access the admin web
+    # application.
+     ./add_site_config.py --site_url http[s]://domain_of_the_site --admin_email your_email;
+
+
+Configure nginx. Edit /usr/local/nginx/conf/nginx.conf.  Put
+    daemon off
+in the top level section, supervisord will be used to daemonize nginx.
+
+Put following directives in the server section:
+    set $wwwhisper_static_files_root /home/wwwhisper/www_static/;
+    set $wwwhisper_site_socket unix:/home/wwwhisper/sites/$scheme.$server_name.$server_port/uwsgi.sock;
+    include /home/wwwhisper/nginx/auth.conf;
+
+Put following directives in the root location section (`location / {`):
+    include /home/wwwhisper/nginx/protected_location.conf;
+    include /home/wwwhisper/nginx/admin.conf;
+
+It is recommended to make all locations nested in the root location like this:
+
+    location / {
+        include /home/wwwhisper/nginx/protected_location.conf;
+        include /home//wwwhisper/nginx/admin.conf;
+
+        location /wiki {
+            # ...
+        }
+
+        location /blog {
+            # ...
+        }
+    }
+
+This ensures all requests are authorized. If for some reason such
+setup is not possible, you need to put
+     include /home/wwwhisper/nginx/protected_location.conf;
+
+In each location not nested in already protected location, otherwise
+requests to the location will be allowed without authentication!
+
+Configure supervisord [to be continued] ...
 

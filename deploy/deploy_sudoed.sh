@@ -39,7 +39,7 @@ git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git
 
 echo "Configuring nginx with required modules."
 ./configure --add-module=./ngx_http_auth_request_module/ \
-    --prefix=/usr//local/nginx/ --with-http_ssl_module --with-http_sub_module \
+    --prefix=/usr/local/nginx/ --with-http_ssl_module --with-http_sub_module \
     --user=www-data --group=www-data --sbin-path=/usr/local/sbin
 
 echo "Compiling nginx."
