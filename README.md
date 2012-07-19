@@ -33,10 +33,9 @@ nginx and that enables following operations:
 the currently logged in user, logout the user, check if
 the user is authorized to access a given location.
 
-2. Admin operations: Define a location, add a user with a given email,
-grant a given user access to a given location, revoke access, remove
-a user, remove a location, allow not-authenticated access to a given
-location.
+2. Admin operations: add/remove a user with a given email, grant a
+user access to a given path, revoke access, allow not-authenticated
+access to a given path.
 
 wwwhisper utilizes auth-request nginx module created by Maxim Dounin.
 The module allows to specify which locations require authorization.
@@ -47,7 +46,7 @@ carries a path and all headers of the original request (including
 cookies).  wwwhisper responds to the sub-request in three possible
 ways:
 
-1. If a user is not authenticated (authentication cookie no set or
+1. If a user is not authenticated (authentication cookie not set or
    invalid), HTTP status code 401 is returned. HTTP server intercepts
    this code and returns a login page to the user.
 
@@ -70,7 +69,7 @@ assertion to authenticate with other sites. After extracting the email
 from the assertion, wwwhisper determines if any resources are shared
 with the user. If yes, a session cookie is set and the user is
 successfully logged. If no resources are shared, a 403 error is returned
-to the user and no session cookie is set.
+to the user and a session cookie is not set.
 
 nginx sub_filter module is used to insert a small iframe at the bottom
 of every protected html document. The iframe contains the user's email
