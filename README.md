@@ -1,4 +1,4 @@
-[Note: wwwhisper will be released mid-August 2012]
+[wwwhisper will be released mid-August 2012]
 
 wwwhisper simplifies sharing of Web resources that are not intended
 for everyone. It is a generic access control layer for nginx HTTP
@@ -27,15 +27,15 @@ Technical details
 -----------------
 
 wwwhisper is a service implemented in Django that should be run along
-nginx and that provides REST interface for following operations:
+nginx and that enables following operations:
 
 1. Authentication and authorization: login a user, get an email of
-currently logged in user, logout a user, check if
-a user is authorized to access a given location.
+the currently logged in user, logout the user, check if
+the user is authorized to access a given location.
 
 2. Admin operations: Define a location, add a user with a given email,
 grant a given user access to a given location, revoke access, remove
-user, remove location, allow not-authenticated access to a given
+a user, remove a location, allow not-authenticated access to a given
 location.
 
 wwwhisper utilizes auth-request nginx module created by Maxim Dounin.
