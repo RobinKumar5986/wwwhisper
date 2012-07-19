@@ -56,9 +56,9 @@ assert_dir_exists ${SITE_DIR}
 source ${VIRTUALENV_DIR}/bin/activate \
     || err_quit "Failed to activate virtualenv in ${VIRTUALENV_DIR}."
 
-exec uwsgi --chdir="${SCRIPT_DIR}/django_wwwhisper"\
+exec uwsgi  --socket="${SITE_DIR}/uwsgi.sock"\
+ --chdir="${SCRIPT_DIR}/django_wwwhisper"\
  --module="wwwhisper_service.wsgi:application"\
- --socket="${SITE_DIR}/uwsgi.sock"\
  --master\
  --vacuum\
  --processes=5\

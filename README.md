@@ -26,8 +26,8 @@ which visitors.
 Technical details
 -----------------
 
-wwwhisper is a service implemented in Django that should be run along
-nginx and that enables following operations:
+wwwhisper is a service implemented in Django that runs along nginx
+and that enables following actions:
 
 1. Authentication and authorization: login a user, get an email of
 the currently logged in user, logout the user, check if
@@ -40,7 +40,7 @@ access to a given path.
 wwwhisper utilizes auth-request nginx module created by Maxim Dounin.
 The module allows to specify which locations require authorization.
 Each time a request is made to a protected location, the auth-request
-module sends a sub-request to the wwwhisper process to determines if
+module sends a sub-request to the wwwhisper process to determine if
 the original request should be allowed. The sub-request carries a path
 and all headers of the original request (including cookies).
 wwwhisper responds to the sub-request in one of three possible ways:
@@ -83,10 +83,7 @@ Debian-derivative Linux distribution (including Ubuntu). The steps
 should be easy to adjust to work on other POSIX systems, if you do so,
 please share your experience.
 
-It is strongly recommended to use SSL for protected sites, unless you
-are protecting access to something very non-sensitive.
-
-    # Install required packages/
+    # Install required packages.
     sudo apt-get install git python-virtualenv libssl-dev supervisor
     # Add a system user to run the wwwhisper service.
     sudo adduser --system --ingroup www-data wwwhisper;
@@ -101,12 +98,12 @@ are protecting access to something very non-sensitive.
     # Generate configurations files for a given site. You need to specify
     # your email as admin_email, to be able to access the admin web
     # application.
-     ./add_site_config.py --site_url http[s]://domain_of_the_site --admin_email your_email;
+     ./add_site_config.py --site_url http[s]://domain_of_the_site[:port] --admin_email your_email;
 
 
 Configure nginx. Edit /usr/local/nginx/conf/nginx.conf.  Put
 
-    daemon off
+    daemon off;
 
 in the top level section, supervisord will be used to daemonize nginx.
 
@@ -138,10 +135,12 @@ It is recommended to make all locations nested in the root location like this:
 
 This ensures all requests are authorized. If for some reason such
 setup is not possible, you need to put
+
      include /home/wwwhisper/nginx/protected_location.conf;
 
-In each location not nested in already protected location, otherwise
-requests to the location will be allowed without authentication!
+In each location section not nested in already protected location,
+otherwise requests to the location will be allowed without
+authentication!
 
 Configure supervisord [to be continued] ...
 
