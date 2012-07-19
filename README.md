@@ -1,95 +1,64 @@
-WWWhisper aims to simplify sharing of Web resources with limited
-audience. It specifies a generic HTTP access control layer, that
-grants access to HTTP resources based on users' emails.  BrowserID
-(aka Persona) from Mozilla is used to prove that a visitor owns an
-allowed email. WWWhisper is not an application nor a platform. It is
-not concerned with what the resources are, it can be used to restrict
-access to any resource served by HTTP server. The project will provide
-a sample implementation of the access control layer and a guidance how
-to use it with popular HTTP servers. The project will also provide
-[sample UI](http://mixedbit.org/protected/wwwhisper) for granting and
-revoking access to web resources.
+[Note: wwwhisper will be released mid-August 2012]
 
+wwwhisper simplifies sharing of Web resources that are not intended
+for everyone. It is a generic access control layer for nginx HTTP
+server that allows to specify which resources can be accessed by
+which visitors.
 
-Introduction
-------------
+* wwwhisper grants access to HTTP resources based on users' email
+  addresses, which enables sharing with almost every Internet user.
+  [Persona](http://persona.org) is used to prove that a visitor owns
+  an allowed email, no site-specific password is needed. Persona UI
+  makes authentication process really smooth.
 
-System that allows sharing with limited audience needs to identify
-users to ensure only authorized ones can access a protected
-resource. Today, the most popular way of identifying allowed audience
-are application specific identifiers. This approach enables sharing
-only with other users of the application and introduces critical mass
-problem - a new application that enables sharing of private resources
-is not very useful, because it has few users, but it won't have more
-users until it is useful. Even Facebook, the most popular application
-that enables sharing, is very limiting in who you can share
-with. Facebook has about 900 million users. This seems a lot, but it
-is less than a half of the Internet population, which means if you
-need to share something with 10 random Internet users, the chance that
-all of them use Facebook is less than one in a thousand (0.5^10).
+* wwwhisper is application independent. It can be used for anything
+  that nginx serves - dynamic content, static files, content generated
+  by back-end servers. No support from applications or back-ends is needed.
 
-A better approach is to use open standard of identifying users. There
-are several such standards OpenID, WebID, BrowserID. From a point of
-view of sharing BrowserID is the best choice, because it is based on
-email, which almost every Internet user has. BrowserID allows owner of
-even the smallest site to share resources with audience select from
-the whole Internet population! Another nice feature of email based ids
-is that emails can be used to notify users about shared resources.
+* wwwhisper provides a REST-like API for granting and revoking access
+  and an admin web application that gives a convenient UI for
+  manipulating permissions. Access to the admin API is protected by
+  wwwhisper, this allows to easily authenticate, add and remove admin
+  users.
 
-Use cases
----------
-
-Lets consider an example of Alice. Alice has following resources to share:
-
-*  A private blog that she would like to share with her family and friends.
-*  A work related wiki that she would like to share with her colleagues.
-*  A site created for a conference that Alice co-organized.  Alice would
-   like the site to be widely accessible, but conference papers should
-   be accessible only to conference attendance. In addition all
-   organizers should be able to submit photos from the conference.
-
-Alice would like to share resources in a convenient way:
-
-*  She would like to easily grant and revoke access to her sites and check
-   who can access what.
-*  She wouldn't like anyone to create yet another account and manage yet
-   another password to access her sites.
-*  She would like to use existing web applications she likes (say WordPress for
-   blog and DokuWiki for wiki), but she wouldn't like to do any
-   modifications in these applications code.
-*  She would like to own the content, be free to move it from server
-   server or host it by herself.
 
 
 Technical details
 -----------------
 
-A web server Alice uses is configured to authorize access to all
-resources within /protected path. Alice uses a generic web application
-to grant/revoke access to resources in /protected and to optionally
-notify users about shared resources. See [prototype
-UI](http://mixedbit.org/protected/wwwhisper) of such application.
-
-Each time the request is made to a protected resource, the web server
-makes a sub-request to determine if the original request should be
-allowed. The application that serves the sub-requests responds in
-three possible ways.
+wwwhisper utilizes auth-request nginx module created by Maxim Dounin.
+The module allows to specify which locations require authorization.
+Each time the request is made to a protected location, the
+auth-request module sends a sub-request to wwwhisper to determines if
+the original request should be allowed. The sub-request carries a
+path and all headers of the original request (including cookies).
+wwwhisper responds to the sub-request in three possible ways:
 
 1. If a user is not authenticated (no authentication cookie set), HTTP
    status code 401 is returned. HTTP server intercepts this code and
-   redirects the user to a login page, where the user is requested to
-   sign-in with BrowserID. [See flow
-   diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authenticated.png)
+   returns a login page to the user.
 
 2. If a user is authenticated and is authorized to access the
    requested resource (user's email is on a list of allowed users),
    sub-request returns HTTP status code 200. HTTP server intercepts
-   this code and allows the original request. [See flow
-   diagram](https://github.com/wrr/wwwhisper/raw/master/img/authorized.png)
+   this code and allows the original request.
 
 3. If a user is authenticated but is not authorized to access the
    requested resource, sub-request returns HTTP status code 403, which
-   is returned to the user. [See flow
-   diagram](https://github.com/wrr/wwwhisper/raw/master/img/not-authorized.png)
+   is returned to the user.
 
+The login page which is presented to not authenticated users asks the
+user to sign-in with Persona. Sign-in process returns a
+cryptographically-secure assertion that is sent to wwwhisper and that
+allows to determine a verified email address of the user. The
+assertion does not carry user's password and is valid only for the
+current domain, because of this, a malicious site can not use the
+assertion to authenticate with other sites. After extracting the email
+from the assertion, wwwhisper determines if any resources are shared
+with the user. If yes, a session cookie is set and the user is
+successfully logged. If no resources are shared, a 403 error is returned
+to the user and no session cookie is set.
 
+nginx sub_filter module is used to insert a small iframe at the bottom
+of every protected html document. The iframe contains the user's email
+address and a 'sign out' button.
