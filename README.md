@@ -26,17 +26,30 @@ which visitors.
 Technical details
 -----------------
 
+wwwhisper is a service implemented in Django that should be run along
+nginx and that provides REST interface for following operations:
+
+1. Authentication and authorization: login a user, get an email of
+currently logged in user, logout a user, check if
+a user is authorized to access a given location.
+
+2. Admin operations: Define a location, add a user with a given email,
+grant a given user access to a given location, revoke access, remove
+user, remove location, allow not-authenticated access to a given
+location.
+
 wwwhisper utilizes auth-request nginx module created by Maxim Dounin.
 The module allows to specify which locations require authorization.
 Each time the request is made to a protected location, the
-auth-request module sends a sub-request to wwwhisper to determines if
-the original request should be allowed. The sub-request carries a
-path and all headers of the original request (including cookies).
-wwwhisper responds to the sub-request in three possible ways:
+auth-request module sends a sub-request to the wwwhisper process to
+determines if the original request should be allowed. The sub-request
+carries a path and all headers of the original request (including
+cookies).  wwwhisper responds to the sub-request in three possible
+ways:
 
-1. If a user is not authenticated (no authentication cookie set), HTTP
-   status code 401 is returned. HTTP server intercepts this code and
-   returns a login page to the user.
+1. If a user is not authenticated (authentication cookie no set or
+   invalid), HTTP status code 401 is returned. HTTP server intercepts
+   this code and returns a login page to the user.
 
 2. If a user is authenticated and is authorized to access the
    requested resource (user's email is on a list of allowed users),
@@ -47,9 +60,9 @@ wwwhisper responds to the sub-request in three possible ways:
    requested resource, sub-request returns HTTP status code 403, which
    is returned to the user.
 
-The login page which is presented to not authenticated users asks the
+The login page, which is presented to not authenticated users, asks the
 user to sign-in with Persona. Sign-in process returns a
-cryptographically-secure assertion that is sent to wwwhisper and that
+cryptographically-secure assertion that is sent to the wwwhisper and that
 allows to determine a verified email address of the user. The
 assertion does not carry user's password and is valid only for the
 current domain, because of this, a malicious site can not use the
@@ -62,3 +75,4 @@ to the user and no session cookie is set.
 nginx sub_filter module is used to insert a small iframe at the bottom
 of every protected html document. The iframe contains the user's email
 address and a 'sign out' button.
+
