@@ -105,15 +105,19 @@ are protecting access to something very non-sensitive.
 
 
 Configure nginx. Edit /usr/local/nginx/conf/nginx.conf.  Put
+
     daemon off
+
 in the top level section, supervisord will be used to daemonize nginx.
 
 Put following directives in the server section:
+
     set $wwwhisper_static_files_root /home/wwwhisper/www_static/;
     set $wwwhisper_site_socket unix:/home/wwwhisper/sites/$scheme.$server_name.$server_port/uwsgi.sock;
     include /home/wwwhisper/nginx/auth.conf;
 
 Put following directives in the root location section (`location / {`):
+
     include /home/wwwhisper/nginx/protected_location.conf;
     include /home/wwwhisper/nginx/admin.conf;
 
