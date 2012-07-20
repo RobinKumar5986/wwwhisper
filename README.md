@@ -101,46 +101,27 @@ please share your experience.
      ./add_site_config.py --site_url http[s]://domain_of_the_site[:port] --admin_email your_email;
 
 
-Configure nginx. Edit /usr/local/nginx/conf/nginx.conf.  Put
+Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
+authorization.  See [sample configuration
+file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
+that explains all wwwhisper configuration related directives. In
+particular, pay attention to:
 
+    user www-data www-data;
     daemon off;
 
-in the top level section, supervisord will be used to daemonize nginx.
+in the root section,
 
-Put following directives in the server section:
+    ssl on;
+    set $wwwhisper_root /home/wwwhisper/;
+    set $wwwhisper_site_socket unix:$wwwhisper_root/sites/$scheme.$server_name.$server_port/uwsgi.sock;
 
-    set $wwwhisper_static_files_root /home/wwwhisper/www_static/;
-    set $wwwhisper_site_socket unix:/home/wwwhisper/sites/$scheme.$server_name.$server_port/uwsgi.sock;
+in the server section,
+
     include /home/wwwhisper/nginx/auth.conf;
-
-Put following directives in the root location section (`location / {`):
-
     include /home/wwwhisper/nginx/protected_location.conf;
     include /home/wwwhisper/nginx/admin.conf;
 
-It is recommended to make all locations nested in the root location like this:
+in the location section.
 
-    location / {
-        include /home/wwwhisper/nginx/protected_location.conf;
-        include /home//wwwhisper/nginx/admin.conf;
-
-        location /wiki {
-            # ...
-        }
-
-        location /blog {
-            # ...
-        }
-    }
-
-This ensures all requests are authorized. If for some reason such
-setup is not possible, you need to put
-
-     include /home/wwwhisper/nginx/protected_location.conf;
-
-In each location section not nested in already protected location,
-otherwise requests to the location will be allowed without
-authentication!
-
-Configure supervisord [to be continued] ...
 
