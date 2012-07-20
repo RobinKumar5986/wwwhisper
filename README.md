@@ -123,7 +123,7 @@ and location section directives:
 
 
 Configure supervisord to automatically start nginx and uwsgi managed
-wwwhisper process. Edit /etc/supervisor/supervisord.conf and extend existing include directive to include '/home/wwwhisper/sites/*/supervisor/site.conf' and '/home/wwwhisper/nginx/supervisor.conf'. The directive should now look something like:
+wwwhisper process. Edit /etc/supervisor/supervisord.conf and extend existing include directive to include `/home/wwwhisper/sites/*/supervisor/site.conf` and `/home/wwwhisper/nginx/supervisor.conf`. The directive should now look something like:
 
     [include]
     files = /etc/supervisor/conf.d/*.conf /home/wwwhisper/sites/*/supervisor/site.conf /home/wwwhisper/nginx/supervisor.conf
