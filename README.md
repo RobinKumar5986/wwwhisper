@@ -106,15 +106,15 @@ please share your experience.
     # Become the user.
     cd ~wwwhisper; sudo su --shell /bin/bash wwwhisper;\
     # Clone wwwhisper project to the wwwhisper home dir.
-    git clone https://github.com/wrr/wwwhisper.git;\
+    git clone https://github.com/wrr/wwwhisper.git .;\
     # Initialize and activate virtual environment.
     virtualenv virtualenv; source virtualenv/bin/activate;\
     # Install packages required in the virtual environment.
     pip install -r ./requirements.txt;\
     # Generate configurations files for a site to protect. You need to
     # specify your email as admin_email, to be able to access the
-    # admin web application.  This step can be repeated for multiple
-    # sites.
+    # admin web application. This step can be repeated to enable protection
+    # for multiple sites.
     ./add_site_config.py --site_url  http[s]://domain_of_the_site[:port] --admin_email your@email;
 
 
