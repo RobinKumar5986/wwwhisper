@@ -130,7 +130,7 @@ wwwhisper process. Edit /etc/supervisor/supervisord.conf and extend existing inc
 
 Note that supervisord does not allow multiple include directives, you need to extend the existing one.
 
-Finally, restart supervisor
+Finally, restart the supervisor
 
     sudo /etc/init.d/supervisor stop;\
     sleep 10;\
