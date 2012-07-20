@@ -126,15 +126,16 @@ and location section directives:
 Configure supervisord to automatically start nginx and uwsgi managed
 wwwhisper process. Edit /etc/supervisor/supervisord.conf and extend existing include directive to include /home/wwwhisper/sites/*/supervisor/site.conf and /home/wwwhisper/nginx/supervisor.conf. The directive should now look something like:
 
-[include]
-files = /etc/supervisor/conf.d/*.conf /home/wwwhisper/sites/*/supervisor/site.conf /home/wwwhisper/nginx/supervisor.conf
+    [include]
+    files = /etc/supervisor/conf.d/*.conf /home/wwwhisper/sites/*/supervisor/site.conf /home/wwwhisper/nginx/supervisor.conf
 
 Note that supervisord does not allow multiple include directives, you need to modify the existing one.
 
 Finally, restart supervisor
 
-sudo /etc/init.d/supervisor stop
-sudo /etc/init.d/supervisor start
+    sudo /etc/init.d/supervisor stop;\
+    sleep 10;\
+    sudo /etc/init.d/supervisor start;
 
 Point your browser to http[s]://your.site.address/admin, you should be
 presented with a login page. Sign in with your email and use admin app
