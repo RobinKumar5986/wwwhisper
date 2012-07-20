@@ -83,18 +83,40 @@ Debian-derivative Linux distribution (including Ubuntu). The steps
 should be easy to adjust to work on other POSIX systems, if you do so,
 please share your experience.
 
+### System wide installation.
+
     # Install required packages.
-    sudo apt-get install git python-virtualenv libssl-dev supervisor
+    sudo apt-get install git python-virtualenv libssl-dev supervisor;
     # Add a system user to run the wwwhisper service.
     sudo adduser --system --ingroup www-data wwwhisper;
     # Become the user.
     sudo su --shell /bin/bash wwwhisper;
     # Clone wwwhisper project to the wwwhisper home dir.
     cd ${HOME}; git clone https://github.com/wrr/wwwhisper.git .
-    # Install wwwhisper dependencies, compile and install nginx with
-    # all required modules:
-    ./deploy/setup.sh
-
+    # Initialize and activate virtual environment.
+    virtualenv virtualenv; source virtualenv/bin/activate;
+    # Install packages required in the virtual environment.
+    pip install -r ./requirements.txt;
+    # Download and unpack the latest stable nginx:
+    NGINX_VERSION='nginx-1.2.2';
+    mkdir nginx_src; cd nginx_src;
+    wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;
+    tar xvfz ${NGINX_VERSION}.tar.gz;
+    cd ${NGINX_VERSION};
+    # Download auth-request module:
+    git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git
+    # Configure nginx. If your site needs any additonal modules. add them here.
+    ./configure --add-module=./ngx_http_auth_request_module/ \
+      --prefix=/usr/local/nginx/ --with-http_ssl_module --with-http_sub_module \
+      --user=www-data --group=www-data --sbin-path=/usr/local/sbin
+    # Compile
+    make
+    # Become root (wwwhisper user can not sudo).
+    su
+    # Install nginx.
+    make install
+    # Become wwwhisper again.
+    exit;
     # Generate configurations files for a given site. You need to specify
     # your email as admin_email, to be able to access the admin web
     # application.
@@ -133,7 +155,7 @@ Note that supervisord does not allow multiple include directives, you need to ex
 Finally, restart the supervisor
 
     sudo /etc/init.d/supervisor stop;\
-    sleep 10;\
+    sleep 20;\
     sudo /etc/init.d/supervisor start;
 
 Point your browser to http[s]://your.site.address/admin, you should be

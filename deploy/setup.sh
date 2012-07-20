@@ -14,7 +14,7 @@ NGINX_VERSION="nginx-1.2.2"
 # Where in $WWWHISPER_ROOT_DIRy should nginx source be put.
 NGINX_SRC_DIR=nginx_src
 
-echo "Installing required packages."
+echo "Installing required system packages"
 sudo apt-get install python-virtualenv libssl-dev supervisor
 
 cd ${WWWHISPER_ROOT_DIR}
@@ -47,10 +47,13 @@ echo "Cloning auth-request module."
 git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git
 
 echo "Configuring nginx with required modules."
+# If you want to 
 ./configure --add-module=./ngx_http_auth_request_module/ \
     --prefix=/usr/local/nginx/ --with-http_ssl_module --with-http_sub_module \
-    --user=www-data --group=www-data --sbin-path=/usr/local/sbin
+    --user=${NGINX_USER} --group=${NGINX_USER} --sbin-path=/usr/local/sbin
 
+echo "Compiling nginx."
+make
 
 echo "Installing nginx."
 sudo make install
