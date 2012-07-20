@@ -88,6 +88,24 @@ please share your experience.
     # Install required packages.
     sudo apt-get install git python-virtualenv libssl-dev supervisor;\
     \
+    # Download and unpack the latest stable nginx.
+    NGINX_VERSION='nginx-1.2.2';\
+    mkdir ~/src; cd ~/src;\
+    wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;\
+    tar xvfz ${NGINX_VERSION}.tar.gz;\
+    cd ${NGINX_VERSION};\
+    \
+    # Download auth-request module.
+    git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;\
+    \
+    # Configure nginx. If your site needs any additonal modules add them here.
+    ./configure --add-module=./ngx_http_auth_request_module/ \
+      --prefix=/usr/local/nginx/ --with-http_ssl_module --with-http_sub_module \
+      --user=www-data --group=www-data --sbin-path=/usr/local/sbin;\
+    \
+    # Compile and install
+    make; make install;\
+    \
     # Add a system user to run the wwwhisper service.
     sudo adduser --system --ingroup www-data wwwhisper;\
     \
@@ -103,37 +121,11 @@ please share your experience.
     # Install packages required in the virtual environment.
     pip install -r ./requirements.txt;\
     \
-    # Download and unpack the latest stable nginx.
-    NGINX_VERSION='nginx-1.2.2';\
-    mkdir nginx_src; cd nginx_src;\
-    wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;\
-    tar xvfz ${NGINX_VERSION}.tar.gz;\
-    cd ${NGINX_VERSION};\
-    \
-    # Download auth-request module.
-    git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;\
-    \
-    # Configure nginx. If your site needs any additonal modules add them here.
-    ./configure --add-module=./ngx_http_auth_request_module/ \
-      --prefix=/usr/local/nginx/ --with-http_ssl_module --with-http_sub_module \
-      --user=www-data --group=www-data --sbin-path=/usr/local/sbin;\
-    \
-    # Compile
-    make;\
-    \
-    # Stop being wwwhisper to install nginx (wwwhisper user can not sudo).
-    exit;\
-    \
-    # Install nginx.
-    cd nginx_src/nginx*; sudo make install;\
-    \
-    # Become wwwhisper again.
-    cd ~wwwhisper; sudo su --shell /bin/bash wwwhisper;
-    \
-    # Generate configurations files for a given site. You need to specify
-    # your email as admin_email, to be able to access the admin web
-    # application.
-     ./add_site_config.py --site_url http[s]://domain_of_the_site[:port] --admin_email your@email;
+    # Generate configurations files for a site to protect. You need to
+    # specify your email as admin_email, to be able to access the
+    # admin web application.  This step can be repeated for multiple
+    # sites.
+    ./add_site_config.py --site_url  http[s]://domain_of_the_site[:port] --admin_email your@email;
 
 
 Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
