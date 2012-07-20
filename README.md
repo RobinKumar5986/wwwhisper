@@ -92,10 +92,10 @@ please share your experience.
     sudo adduser --system --ingroup www-data wwwhisper;\
     \
     # Become the user.\
-    sudo su --shell /bin/bash wwwhisper;\
+    cd ~wwwhisper; sudo su --shell /bin/bash wwwhisper;\
     \
     # Clone wwwhisper project to the wwwhisper home dir.\
-    cd ${HOME}; git clone https://github.com/wrr/wwwhisper.git.\
+    git clone https://github.com/wrr/wwwhisper.git.\
     \
     # Initialize and activate virtual environment.\
     virtualenv virtualenv; source virtualenv/bin/activate;\
@@ -111,7 +111,7 @@ please share your experience.
     cd ${NGINX_VERSION};\
     \
     # Download auth-request module:\
-    git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git\
+    git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;\
     \
     # Configure nginx. If your site needs any additonal modules add them here.\
     ./configure --add-module=./ngx_http_auth_request_module/ \
@@ -121,14 +121,14 @@ please share your experience.
     # Compile\
     make;\
     \
-    # Become root (wwwhisper user can not sudo).\
-    su;\
+    # Stop being wwwhisper to install nginx (wwwhisper user can not sudo).\
+    exit;\
     \
     # Install nginx.\
-    make install;\
+    cd nginx_src/nginx*; sudo make install;\
     \
     # Become wwwhisper again.\
-    exit;\
+    cd ~wwwhisper; sudo su --shell /bin/bash wwwhisper;
     \
     # Generate configurations files for a given site. You need to specify\
     # your email as admin_email, to be able to access the admin web\
