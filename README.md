@@ -98,11 +98,11 @@ please share your experience.
     # Generate configurations files for a given site. You need to specify
     # your email as admin_email, to be able to access the admin web
     # application.
-     ./add_site_config.py --site_url http[s]://domain_of_the_site[:port] --admin_email your_email;
+     ./add_site_config.py --site_url http[s]://domain_of_the_site[:port] --admin_email your@email;
 
 
 Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
-authorization.  See [sample configuration
+authorization.  See [a sample configuration
 file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
 that explains all wwwhisper configuration related directives. In
 particular, pay attention to the root section directives:
@@ -112,7 +112,6 @@ particular, pay attention to the root section directives:
 
 server section directives:
 
-    ssl on;
     set $wwwhisper_root /home/wwwhisper/;
     set $wwwhisper_site_socket unix:$wwwhisper_root/sites/$scheme.$server_name.$server_port/uwsgi.sock;
     include /home/wwwhisper/nginx/auth.conf;
@@ -124,12 +123,12 @@ and location section directives:
 
 
 Configure supervisord to automatically start nginx and uwsgi managed
-wwwhisper process. Edit /etc/supervisor/supervisord.conf and extend existing include directive to include /home/wwwhisper/sites/*/supervisor/site.conf and /home/wwwhisper/nginx/supervisor.conf. The directive should now look something like:
+wwwhisper process. Edit /etc/supervisor/supervisord.conf and extend existing include directive to include '/home/wwwhisper/sites/*/supervisor/site.conf' and '/home/wwwhisper/nginx/supervisor.conf'. The directive should now look something like:
 
     [include]
     files = /etc/supervisor/conf.d/*.conf /home/wwwhisper/sites/*/supervisor/site.conf /home/wwwhisper/nginx/supervisor.conf
 
-Note that supervisord does not allow multiple include directives, you need to modify the existing one.
+Note that supervisord does not allow multiple include directives, you need to extend the existing one.
 
 Finally, restart supervisor
 
@@ -138,17 +137,18 @@ Finally, restart supervisor
     sudo /etc/init.d/supervisor start;
 
 Point your browser to http[s]://your.site.address/admin, you should be
-presented with a login page. Sign in with your email and use admin app
-to define which locations can be accessed by which visitor.
+presented with a login page. Sign in with your email and use the admin
+application to define which locations can be accessed by which
+visitor.
 
 Final remarks
 -----------------
 
 1. Make sure content you are protecting can not be accessed through
-some other channels. If you are using a multiuser server, set correct
-file permissions for protected static files and communication
-sockets. If nginx is delegating requests to backend servers, make sure
-the servers are not externally accessible.
+some other channels. If you are using a multiuser server, set
+correct file permissions for protected static files and
+communication sockets. If nginx is delegating requests to backend
+servers, make sure the backends are not externally accessible.
 
 2. Use SSL for anything important, you can get a free [SSL certificate
    for personal use](https://cert.startcom.org/).

@@ -131,6 +131,18 @@ WWWHISPER_ADMINS = ['%s']
     write_to_file(django_config_path, '__init__.py', '')
     write_to_file(django_config_path, DJANGO_CONFIG_FILE, settings)
 
+def default_port(scheme):
+    """Returns default port for a given scheme (https or http) as string."""
+    if scheme == "https":
+        return "443"
+    elif scheme == "http":
+        return "80"
+    assert False
+
+def is_default_port(scheme, port):
+    """Checks if a port (string) is default for a given scheme."""
+    return default_port(scheme) == port
+
 def create_supervisor_config_file(
     site_dir_name, root_path, site_config_path, supervisor_config_path):
     """Creates site-specific supervisor config file.
@@ -153,10 +165,10 @@ stopasgroup=true
 def parse_url(url):
     """Parses and validates a URL.
 
-    URL needs to have scheme://domain:port format, scheme and domain
-    are mandatory, port is optional. If the URL is valid, returns it
-    with all characters converted to lower case. Dies if the URL is
-    invalid.
+    URL needs to have scheme://hostname:port format, scheme and hostname
+    are mandatory, port is optional. Converts scheme and hostname to
+    lower case and returns scheme, hostname, port (as string) tupple.
+    Dies if the URL is invalid.
     """
 
     err_prefix = 'Invalid site address - '
@@ -166,8 +178,8 @@ def parse_url(url):
         err_quit(err_prefix + 'scheme missing. '
                  'URL schould start with https:// (recommended) or http://')
     if parsed_url.hostname is None:
-        err_quit(err_prefix + 'domain name missing.'
-                 'URL should include full domain name (like https://foo.org).')
+        err_quit(err_prefix + 'host name missing.'
+                 'URL should include full host name (like https://foo.org).')
     if parsed_url.path  != '':
         err_quit(err_prefix + 'URL should not include resource path '
                  '(/foo/bar).')
@@ -182,18 +194,10 @@ def parse_url(url):
 
     hostname = parsed_url.hostname.lower()
     port = parsed_url.port
-    if port is not None:
-        return scheme + '://' + hostname + ':' + str(port)
-    else:
-        return scheme + '://' + hostname
+    if port is None:
+        port = default_port(scheme)
 
-def url2dirname(url):
-    """Converts a site URL to a directory name.
-
-    The directory will be used to store configuration for the site.
-    """
-    # '/' is forbidden in file names, ':' is not handled properply by nginx.
-    return url.replace('://', '.').replace(':', '.')
+    return (scheme, hostname, port)
 
 def main():
     site_url = None
@@ -224,8 +228,13 @@ def main():
     if admin_email is None:
         err_quit('--admin_email is missing.')
 
-    site_url = parse_url(site_url)
-    site_dir_name = url2dirname(site_url)
+    (scheme, hostname, port) = parse_url(site_url)
+    site_url = scheme + '://' + hostname
+    # URL should include the port number only if it is non-default.
+    if not is_default_port(scheme, port):
+        site_url += ":" + port
+    # But settings directory name should always include the port.
+    site_dir_name = '.'.join([scheme, hostname, port])
 
     # TODO: dir->path
     site_config_path = os.path.join(root_path, SITES_DIR, site_dir_name)
