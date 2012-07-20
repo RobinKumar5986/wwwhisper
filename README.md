@@ -103,14 +103,14 @@ please share your experience.
     # Install packages required in the virtual environment.
     pip install -r ./requirements.txt;\
     \
-    # Download and unpack the latest stable nginx:
+    # Download and unpack the latest stable nginx.
     NGINX_VERSION='nginx-1.2.2';\
     mkdir nginx_src; cd nginx_src;\
     wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;\
     tar xvfz ${NGINX_VERSION}.tar.gz;\
     cd ${NGINX_VERSION};\
     \
-    # Download auth-request module:
+    # Download auth-request module.
     git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;\
     \
     # Configure nginx. If your site needs any additonal modules add them here.
