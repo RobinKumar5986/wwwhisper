@@ -58,17 +58,17 @@ wwwhisper responds to the sub-request in one of three possible ways:
    requested resource, sub-request returns HTTP status code 403, which
    is returned to the user.
 
-The login page, which is presented to not authenticated users, asks the
-user to sign-in with Persona. Sign-in process returns a
-cryptographically-secure assertion that is sent to the wwwhisper and that
-allows to determine a verified email address of the user. The
+The login page, which is presented to not authenticated users, asks
+the user to sign-in with Persona. Sign-in process returns a
+cryptographically-secure assertion that is sent to the wwwhisper and
+that allows to determine a verified email address of the user. The
 assertion does not carry user's password and is valid only for the
 current domain, because of this, a malicious site can not use the
 assertion to authenticate with other sites. After extracting the email
 from the assertion, wwwhisper determines if any resources are shared
 with the user. If yes, a session cookie is set and the user is
-successfully logged. If no resources are shared, a 403 error is returned
-to the user and a session cookie is not set.
+successfully logged in. If no resources are shared, a 403 error is
+returned to the user and a session cookie is not set.
 
 nginx sub_filter module is used to insert a small iframe at the bottom
 of every protected html document. The iframe contains the user's email
@@ -105,23 +105,49 @@ Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
 authorization.  See [sample configuration
 file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
 that explains all wwwhisper configuration related directives. In
-particular, pay attention to:
+particular, pay attention to the root section directives:
 
     user www-data www-data;
     daemon off;
 
-in the root section,
+server section directives:
 
     ssl on;
     set $wwwhisper_root /home/wwwhisper/;
     set $wwwhisper_site_socket unix:$wwwhisper_root/sites/$scheme.$server_name.$server_port/uwsgi.sock;
-
-in the server section,
-
     include /home/wwwhisper/nginx/auth.conf;
+
+and location section directives:
+
     include /home/wwwhisper/nginx/protected_location.conf;
     include /home/wwwhisper/nginx/admin.conf;
 
-in the location section.
 
+Configure supervisord to automatically start nginx and uwsgi managed
+wwwhisper process. Edit /etc/supervisor/supervisord.conf and extend existing include directive to include /home/wwwhisper/sites/*/supervisor/site.conf and /home/wwwhisper/nginx/supervisor.conf. The directive should now look something like:
 
+[include]
+files = /etc/supervisor/conf.d/*.conf /home/wwwhisper/sites/*/supervisor/site.conf /home/wwwhisper/nginx/supervisor.conf
+
+Note that supervisord does not allow multiple include directives, you need to modify the existing one.
+
+Finally, restart supervisor
+
+sudo /etc/init.d/supervisor stop
+sudo /etc/init.d/supervisor start
+
+Point your browser to http[s]://your.site.address/admin, you should be
+presented with a login page. Sign in with your email and use admin app
+to define which locations can be accessed by which visitor.
+
+Final remarks
+-----------------
+
+1. Make sure content you are protecting can not be accessed through
+some other channels. If you are using a multiuser server, set correct
+file permissions for protected static files and communication
+sockets. If nginx is delegating requests to backend servers, make sure
+the servers are not externally accessible.
+
+2  Use SSL for anything important, you can get a free [SSL certificate
+   for personal use](https://cert.startcom.org/).

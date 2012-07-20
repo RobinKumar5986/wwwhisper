@@ -142,7 +142,7 @@ command=%s/run_wwwhisper_for_site.sh -d %s
 user=%s
 group=%s
 autorestart=true
-stopwaitsecs=16
+stopwaitsecs=2
 stopsignal=INT
 stopasgroup=true
 """ % (site_dir_name, root_path, site_config_path, WWWHISPER_USER,
