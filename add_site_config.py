@@ -60,7 +60,7 @@ Usage:
             Port defaults to 443 for https and 80 for http.
       -a, --admin_email An email of a user that will be allowed to access
             wwwhisper admin interface after wwwhisper is configured.
-            More such users can be added via the admin interface.
+            More admin users can be added via the admin interface.
 """ % {'prog': sys.argv[0]}
     sys.exit(1)
 
@@ -193,7 +193,7 @@ def parse_url(url):
         err_quit(err_prefix + 'URL should not include username (foo@).')
 
     hostname = parsed_url.hostname.lower()
-    port = parsed_url.port
+    port = str(parsed_url.port)
     if port is None:
         port = default_port(scheme)
 

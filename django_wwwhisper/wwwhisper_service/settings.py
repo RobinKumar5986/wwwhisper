@@ -44,12 +44,16 @@ MIDDLEWARE_CLASSES = (
 SESSION_COOKIE_NAME = 'wwwhisper-sessionid'
 CSRF_COOKIE_NAME = 'wwwhisper-csrftoken'
 
-# Make session cookie valid until a browser closes.
+# Make session cookie valid only until a browser closes.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
-# TODO: change this:
-SESSION_COOKIE_SECURE = False
 SESSION_COOKIE_HTTPONLY = True
+
+# If HTTPS is used, ask the browser to never send session and csrf
+# protection cookies over HTTP.
+if SITE_URL[:8] == 'https://':
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 ROOT_URLCONF = 'wwwhisper_service.urls'
 

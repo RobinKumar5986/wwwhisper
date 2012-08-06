@@ -148,8 +148,6 @@ def csrf_cookie_http_only(decorated_function):
         response = decorated_function(*args, **kwargs)
         if response.cookies.has_key(settings.CSRF_COOKIE_NAME):
             response.cookies[settings.CSRF_COOKIE_NAME]['httponly'] = True
-            # TODO: enable this:
-            # response.cookies[settings.CSRF_COOKIE_NAME]['secure'] = True
         return response
     return wrapper
 
