@@ -30,8 +30,6 @@
                     $('body').html(errorMessage);
                   }
                 });
-    } else {
-      alert('BrowserID assertion not set. Login failed.');
     }
   }
 
