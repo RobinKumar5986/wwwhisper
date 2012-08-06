@@ -56,13 +56,13 @@ class ValidatedModel(models.Model):
     saved.
     """
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        return super(ValidatedModel, self).save(*args, **kwargs)
-
     class Meta:
         """Disables creation of a DB table for ValidatedModel."""
         abstract = True
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super(ValidatedModel, self).save(*args, **kwargs)
 
 # Because Django authentication mechanism is used, users need to be
 # represented by a standard Django User class. But some additions are
@@ -103,10 +103,23 @@ class Location(ValidatedModel):
           authentication.
     """
 
-    path = models.CharField(max_length=2000, null=False, primary_key=True)
-    uuid = models.CharField(max_length=36, null=False, db_index=True,
-                            editable=False)
-    open_access = models.BooleanField(default=False, null=False)
+    path = models.TextField(primary_key=True)
+    uuid = models.CharField(max_length=36, db_index=True,
+                            editable=False, unique=True)
+    open_access = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return "%s" % (self.path)
+
+    def save(self, *args, **kwargs):
+        if not self.uuid:
+            self.uuid = str(uuidgen.uuid4())
+        return super(Location, self).save(*args, **kwargs)
+
+    @models.permalink
+    def get_absolute_url(self):
+        """Constructs URL of the location resource."""
+        return ('wwwhisper_location', (), {'uuid' : self.uuid})
 
     def grant_open_access(self):
         """Allows access to the location without authentication.
@@ -211,19 +224,6 @@ class Location(ValidatedModel):
                     ],
                 })
 
-    @models.permalink
-    def get_absolute_url(self):
-        """Constructs URL of the location resource."""
-        return ('wwwhisper_location', (), {'uuid' : self.uuid})
-
-    def save(self, *args, **kwargs):
-        if not self.uuid:
-            self.uuid = str(uuidgen.uuid4())
-        return super(Location, self).save(*args, **kwargs)
-
-    def __unicode__(self):
-        return "%s" % (self.path)
-
 class Permission(ValidatedModel):
     """Connects a location with a user that can access the location.
 
@@ -232,13 +232,11 @@ class Permission(ValidatedModel):
         user: The user that is given access to the location.
     """
 
-    http_location = models.ForeignKey(Location)
-    user = models.ForeignKey(User)
+    http_location = models.ForeignKey(Location, related_name='+')
+    user = models.ForeignKey(User, related_name='+')
 
-    def attributes_dict(self):
-        """Returns externally visible attributes of the permission resource."""
-        return _add_common_attributes(
-            self, {'user': self.user.attributes_dict()})
+    def __unicode__(self):
+        return "%s, %s" % (self.http_location, self.user.email)
 
     @models.permalink
     def get_absolute_url(self):
@@ -247,8 +245,10 @@ class Permission(ValidatedModel):
                 {'location_uuid' : self.http_location.uuid,
                  'user_uuid': self.user.uuid})
 
-    def __unicode__(self):
-        return "%s, %s" % (self.http_location, self.user.email)
+    def attributes_dict(self):
+        """Returns externally visible attributes of the permission resource."""
+        return _add_common_attributes(
+            self, {'user': self.user.attributes_dict()})
 
 class Collection(object):
     """A common base class for managing a collection of resources.

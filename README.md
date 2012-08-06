@@ -99,7 +99,7 @@ please share your experience.
     ./configure --add-module=./ngx_http_auth_request_module/ \
       --prefix=/usr/local/nginx/ --with-http_ssl_module --with-http_sub_module \
       --user=www-data --group=www-data --sbin-path=/usr/local/sbin;\
-    # Compile and install
+    # Compile and install nginx.
     make; make install;\
     # Add a system user to run the wwwhisper service.
     sudo adduser --system --ingroup www-data wwwhisper;\
@@ -167,5 +167,5 @@ correct file permissions for protected static files and
 communication sockets. If nginx is delegating requests to backend
 servers, make sure the backends are not externally accessible.
 
-2. Use SSL for anything important, you can get a free [SSL certificate
+2. Use SSL for anything important. You can get a free [SSL certificate
    for personal use](https://cert.startcom.org/).
