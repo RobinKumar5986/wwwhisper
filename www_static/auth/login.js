@@ -23,7 +23,7 @@
                 function(errorMessage, errorStatus) {
                   if (errorStatus === 403) {
                     // Login failed because the user is unknown.
-                    $('#sign-in').addClass('hidden');
+                    $('#login-required').addClass('hidden');
                     $('#nothing-shared').removeClass('hidden');
                   } else {
                     // Other error.
@@ -56,11 +56,11 @@
   }
 
   executeIfLoggedOut(function() {
-    $('#sign-in').removeClass('hidden');
-    $('#browserid').removeClass('hidden');
+    $('#login-required').removeClass('hidden');
+    $('#login').removeClass('hidden');
     $('#nothing-shared').addClass('hidden');
     // Register a callback to process a BrowserID assertion.
-    $('#browserid').click(function() {
+    $('#login').click(function() {
       navigator.id.get(login);
       return false;
     });
