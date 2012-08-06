@@ -38,8 +38,6 @@ from wwwhisper_auth import  url_path
 import re
 import uuid as uuidgen
 
-# TODO: Fix lint warning also for django-lint.
-
 SITE_URL = getattr(settings, 'SITE_URL', None)
 if SITE_URL is None:
     raise ImproperlyConfigured(
@@ -68,17 +66,17 @@ class ValidatedModel(models.Model):
 # represented by a standard Django User class. But some additions are
 # needed:
 
+User.uuid = property(fget=lambda(self): self.username, doc=\
 """Externally visible UUID of a user.
 
 Allows to identify a REST resource representing a user. UUID is stored
 in the username field when User object is created.
-"""
-User.uuid = property(lambda(self): self.username)
+""")
 
-# TODO: Check if a doc string can be dynamically added.
-"""Returns externally visible attributes of the user resource."""
 User.attributes_dict = lambda(self): \
     _add_common_attributes(self, {'email': self.email})
+User.attributes_dict.__func__.__doc__ = \
+    """Returns externally visible attributes of the user resource."""
 
 class Location(ValidatedModel):
     """A location for which access control rules are defined.
@@ -368,7 +366,7 @@ class LocationsCollection(Collection):
             if path.encode('utf-8', 'strict') != path:
                 raise CreationException(
                     'Path should contain only ascii characters.')
-        except UnicodeError, er:
+        except UnicodeError:
             raise CreationException('Invalid path encoding')
 
         if _find(Location, path=path) is not None:
@@ -413,7 +411,7 @@ def full_url(absolute_path):
     """Return full url of a resource with a given path."""
     return SITE_URL + absolute_path
 
-def _urn_from_uuid(uuid):
+def _uuid2urn(uuid):
     return 'urn:uuid:' + uuid
 
 def _add_common_attributes(item, attributes_dict):
@@ -424,7 +422,7 @@ def _add_common_attributes(item, attributes_dict):
     """
     attributes_dict['self'] = full_url(item.get_absolute_url())
     if hasattr(item, 'uuid'):
-        attributes_dict['id'] = _urn_from_uuid(item.uuid)
+        attributes_dict['id'] = _uuid2urn(item.uuid)
     return attributes_dict
 
 def _find(model_class, **kwargs):

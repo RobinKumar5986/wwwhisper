@@ -26,7 +26,6 @@ from django.middleware import csrf
 from django.utils.crypto import constant_time_compare
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
-from django.views.decorators.csrf import csrf_protect
 from django.views.generic import View
 from wwwhisper_auth import models
 
@@ -172,7 +171,7 @@ class RestView(View):
                 if not _utf8_encoded_json(request):
                     return HttpResponseBadRequest(
                         "Invalid Content-Type (only '%s' is acceptable)."
-                        % (JSON_MIME_TYPE));
+                        % (JSON_MIME_TYPE))
 
                 json_args = json.loads(request.body)
                 for k in json_args:

@@ -14,6 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""wwwhisper admin API.
+
+The package exposes REST API for specifying which users can access
+which locations.
+"""
+
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db.models import signals
@@ -48,7 +54,7 @@ def enable_access_to_admin(app, created_models, *args, **kwargs):
                 admin_location.grant_access(user.uuid)
             except auth_models.CreationException as ex:
                 raise ImproperlyConfigured('Failed to create admin user %s: %s'
-                                           % (email, ex));
+                                           % (email, ex))
 
 # Disable default behaviour for admin user creation (interactive
 # question).

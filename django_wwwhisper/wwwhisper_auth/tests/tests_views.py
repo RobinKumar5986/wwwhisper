@@ -15,8 +15,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.contrib.auth.models import User
-from django.test import TestCase
-from django.test.client import Client
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from wwwhisper_auth import backend
@@ -25,7 +23,7 @@ from wwwhisper_auth.tests.utils import HttpTestCase
 
 import json
 
-INCORRECT_ASSERTION="ThisAssertionIsFalse"
+INCORRECT_ASSERTION = "ThisAssertionIsFalse"
 
 class FakeAssertionVeryfingBackend(ModelBackend):
     def authenticate(self, assertion):

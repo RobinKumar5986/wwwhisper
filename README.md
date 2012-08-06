@@ -107,7 +107,7 @@ please share your experience.
     cd ~wwwhisper; sudo su --shell /bin/bash wwwhisper;\
     # Clone wwwhisper project to the wwwhisper home dir.
     git clone https://github.com/wrr/wwwhisper.git .;\
-    # Initialize and activate virtual environment.
+    # Create and activate virtual environment.
     virtualenv virtualenv; source virtualenv/bin/activate;\
     # Install packages required in the virtual environment.
     pip install -r ./requirements.txt;\

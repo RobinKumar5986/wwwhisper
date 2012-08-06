@@ -21,7 +21,7 @@ the outside world, other views need to be externally accessible.
 """
 
 from django.conf.urls.defaults import patterns, url
-from views import Auth, CsrfToken, Login, Logout, WhoAmI
+from wwwhisper_auth.views import Auth, CsrfToken, Login, Logout, WhoAmI
 from wwwhisper_auth.models import LocationsCollection
 
 urlpatterns = patterns(
