@@ -60,8 +60,13 @@
     $('#login').removeClass('hidden');
     $('#nothing-shared').addClass('hidden');
     // Register a callback to process a BrowserID assertion.
+    navigator.id.watch({
+      loggedInEmail: null,
+      onlogin: login,
+      onlogout: function() {}
+    });
     $('#login').click(function() {
-      navigator.id.get(login);
+      navigator.id.request();
       return false;
     });
   });

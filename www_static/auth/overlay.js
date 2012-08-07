@@ -39,15 +39,23 @@
     }
     $('#email').text(email);
     $('#wwwhisper-overlay').removeClass('hidden');
+    navigator.id.watch({
+      loggedInEmail: email,
+      onlogin: function() {},
+      onlogout: function() {
+        stub.ajax('POST', '/auth/api/logout/', {}, function() {
+          window.top.location = '/auth/goodbye.html';
+        });
+      }
+    });
+
     $('#logout').click(function() {
-      stub.ajax('POST', '/auth/api/logout/', {}, function() {
-        window.top.location.reload(true);
-      });
+      navigator.id.logout();
     });
   }
 
   if (window.parent.parent !== window.parent) {
-    // Parent is not top level frame.
+    // Parent is not the top level frame.
     removeOverlay();
   } else {
     stub.ajax('GET', '/auth/api/whoami/', null,

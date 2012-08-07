@@ -9,18 +9,26 @@
   'use strict';
   var stub = new wwwhisper.Stub();
 
+  // TODO: remove duplication between logout.js, overlay.js and login.js.
+
   // Make sure a user is authenticated.
   stub.ajax('GET', '/auth/api/whoami/', null,
             function(result) {
               // Logged in.
               $('#email').text(result.email);
               $('#authenticated').removeClass('hidden');
+              navigator.id.watch({
+                loggedInEmail: email,
+                onlogin: function() {},
+                onlogout: function() {
+                  stub.ajax('POST', '/auth/api/logout/', {}, function() {
+                    window.location = '/auth/goodbye.html';
+                  });
+                }
+              });
+
               $('#logout').click(function() {
-                // TODO: change this to display goodbye message from the server.
-                stub.ajax('POST', '/auth/api/logout/', {}, function() {
-                  $('#authenticated').addClass('hidden');
-                  $('#logged-out').removeClass('hidden');
-                });
+                navigator.id.logout();
                 return false;
               });
             },
