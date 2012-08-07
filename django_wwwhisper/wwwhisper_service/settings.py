@@ -74,6 +74,7 @@ AUTHENTICATION_BACKENDS = (
     'wwwhisper_auth.backend.BrowserIDBackend',
 )
 
+BROWSERID_VERIFICATION_URL = 'https://verifier.login.persona.org/verify'
 
 ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: "/admin/api/users/%s/" % u.username,

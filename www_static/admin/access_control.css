@@ -3,6 +3,11 @@ body {
  padding-top: 60px;
 }
 
+.light {
+  opacity: 0.4;
+  filter: alpha(opacity=40);
+}
+
 .menu-item {
   float: right;
   opacity: 0.2;
@@ -16,7 +21,7 @@ body {
 }
 
 .spaced-left {
-  margin-left: 7px;
+  margin-left: 10px;
 }
 
 .spaced-top {

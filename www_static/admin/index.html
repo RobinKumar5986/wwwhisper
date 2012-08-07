@@ -33,14 +33,15 @@ https://www.gnu.org/licenses/gpl-3.0.html
       <div class="alert alert-success help-message fade in hide">
         <!-- <a class="close"  href="#" data-dismiss="alert">&times;</a> -->
         <p>
-          Left side: locations under <span class='locations-root'></span>
-          to which Alice wants to grant access. <br />
-          Right side: emails of users that can access a select location.
+          Left side: paths on <span class='locations-root'></span>
+          to which access can be granted. <br />
+          Right side: emails of users that can access a select path
+          (enter * to allow not authenticated access).
         </p>
 
         <p>
-          Granting access to a location gives also access to all
-          sub-locations unless a more specific access control rule is
+          Granting access to a path gives also access to all
+          sub-paths unless a more specific access control rule is
           defined.  The more specific rule overwrites a more generic
           one.  <!--For example, if a user is on a list granting
           access to /foo she can access /foo/bar but if there is more
@@ -50,8 +51,13 @@ https://www.gnu.org/licenses/gpl-3.0.html
         </p>
 
         <p>
-          Use <i class="icon-envelope"></i> to compose a notification
-          about a shared site.
+        <i class="icon-eye-open light"></i> visit a location in a separate tab.
+        <br />
+        <i class="icon-envelope light"></i> compose a notification about a
+        shared location.
+        <br />
+        <i class="icon-remove light"></i> remove an access control
+        list for a path (left) or remove a user (right).
         </p>
       </div> <!-- /.alert -->
 
@@ -109,11 +115,19 @@ https://www.gnu.org/licenses/gpl-3.0.html
 
 
       <div class="alert alert-success help-message fade in hide">
-        <!-- <a class="close" href="#" data-dismiss="alert">&times;</a> -->
-        Use <i class="icon-search"></i> to quickly check which
-        locations a person can access (green color). <br />
-        Use <i class="icon-envelope"></i> to compose a notification
-        about all resources shared with a person.
+        <p>
+          <i class="icon-arrow-up light"></i> grant a user access to
+          the currently active location.
+          <br />
+          <i class="icon-search light"></i> quickly check which
+          locations a user can access (green color).
+          <br />
+          <i class="icon-envelope light"></i> compose a notification
+          about locations shared with a user.
+          <br />
+          <i class="icon-remove light"></i> remove a user and disallow
+          the removed user access to all locations.
+        </p>
       </div>  <!-- /.alert -->
 
       <h3>Users</h3>
@@ -167,12 +181,13 @@ https://www.gnu.org/licenses/gpl-3.0.html
         </form>
       </div>
       <div class="modal-footer">
-        <a href="#" class="btn btn-primary" id="send" target="_blank">Launch email client</a>
+        <a href="#" class="btn btn-primary" id="send" target="_blank">
+        Launch email client
+        </a>
         <a href="#" class="btn" data-dismiss="modal">Cancel</a>
       </div>
     </div>
 
-    <!-- TODO: include only what is needed -->
     <script type="text/javascript" src="assets/js/jquery.js">
     </script>
     <script type="text/javascript" src="assets/js/bootstrap-alert.js">

@@ -97,10 +97,10 @@ please share your experience.
     git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;\
     # Configure nginx. If your site needs any additonal modules add them here.
     ./configure --add-module=./ngx_http_auth_request_module/ \
-      --prefix=/usr/local/nginx/ --with-http_ssl_module --with-http_sub_module \
-      --user=www-data --group=www-data --sbin-path=/usr/local/sbin;\
+      --with-http_ssl_module --with-http_sub_module --user=www-data \
+      --group=www-data --prefix=/usr/local/nginx/ --sbin-path=/usr/local/sbin \
     # Compile and install nginx.
-    make; make install;\
+    make; sudo make install;\
     # Add a system user to run the wwwhisper service.
     sudo adduser --system --ingroup www-data wwwhisper;\
     # Become the user.
