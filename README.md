@@ -75,13 +75,21 @@ of every protected html document. The iframe contains the user's email
 address and a 'sign out' button.
 
 
-Installation
-------------
+Setup
+-----
 
-Following steps demonstrate how to setup nginx with wwwhisper on
-Debian-derivative Linux distribution (including Ubuntu). The steps
-should be easy to adjust to work on other POSIX systems.
+Following steps demonstrate how to install and configure nginx with
+wwwhisper authentication on Debian-derivative distributions (including
+Ubuntu). The steps should be easy to adjust to work on other POSIX
+systems. [Unprivileged
+installation](https://github.com/wrr/wwwhisper/blob/master/doc/unprivileged_install.md)
+is good for experiments, development or if you don't have
+administrative priviledged on the machine. [System-wide
+installation](https://github.com/wrr/wwwhisper/blob/master/doc/system_wide_install.md)
+is recommended for more serious deployments.
 
+If you are already using nginx or uwsgi, use these steps only as
+guidance and adjust them to fit your current configuration.
 
 Final remarks
 -----------------

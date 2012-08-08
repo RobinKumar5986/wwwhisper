@@ -2,7 +2,7 @@
 
     sudo apt-get install git python python-dev python-virtualenv libssl-dev libpcre3;
 
-### Get, compille and install nginx.
+### Get, compile and install nginx.
     # Download and unpack the latest stable nginx.
     NGINX_VERSION='nginx-1.2.3';
     mkdir -p ~/src; cd ~/src;
@@ -12,15 +12,13 @@
     # Get auth-request module.
     git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;
     # Configure nginx. If your site needs any additonal modules add them here.
-    # Also, it you want to install nginx in a different directory,
-    # modify --prefix and --sbin-path
     ./configure --add-module=./ngx_http_auth_request_module/ \
       --with-http_ssl_module --with-http_sub_module --user=www-data \
       --group=www-data --prefix=/usr/local/nginx/ --sbin-path=/usr/local/sbin
     # Compile and install nginx.
     make; sudo make install;
 
-### Install wwwhisper
+### Install wwwhisper.
     # Add a system user to run the wwwhisper service.
     sudo adduser --system --ingroup www-data wwwhisper;
     # Become the user.
@@ -36,9 +34,9 @@
     # specify your email as admin_email to be able to access the
     # admin web application. This step can be later repeated to enable
     # protection for multiple sites.
-    ./add_site_config.py --site_url  http[s]://domain_of_the_site[:port] --admin_email your@email;
+    ./add_site_config.py --site_url  http[s]://your.domain[:port] --admin_email your@email;
 
-### Configure nginx
+### Configure nginx.
 Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
 authorization.  See [a sample configuration
 file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
@@ -55,7 +53,7 @@ particular, pay attention to following directives:
     include /home/wwwhisper/nginx/protected_location.conf;
     include /home/wwwhisper/nginx/admin.conf;
 
-### Configure supervisor
+### Configure supervisord.
 
 Supervisord can be used to automatically start nginx and uwsgi managed
 wwwhisper process. Alternatively you can use a little harder to
@@ -79,4 +77,4 @@ Finally, restart the supervisor
 Point your browser to http[s]://your.site.address/admin, you should be
 presented with a login page. Sign in with your email and use the admin
 application to define which locations can be accessed by which
-visitor.
+visitors.
