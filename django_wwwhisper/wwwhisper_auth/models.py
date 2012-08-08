@@ -363,7 +363,9 @@ class LocationsCollection(Collection):
             raise CreationException(
                 "Path should not contain parameters (';' part).")
         try:
-            if path.encode('utf-8', 'strict') != path:
+            try:
+                path.encode('ascii')
+            except UnicodeDecodeError:
                 raise CreationException(
                     'Path should contain only ascii characters.')
         except UnicodeError:

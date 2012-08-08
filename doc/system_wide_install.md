@@ -1,6 +1,6 @@
 ### Install required packages.
 
-    sudo apt-get install git python python-dev python-virtualenv libssl-dev;
+    sudo apt-get install git python python-dev python-virtualenv libssl-dev libpcre3;
 
 ### Get, compille and install nginx.
     # Download and unpack the latest stable nginx.

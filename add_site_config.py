@@ -238,7 +238,6 @@ def main():
     # But settings directory name should always include the port.
     site_dir_name = '.'.join([scheme, hostname, port])
 
-    # TODO: dir->path
     site_config_path = os.path.join(root_path, SITES_DIR, site_dir_name)
     django_config_path = os.path.join(site_config_path, DJANGO_CONFIG_DIR)
     db_path = os.path.join(site_config_path, DB_DIR)

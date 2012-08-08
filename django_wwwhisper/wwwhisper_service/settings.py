@@ -3,7 +3,11 @@
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
-from site_settings import *
+try:
+    from site_settings import *
+except ImportError:
+    from test_site_settings import *
+
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -35,6 +39,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware'
 )
 
 # Don't use just sessionid, to avoid collision with apps protected by wwwhisper.
