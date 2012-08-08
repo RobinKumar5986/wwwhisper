@@ -80,8 +80,7 @@ Installation
 
 Following steps demonstrate how to setup nginx with wwwhisper on
 Debian-derivative Linux distribution (including Ubuntu). The steps
-should be easy to adjust to work on other POSIX systems, if you do so,
-please share your experience.
+should be easy to adjust to work on other POSIX systems.
 
 ### Install required packages.
 
@@ -98,7 +97,7 @@ please share your experience.
     git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;
     # Configure nginx. If your site needs any additonal modules add them here.
     # Also, it you want to install nginx in a different directory,
-    # modify --prefix and remove --sbin-path
+    # modify --prefix and --sbin-path
     ./configure --add-module=./ngx_http_auth_request_module/ \
       --with-http_ssl_module --with-http_sub_module --user=www-data \
       --group=www-data --prefix=/usr/local/nginx/ --sbin-path=/usr/local/sbin
@@ -119,8 +118,8 @@ please share your experience.
     pip install -r ./requirements.txt;
     # Generate configurations files for a site to protect. You need to
     # specify your email as admin_email, to be able to access the
-    # admin web application. This step can be repeated to enable protection
-    # for multiple sites.
+    # admin web application. This step can be later repeated to enable
+    # protection for multiple sites.
     ./add_site_config.py --site_url  http[s]://domain_of_the_site[:port] --admin_email your@email;
 
 ### Configure nginx
