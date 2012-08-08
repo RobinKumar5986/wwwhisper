@@ -20,6 +20,11 @@ body {
   cursor: pointer;
 }
 
+.path {
+  /* Show all white spaces in paths */
+  white-space: pre-wrap;
+}
+
 .spaced-left {
   margin-left: 10px;
 }
