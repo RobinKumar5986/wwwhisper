@@ -363,13 +363,10 @@ class LocationsCollection(Collection):
             raise CreationException(
                 "Path should not contain parameters (';' part).")
         try:
-            try:
-                path.encode('ascii')
-            except UnicodeDecodeError:
-                raise CreationException(
-                    'Path should contain only ascii characters.')
+            path.encode('ascii')
         except UnicodeError:
-            raise CreationException('Invalid path encoding')
+            raise CreationException(
+                'Path should contain only ascii characters.')
 
         if _find(Location, path=path) is not None:
             raise CreationException('Location already exists.')
