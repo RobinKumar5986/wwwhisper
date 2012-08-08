@@ -29,8 +29,6 @@
                     // Other error.
                     $('body').html(errorMessage);
                   }
-                  // Make sure BrowserId does not retry login.
-                  navigator.id.logout();
                 });
     }
   }
@@ -62,13 +60,8 @@
     $('#login').removeClass('hidden');
     $('#nothing-shared').addClass('hidden');
     // Register a callback to process a BrowserID assertion.
-    navigator.id.watch({
-      loggedInEmail: null,
-      onlogin: login,
-      onlogout: function() {}
-    });
     $('#login').click(function() {
-      navigator.id.request();
+      navigator.id.get(login);
       return false;
     });
   });

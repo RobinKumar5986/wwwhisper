@@ -39,18 +39,10 @@
     }
     $('#email').text(emailToDisplay);
     $('#wwwhisper-overlay').removeClass('hidden');
-    navigator.id.watch({
-      loggedInEmail: result.email,
-      onlogin: function() {},
-      onlogout: function() {
-        stub.ajax('POST', '/auth/api/logout/', {}, function() {
-          window.top.location = '/auth/goodbye.html';
-        });
-      }
-    });
-
     $('#logout').click(function() {
-      navigator.id.logout();
+      stub.ajax('POST', '/auth/api/logout/', {}, function() {
+        window.top.location.reload(true);
+      });
     });
   }
 
