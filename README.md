@@ -83,64 +83,72 @@ Debian-derivative Linux distribution (including Ubuntu). The steps
 should be easy to adjust to work on other POSIX systems, if you do so,
 please share your experience.
 
-### System wide installation.
+### Install required packages.
 
-    # Install required packages.
-    sudo apt-get install git python-virtualenv libssl-dev supervisor;\
+    sudo apt-get install git python-virtualenv libssl-dev;
+
+### Get, compille and install nginx.
     # Download and unpack the latest stable nginx.
-    NGINX_VERSION='nginx-1.2.2';\
-    mkdir ~/src; cd ~/src;\
-    wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;\
-    tar xvfz ${NGINX_VERSION}.tar.gz;\
-    cd ${NGINX_VERSION};\
-    # Download auth-request module.
-    git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;\
+    NGINX_VERSION='nginx-1.2.3';
+    mkdir ~/src; cd ~/src;
+    wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;
+    tar xvfz ${NGINX_VERSION}.tar.gz;
+    cd ${NGINX_VERSION};
+    # Get auth-request module.
+    git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;
     # Configure nginx. If your site needs any additonal modules add them here.
+    # Also, it you want to install nginx in a different directory,
+    # modify --prefix and remove --sbin-path
     ./configure --add-module=./ngx_http_auth_request_module/ \
       --with-http_ssl_module --with-http_sub_module --user=www-data \
-      --group=www-data --prefix=/usr/local/nginx/ --sbin-path=/usr/local/sbin \
+      --group=www-data --prefix=/usr/local/nginx/ --sbin-path=/usr/local/sbin
     # Compile and install nginx.
-    make; sudo make install;\
+    make; sudo make install;
+
+### Install wwwhisper
     # Add a system user to run the wwwhisper service.
-    sudo adduser --system --ingroup www-data wwwhisper;\
+    sudo adduser --system --ingroup www-data wwwhisper;
     # Become the user.
-    cd ~wwwhisper; sudo su --shell /bin/bash wwwhisper;\
+    cd ~wwwhisper; sudo su --shell /bin/bash wwwhisper;
     # Clone wwwhisper project to the wwwhisper home dir.
-    git clone https://github.com/wrr/wwwhisper.git .;\
+    git clone https://github.com/wrr/wwwhisper.git .;
     # Create and activate virtual environment.
-    virtualenv virtualenv; source virtualenv/bin/activate;\
+    virtualenv virtualenv;
+    source virtualenv/bin/activate;
     # Install packages required in the virtual environment.
-    pip install -r ./requirements.txt;\
+    pip install -r ./requirements.txt;
     # Generate configurations files for a site to protect. You need to
     # specify your email as admin_email, to be able to access the
     # admin web application. This step can be repeated to enable protection
     # for multiple sites.
     ./add_site_config.py --site_url  http[s]://domain_of_the_site[:port] --admin_email your@email;
 
-
+### Configure nginx
 Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
 authorization.  See [a sample configuration
 file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
 that explains all wwwhisper configuration related directives. In
-particular, pay attention to the root section directives:
+particular, pay attention to following directives:
 
     user www-data www-data;
     daemon off;
-
-server section directives:
 
     set $wwwhisper_root /home/wwwhisper/;
     set $wwwhisper_site_socket unix:$wwwhisper_root/sites/$scheme.$server_name.$server_port/uwsgi.sock;
     include /home/wwwhisper/nginx/auth.conf;
 
-and location section directives:
-
     include /home/wwwhisper/nginx/protected_location.conf;
     include /home/wwwhisper/nginx/admin.conf;
 
+### Configure supervisor
 
-Configure supervisord to automatically start nginx and uwsgi managed
-wwwhisper process. Edit /etc/supervisor/supervisord.conf and extend existing include directive to include `/home/wwwhisper/sites/*/supervisor/site.conf` and `/home/wwwhisper/nginx/supervisor.conf`. The directive should now look something like:
+Supervisord can be used to automatically start nginx and uwsgi managed
+wwwhisper process. Alternatively you can use a little harder to
+configure [init.d scripts](http://wiki.nginx.org/Nginx-init-ubuntu).
+
+     sudo apt-get install supervisor;
+
+ Edit /etc/supervisor/supervisord.conf and extend existing include directive to include `/home/wwwhisper/sites/*/supervisor/site.conf` and `/home/wwwhisper/nginx/supervisor.conf`. The directive should now look something like:
 
     [include]
     files = /etc/supervisor/conf.d/*.conf /home/wwwhisper/sites/*/supervisor/site.conf /home/wwwhisper/nginx/supervisor.conf
@@ -149,8 +157,8 @@ Note that supervisord does not allow multiple include directives, you need to ex
 
 Finally, restart the supervisor
 
-    sudo /etc/init.d/supervisor stop;\
-    sleep 20;\
+    sudo /etc/init.d/supervisor stop; \
+    sleep 20; \
     sudo /etc/init.d/supervisor start;
 
 Point your browser to http[s]://your.site.address/admin, you should be
