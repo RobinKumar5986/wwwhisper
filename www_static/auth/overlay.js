@@ -31,16 +31,16 @@
    * activates the 'sign-out' button.
    */
   function authenticated(result) {
-    var email = result.email;
-    if (email.length > MAX_EMAIL_LENGTH) {
+    var emailToDisplay = result.email;
+    if (emailToDisplay.length > MAX_EMAIL_LENGTH) {
       // Trim very long emails so 'sign out' button fits in
       // the iframe.
-      email = email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
+      emailToDisplay = result.email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
     }
-    $('#email').text(email);
+    $('#email').text(emailToDisplay);
     $('#wwwhisper-overlay').removeClass('hidden');
     navigator.id.watch({
-      loggedInEmail: email,
+      loggedInEmail: result.email,
       onlogin: function() {},
       onlogout: function() {
         stub.ajax('POST', '/auth/api/logout/', {}, function() {

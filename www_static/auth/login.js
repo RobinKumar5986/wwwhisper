@@ -29,6 +29,8 @@
                     // Other error.
                     $('body').html(errorMessage);
                   }
+                  // Make sure BrowserId does not retry login.
+                  navigator.id.logout();
                 });
     }
   }
