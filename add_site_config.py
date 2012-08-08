@@ -193,8 +193,10 @@ def parse_url(url):
         err_quit(err_prefix + 'URL should not include username (foo@).')
 
     hostname = parsed_url.hostname.lower()
-    port = str(parsed_url.port)
-    if port is None:
+    port = None
+    if parsed_url.port is not None:
+        port = str(parsed_url.port)
+    else:
         port = default_port(scheme)
 
     return (scheme, hostname, port)
