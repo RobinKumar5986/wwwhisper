@@ -39,13 +39,13 @@ to the site:
 
 ![Access granted](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/access_granted.png)
 
-Usually web authentication systems are built into web
+Usually authentication systems are built into web
 applications. With wwwhisper this is not required. The photo album
 above consist of static HTML and JavaScript files with no dynamic code
 executed at the server side and with no awareness of wwwhisper.
 
 Nginx inserts a small overlay in the lower-right corner of each
-protected html document. The overlay contains an email of the current
+protected HTML document. The overlay contains an email of the current
 user and a 'Sign out' button.
 
 If the user visits a location that she is not allowed to access, an
@@ -104,7 +104,7 @@ successfully logged in. If no resources are shared, a 403 error is
 returned to the user and a session cookie is not set.
 
 nginx sub_filter module is used to insert a small iframe at the bottom
-of every protected html document. The iframe contains the user's email
+of every protected HTML document. The iframe contains the user's email
 address and a 'sign out' button.
 
 Setup
@@ -127,7 +127,7 @@ Final remarks
 -----------------
 
 1. Make sure content you are protecting can not be accessed through
-some other channels. If you are using a multi-user server, set
+other channels. If you are using a multi-user server, set
 correct file permissions for protected static files and
 communication sockets. If nginx is delegating requests to back-end
 servers, make sure the back-ends are not externally accessible.

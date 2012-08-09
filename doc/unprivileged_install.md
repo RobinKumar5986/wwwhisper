@@ -1,4 +1,4 @@
-### Install required packages.
+### Make sure required packages are installed.
 
     sudo apt-get install git python python-dev python-virtualenv libssl-dev libpcre3;
 
@@ -17,7 +17,7 @@
     # Compile and install nginx.
     make; make install;
 
-### Install wwwhispers.
+### Install wwwhisper.
     # Choose where to put wwwhisper files.
     cd ~/local;
     git clone https://github.com/wrr/wwwhisper.git; cd wwwhisper;

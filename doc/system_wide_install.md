@@ -1,4 +1,4 @@
-### Install required packages.
+### Make sure required packages are installed.
 
     sudo apt-get install git python python-dev python-virtualenv libssl-dev libpcre3;
 
