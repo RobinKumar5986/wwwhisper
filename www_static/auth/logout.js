@@ -17,14 +17,14 @@
               $('#authenticated').removeClass('hidden');
               $('#logout').click(function() {
                 stub.ajax('POST', '/auth/api/logout/', {}, function() {
-                  $('#authenticated').addClass('hidden');
-                  $('#logged-out').removeClass('hidden');
+                  window.top.location = '/auth/goodbye.html';
                 });
                 return false;
               });
             },
             function(errorMessage, errorStatus) {
               if (errorStatus === 401) {
+                $('#authenticated').addClass('hidden');
                 $('#not-authenticated').removeClass('hidden');
               } else {
                 // Other error.
