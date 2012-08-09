@@ -11,7 +11,7 @@
     cd ${NGINX_VERSION};
     # Get auth-request module.
     git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;
-    # Configure nginx. If your site needs any additonal modules add them here.
+    # Configure nginx. If your site needs any additional modules add them here.
     ./configure --add-module=./ngx_http_auth_request_module/ \
       --with-http_ssl_module --with-http_sub_module --user=www-data \
       --group=www-data --prefix=/usr/local/nginx/ --sbin-path=/usr/local/sbin
@@ -38,19 +38,24 @@
 
 ### Configure nginx.
 Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
-authorization.  See [a sample configuration
-file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
-that explains all wwwhisper related configuration directives. In
-particular, pay attention to following directives:
-
-    user www-data www-data;
+authorization. In the server section put:
 
     set $wwwhisper_root /home/wwwhisper/;
     set $wwwhisper_site_socket unix:$wwwhisper_root/sites/$scheme.$server_name.$server_port/uwsgi.sock;
     include /home/wwwhisper/nginx/auth.conf;
 
+In each location section that requires protection and that is not nested in already protected location put:
+
     include /home/wwwhisper/nginx/protected_location.conf;
+
+To enable the admin application, in the root location section put:
+
     include /home/wwwhisper/nginx/admin.conf;
+
+See [a sample configuration
+file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
+for a detailed explanation of all wwwhisper related configuration
+directives.
 
 ### Configure supervisord.
 

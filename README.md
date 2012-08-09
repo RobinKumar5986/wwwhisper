@@ -1,5 +1,3 @@
-[wwwhisper will be released mid-August 2012]
-
 wwwhisper simplifies sharing of Web resources that are not intended
 for everyone. It is a generic access control layer for nginx HTTP
 server that allows to specify which resources can be accessed by
@@ -30,7 +28,7 @@ login prompt:
 ![Login prompt](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/login_required.png)
 
 'Sign in' button opens Mozilla Persona authentication dialog. Persona
-alows the user to smoothly and securely verify that she owns a
+allows the user to smoothly and securely verify that she owns a
 given email address:
 
 ![Login prompt](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/persona_dialog.png)
@@ -43,8 +41,8 @@ to the site:
 
 Usually web authentication systems are built into web
 applications. With wwwhisper this is not required. The photo album
-above consist of static html and javascript files with no dynamic code
-executed at the server side and with no awerness of wwwhisper.
+above consist of static HTML and JavaScript files with no dynamic code
+executed at the server side and with no awareness of wwwhisper.
 
 Nginx inserts a small overlay in the lower-right corner of each
 protected html document. The overlay contains an email of the current
@@ -56,38 +54,29 @@ error is displayed:
 
 Finally, the admin application allows to easily grant and revoke
 access and to check who can access what. It also helps to compose
-invitations emails to allowed users:
+invitation emails to allowed users:
 
 ![Admin](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/admin.png)
 
-All the site admins need to do, is to specify emails of allowed
-users. There is no need to create, distribute and manage
-passwords. Also, unlike in cases of URL encoded credentials, URLs of
-protected sites to not need to be kept private. If someone discovers
-such URL, he won't be able to access the resource without
-authenticating with an allowed email.
+The admin users need to only specify emails of people allowed to
+access a given location.  There is no need to create, distribute and
+manage passwords. Also, unlike in case of URL encoded credentials,
+URLs of protected resources to not need to be kept private. If someone
+discovers such URL, he won't be able to access the resource without
+proving ownership of an allowed email.
 
 Technical details
 -----------------
 
-wwwhisper is a service implemented in Django that runs along nginx
-and that enables following actions:
-
-1. Authentication and authorization: login a user, get an email of
-the currently logged in user, logout the user, check if
-the user is authorized to access a given location.
-
-2. Admin operations: add/remove a user with a given email, grant a
-user access to a given path, revoke access, allow not-authenticated
-access to a given path.
-
-wwwhisper utilizes auth-request nginx module created by Maxim Dounin.
-The module allows to specify which locations require authorization.
-Each time a request is made to a protected location, the auth-request
-module sends a sub-request to the wwwhisper process to determine if
-the original request should be allowed. The sub-request carries a path
-and all headers of the original request (including cookies).
-wwwhisper responds to the sub-request in one of three possible ways:
+wwwhisper is a service implemented in Django that runs along
+nginx. The service utilizes nginx auth-request module created by Maxim
+Dounin. The module allows to specify which locations require
+authorization. Each time a request is made to a protected location,
+the auth-request module sends a sub-request to the wwwhisper process
+to determine if the original request should be allowed. The
+sub-request carries a path and all headers of the original request
+(including cookies).  wwwhisper responds to the sub-request in one of
+three possible ways:
 
 1. If a user is not authenticated (authentication cookie not set or
    invalid), HTTP status code 401 is returned. HTTP server intercepts
@@ -118,7 +107,6 @@ nginx sub_filter module is used to insert a small iframe at the bottom
 of every protected html document. The iframe contains the user's email
 address and a 'sign out' button.
 
-
 Setup
 -----
 
@@ -128,7 +116,7 @@ Ubuntu). The steps should be easy to adjust to work on other POSIX
 systems. [Unprivileged
 installation](https://github.com/wrr/wwwhisper/blob/master/doc/unprivileged_install.md)
 is good for experiments, development or if you don't have
-administrative priviledged on the machine. [System-wide
+administrative privileged on the machine. [System-wide
 installation](https://github.com/wrr/wwwhisper/blob/master/doc/system_wide_install.md)
 is recommended for more serious deployments.
 
@@ -139,10 +127,10 @@ Final remarks
 -----------------
 
 1. Make sure content you are protecting can not be accessed through
-some other channels. If you are using a multiuser server, set
+some other channels. If you are using a multi-user server, set
 correct file permissions for protected static files and
-communication sockets. If nginx is delegating requests to backend
-servers, make sure the backends are not externally accessible.
+communication sockets. If nginx is delegating requests to back-end
+servers, make sure the back-ends are not externally accessible.
 
 2. Use SSL for anything important. You can get a free [SSL certificate
    for personal use](https://cert.startcom.org/).
