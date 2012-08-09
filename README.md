@@ -61,8 +61,8 @@ invitation emails to allowed users:
 The admin users need to only specify emails of people allowed to
 access a given location.  There is no need to create, distribute and
 manage passwords. Also, unlike in case of URL encoded credentials,
-URLs of protected resources to not need to be kept private. If someone
-discovers such URL, he won't be able to access the resource without
+URLs of protected resources do not need to be kept private. A person
+that discovers such URL won't be able to access the resource without
 proving ownership of an allowed email.
 
 Technical details
@@ -120,7 +120,7 @@ administrative privileged on the machine. [System-wide
 installation](https://github.com/wrr/wwwhisper/blob/master/doc/system_wide_install.md)
 is recommended for more serious deployments.
 
-If you are already using nginx or uwsgi, you may use these steps only
+If you are already using nginx or uwsgi, you may use these steps
 as guidance and adjust them to fit your current configuration.
 
 Final remarks
