@@ -21,7 +21,44 @@ which visitors.
   wwwhisper, this allows to easily authenticate, add and remove admin
   users.
 
+Quick tour
+-----------
 
+Upon visiting a wwwhisper protected site, a user is presented with a
+login prompt:
+
+![Login prompt](wrr.github.com/www/mixedbit.org/wwwhisper_screens/login_required.png)
+
+'Sign in' button opens Mozilla Persona authentication dialog. Persona
+alows the user to smoothly and securely verify that she owns a
+given email address:
+
+![Login prompt](wrr.github.com/www/mixedbit.org/wwwhisper_screens/persona_dialog.png)
+
+After successful authentication, wwwhisper checks that the user is allowed to visit a given site. If this is the case, the user is taken to the site:
+
+![Login prompt](wrr.github.com/www/mixedbit.org/wwwhisper_screens/access_granted.png)
+
+Usually web authentication systems are built into web
+applications. With wwwhisper this is not required. The photo album
+above consist of static html and javascript files with no dynamic code
+executed at the server side and with no awerness of wwwhisper.
+
+Nginx inserts a small overlay in the lower-right corner of each protected html document. The overlay contains an email of the current user and a 'Sign out' button.
+
+If the user visits a location that she is not allowed to access, an error is displayed:
+![Login prompt](wrr.github.com/www/mixedbit.org/wwwhisper_screens/access_denied.png)
+
+Finally, the admin application allows to easily grant and revoke access and to check who can access what. It also helps to compose invitations emails to allowed users:
+
+![Login prompt](wrr.github.com/www/mixedbit.org/wwwhisper_screens/admin.png)
+
+All the site admins need to do, is to specify emails of allowed
+users. There is no need to create, distribute and manage
+passwords. Also, unlike in cases of URL encoded credentials, URLs of
+protected sites to not need to be kept private. If someone discovers
+such URL, he won't be able to access the resource without
+authenticating with an allowed email.
 
 Technical details
 -----------------
