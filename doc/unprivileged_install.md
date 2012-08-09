@@ -1,6 +1,6 @@
 ### Make sure required packages are installed.
 
-    sudo apt-get install git python python-dev python-virtualenv libssl-dev libpcre3;
+    sudo apt-get install git python python-dev python-virtualenv libssl-dev libpcre3-dev;
 
 ### Get, compile and install nginx.
      # Download and unpack the latest stable nginx.
@@ -61,7 +61,7 @@ directives.
     cd ~/local/wwwhisper; source virtualenv/bin/activate;
     ./run_wwwhisper_for_site.sh -d sites/http[s].your.domain.port
 
-Point your browser to http[s]://your.domain[:port]/admin, you should be
-presented with a login page. Sign in with your email and use the admin
-application to define which locations can be accessed by which
-visitors.
+Point your browser to http[s]://your.domain[:port]/admin, you should
+be presented with a login page. Sign in with the admin email and use
+the admin application to define which locations can be accessed by
+which visitors.
