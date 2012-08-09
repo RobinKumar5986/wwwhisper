@@ -7,7 +7,7 @@ which visitors.
   addresses, which enables sharing with almost every Internet user.
   [Persona](http://persona.org) is used to prove that a visitor owns
   an allowed email, no site-specific password is needed. Persona UI
-  makes authentication process really smooth.
+  makes the authentication process really smooth.
 
 * wwwhisper is application independent. It can be used for anything
   that nginx serves - dynamic content, static files, content generated
@@ -34,7 +34,7 @@ given email address:
 ![Login prompt](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/persona_dialog.png)
 
 After successful authentication, wwwhisper checks that the user is
-allowed to visit a given site. If this is the case, the user is taken
+allowed to visit the URL. If this is the case, the user is taken
 to the site:
 
 ![Access granted](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/access_granted.png)
@@ -59,11 +59,11 @@ invitation emails to allowed users:
 ![Admin](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/admin.png)
 
 The admin users need to only specify emails of people allowed to
-access a given location.  There is no need to create, distribute and
+access a given location. There is no need to create, distribute and
 manage passwords. Also, unlike in case of URL encoded credentials,
 URLs of protected resources do not need to be kept private. A person
-that discovers such URL won't be able to access the resource without
-proving ownership of an allowed email.
+that discovers a protected URL won't be able to access the resource
+without proving ownership of an allowed email.
 
 Technical details
 -----------------
