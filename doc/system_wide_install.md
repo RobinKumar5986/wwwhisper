@@ -3,37 +3,37 @@
     sudo apt-get install git python python-dev python-virtualenv libssl-dev libpcre3;
 
 ### Get, compile and install nginx.
-    # Download and unpack the latest stable nginx.
+     # Download and unpack the latest stable nginx.
     NGINX_VERSION='nginx-1.2.3';
     mkdir -p ~/src; cd ~/src;
     wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;
     tar xvfz ${NGINX_VERSION}.tar.gz;
     cd ${NGINX_VERSION};
-    # Get auth-request module.
+     # Get auth-request module.
     git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;
-    # Configure nginx. If your site needs any additional modules add them here.
+     # Configure nginx. If your site needs any additional modules add them here.
     ./configure --add-module=./ngx_http_auth_request_module/ \
       --with-http_ssl_module --with-http_sub_module --user=www-data \
       --group=www-data --prefix=/usr/local/nginx/ --sbin-path=/usr/local/sbin
-    # Compile and install nginx.
+     # Compile and install nginx.
     make; sudo make install;
 
 ### Install wwwhisper.
-    # Add a system user to run the wwwhisper service.
+     # Add a system user to run the wwwhisper service.
     sudo adduser --system --ingroup www-data wwwhisper;
-    # Become the user.
+     # Become the user.
     cd ~wwwhisper; sudo su --shell /bin/bash wwwhisper;
-    # Clone wwwhisper project to the wwwhisper home dir.
+     # Clone wwwhisper project to the wwwhisper home dir.
     git clone https://github.com/wrr/wwwhisper.git .;
-    # Create and activate virtual environment.
+     # Create and activate virtual environment.
     virtualenv virtualenv;
     source virtualenv/bin/activate;
-    # Install required packages in the virtual environment.
+     # Install required packages in the virtual environment.
     pip install -r ./requirements.txt;
-    # Generate configurations files for a site to protect. You need to
-    # specify your email as admin_email to be able to access the
-    # admin web application. This step can be later repeated to enable
-    # protection for multiple sites.
+     # Generate configurations files for a site to protect. You need to
+     # specify your email as admin_email to be able to access the
+     # admin web application. This step can be later repeated to enable
+     # protection for multiple sites.
     ./add_site_config.py --site-url  http[s]://your.domain[:port] --admin-email your@email;
 
 ### Configure nginx.

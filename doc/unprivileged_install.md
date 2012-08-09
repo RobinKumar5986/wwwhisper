@@ -3,33 +3,33 @@
     sudo apt-get install git python python-dev python-virtualenv libssl-dev libpcre3;
 
 ### Get, compile and install nginx.
-    # Download and unpack the latest stable nginx.
+     # Download and unpack the latest stable nginx.
     mkdir -p ~/src; cd ~/src;
     NGINX_VERSION='nginx-1.2.3';
     wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;
     tar xvfz ${NGINX_VERSION}.tar.gz;
     cd ${NGINX_VERSION};
-    # Get auth-request module.
+     # Get auth-request module.
     git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;
-    # Configure nginx. If your site needs any additional modules add them here.
+     # Configure nginx. If your site needs any additional modules add them here.
     ./configure --add-module=./ngx_http_auth_request_module/ \
       --with-http_ssl_module --with-http_sub_module --prefix=$HOME/local/nginx/
-    # Compile and install nginx.
+     # Compile and install nginx.
     make; make install;
 
 ### Install wwwhisper.
-    # Choose where to put wwwhisper files.
+     # Choose where to put wwwhisper files.
     cd ~/local;
     git clone https://github.com/wrr/wwwhisper.git; cd wwwhisper;
-    # Create and activate virtual environment.
+     # Create and activate virtual environment.
     virtualenv virtualenv;
     source virtualenv/bin/activate;
-    # Install required packages in the virtual environment.
+     # Install required packages in the virtual environment.
     pip install -r ./requirements.txt;
-    # Generate configurations files for a site to protect. You need to
-    # specify your email as admin_email to be able to access the
-    # admin web application. This step can be later repeated to enable
-    # protection for multiple sites.
+     # Generate configurations files for a site to protect. You need to
+     # specify your email as admin_email to be able to access the
+     # admin web application. This step can be later repeated to enable
+     # protection for multiple sites.
     ./add_site_config.py --site-url  http[s]://your.domain[:port] --admin-email your@email;
 
 ### Configure nginx.
