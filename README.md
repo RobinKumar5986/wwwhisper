@@ -88,8 +88,8 @@ administrative priviledged on the machine. [System-wide
 installation](https://github.com/wrr/wwwhisper/blob/master/doc/system_wide_install.md)
 is recommended for more serious deployments.
 
-If you are already using nginx or uwsgi, use these steps only as
-guidance and adjust them to fit your current configuration.
+If you are already using nginx or uwsgi, you may use these steps only
+as guidance and adjust them to fit your current configuration.
 
 Final remarks
 -----------------

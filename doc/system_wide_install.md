@@ -40,7 +40,7 @@
 Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
 authorization.  See [a sample configuration
 file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
-that explains all wwwhisper configuration related directives. In
+that explains all wwwhisper related configuration directives. In
 particular, pay attention to following directives:
 
     user www-data www-data;
@@ -64,7 +64,8 @@ configure [init.d scripts](http://wiki.nginx.org/Nginx-init-ubuntu).
  Edit /etc/supervisor/supervisord.conf and extend existing include directive to include `/home/wwwhisper/sites/*/supervisor/site.conf` and `/home/wwwhisper/nginx/supervisor.conf`. The directive should now look something like:
 
     [include]
-    files = /etc/supervisor/conf.d/*.conf /home/wwwhisper/sites/*/supervisor/site.conf /home/wwwhisper/nginx/supervisor.conf
+    files = /etc/supervisor/conf.d/*.conf /home/wwwhisper/sites/*/supervisor/site.conf \
+            /home/wwwhisper/nginx/supervisor.conf
 
 Note that supervisord does not allow multiple include directives, you need to extend the existing one.
 

@@ -45,8 +45,14 @@ In each location section that requires protection and that is not nested in alre
 
     include /home/wwwhisper/nginx/protected_location.conf;
 
-To enable admin application, in the root location put:
+To enable the admin application, in the root location put:
+
     include /home/wwwhisper/nginx/admin.conf;
+
+See [a sample configuration
+file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
+for a more detailed explaination of all wwwhisper related configuration
+directives.
 
 ### Start nginx and wwwhisper.
     ~/local/bin/nginx;
