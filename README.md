@@ -33,13 +33,13 @@ login prompt:
 alows the user to smoothly and securely verify that she owns a
 given email address:
 
-![Login prompt](wrr.github.com/www/mixedbit.org/wwwhisper_screens/persona_dialog.png)
+![Login prompt](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/persona_dialog.png)
 
 After successful authentication, wwwhisper checks that the user is
 allowed to visit a given site. If this is the case, the user is taken
 to the site:
 
-![Access granted](wrr.github.com/www/mixedbit.org/wwwhisper_screens/access_granted.png)
+![Access granted](https://raw.github.com/wrr/www/master/wwwhisper_screens/access_granted.png)
 
 Usually web authentication systems are built into web
 applications. With wwwhisper this is not required. The photo album
@@ -52,13 +52,13 @@ user and a 'Sign out' button.
 
 If the user visits a location that she is not allowed to access, an
 error is displayed:
-![Access denied](wrr.github.com/www/mixedbit.org/wwwhisper_screens/access_denied.png)
+![Access denied](https://raw.github.com/wrr/www/master/wwwhisper_screens/access_denied.png)
 
 Finally, the admin application allows to easily grant and revoke
 access and to check who can access what. It also helps to compose
 invitations emails to allowed users:
 
-![Admin](wrr.github.com/www/mixedbit.org/wwwhisper_screens/admin.png)
+![Admin](https://raw.github.com/wrr/www/master/wwwhisper_screens/admin.png)
 
 All the site admins need to do, is to specify emails of allowed
 users. There is no need to create, distribute and manage
