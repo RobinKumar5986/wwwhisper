@@ -28,7 +28,7 @@ login prompt:
 ![Login prompt](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/login_required.png)
 
 'Sign in' button opens Mozilla Persona authentication dialog. Persona
-allows the user to smoothly and securely verify that she owns a
+allows the user to smoothly and securely prove that she owns a
 given email address:
 
 ![Login prompt](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/persona_dialog.png)
@@ -39,10 +39,10 @@ to the site:
 
 ![Access granted](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/access_granted.png)
 
-Usually authentication systems are built into web
-applications. With wwwhisper this is not required. The photo album
-above consist of static HTML and JavaScript files with no dynamic code
-executed at the server side and with no awareness of wwwhisper.
+Usually authentication systems are built into web applications. With
+wwwhisper this is not required. The photo album above consist of
+static HTML and JavaScript files with no dynamic code executed at the
+server side and with no awareness of wwwhisper.
 
 Nginx inserts a small overlay in the lower-right corner of each
 protected HTML document. The overlay contains an email of the current
