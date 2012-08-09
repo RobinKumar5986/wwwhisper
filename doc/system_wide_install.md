@@ -34,7 +34,7 @@
     # specify your email as admin_email to be able to access the
     # admin web application. This step can be later repeated to enable
     # protection for multiple sites.
-    ./add_site_config.py --site_url  http[s]://your.domain[:port] --admin_email your@email;
+    ./add_site_config.py --site-url  http[s]://your.domain[:port] --admin-email your@email;
 
 ### Configure nginx.
 Edit /usr/local/nginx/conf/nginx.conf and enable wwwhisper
@@ -44,7 +44,6 @@ that explains all wwwhisper related configuration directives. In
 particular, pay attention to following directives:
 
     user www-data www-data;
-    daemon off;
 
     set $wwwhisper_root /home/wwwhisper/;
     set $wwwhisper_site_socket unix:$wwwhisper_root/sites/$scheme.$server_name.$server_port/uwsgi.sock;

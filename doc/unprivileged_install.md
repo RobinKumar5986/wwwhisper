@@ -13,7 +13,7 @@
     git clone https://github.com/PiotrSikora/ngx_http_auth_request_module.git;
     # Configure nginx. If your site needs any additonal modules add them here.
     ./configure --add-module=./ngx_http_auth_request_module/ \
-      --with-http_ssl_module --with-http_sub_module --prefix=~/local/nginx/
+      --with-http_ssl_module --with-http_sub_module --prefix=$HOME/local/nginx/
     # Compile and install nginx.
     make; make install;
 
@@ -29,7 +29,7 @@
     # specify your email as admin_email to be able to access the
     # admin web application. This step can be later repeated to enable
     # protection for multiple sites.
-    ./add_site_config.py --site_url  http[s]://your.domain[:port] --admin_email your@email;
+    ./add_site_config.py --site-url  http[s]://your.domain[:port] --admin-email your@email;
 
 ### Configure nginx.
 

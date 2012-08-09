@@ -55,10 +55,10 @@ Generates site-specific configuration files and initializes wwwhisper database.
 Usage:
 
   %(prog)s
-      -s, --site_url A URL of a site to protect in a form
+      -s, --site-url A URL of a site to protect in a form
             scheme://domain(:port). Scheme can be https (recomended) or http.
             Port defaults to 443 for https and 80 for http.
-      -a, --admin_email An email of a user that will be allowed to access
+      -a, --admin-email An email of a user that will be allowed to access
             wwwhisper admin interface after wwwhisper is configured.
             More admin users can be added via the admin interface.
 """ % {'prog': sys.argv[0]}
@@ -209,7 +209,7 @@ def main():
     try:
         optlist, _ = getopt.gnu_getopt(sys.argv[1:],
                                        's:a:h',
-                                       ['site_url=', 'admin_email=', 'help'])
+                                       ['site-url=', 'admin-email=', 'help'])
     except getopt.GetoptError, ex:
         print 'Arguments parsing error: ', ex,
         usage()
@@ -217,18 +217,18 @@ def main():
     for opt, arg in optlist:
         if opt in ('-h', '--help'):
             usage()
-        elif opt in ('-s', '--site_url'):
+        elif opt in ('-s', '--site-url'):
             site_url = arg
-        elif opt in ('-a', '--admin_email'):
+        elif opt in ('-a', '--admin-email'):
             admin_email = arg
         else:
             assert False, 'unhandled option'
 
 
     if site_url is None:
-        err_quit('--site_url is missing.')
+        err_quit('--site-url is missing.')
     if admin_email is None:
-        err_quit('--admin_email is missing.')
+        err_quit('--admin-email is missing.')
 
     (scheme, hostname, port) = parse_url(site_url)
     site_url = scheme + '://' + hostname
