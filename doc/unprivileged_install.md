@@ -19,7 +19,8 @@
 
 ### Install wwwhispers.
     # Choose where to put wwwhisper files.
-    cd ~/local; git clone https://github.com/wrr/wwwhisper.git; cd wwwhisper;
+    cd ~/local;
+    git clone https://github.com/wrr/wwwhisper.git; cd wwwhisper;
     # Create and activate virtual environment.
     virtualenv virtualenv;
     source virtualenv/bin/activate;
@@ -34,8 +35,8 @@
 ### Configure nginx.
 
 Edit ~/local/nginx/conf/nginx.conf and enable wwwhisper
-authorization. In the server section put (but replace
-/home/alice/local/wwwhisper with a proper path):
+authorization. In the server section put (/home/alice/local/wwwhisper
+must be replaced everywhere with a path where wwwhisper is installed):
 
     set $wwwhisper_root /home/alice/local/wwwhisper;
     set $wwwhisper_site_socket unix:$wwwhisper_root/sites/$scheme.$server_name.$server_port/uwsgi.sock;
@@ -43,11 +44,11 @@ authorization. In the server section put (but replace
 
 In each location section that requires protection and that is not nested in already protected location put:
 
-    include /home/wwwhisper/nginx/protected_location.conf;
+    include /home/alice/local/wwwhisper/nginx/protected_location.conf;
 
 To enable the admin application, in the root location put:
 
-    include /home/wwwhisper/nginx/admin.conf;
+    include /home/alice/local/wwwhisper/nginx/admin.conf;
 
 See [a sample configuration
 file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
@@ -56,8 +57,8 @@ directives.
 
 ### Start nginx and wwwhisper.
     ~/local/bin/nginx;
-    cd ~/local/wwwhisper; source virtualen/bin/activate;
-    ./run_wwwhisper_for_site -d sites/http[s].your.domain.port
+    cd ~/local/wwwhisper; source virtualenv/bin/activate;
+    ./run_wwwhisper_for_site.sh -d sites/http[s].your.domain.port
 
 Point your browser to http[s]://your.domain[:port]/admin, you should be
 presented with a login page. Sign in with your email and use the admin
