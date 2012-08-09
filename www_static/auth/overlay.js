@@ -38,7 +38,7 @@
       emailToDisplay = result.email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
     }
     $('#email').text(emailToDisplay);
-    $('#wwwhisper-overlay').removeClass('hidden');
+    $('#wwwhisper-overlay').removeClass('hide');
     $('#logout').click(function() {
       stub.ajax('POST', '/auth/api/logout/', {}, function() {
         window.top.location = '/auth/goodbye.html';

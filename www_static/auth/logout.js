@@ -14,7 +14,7 @@
             function(result) {
               // Logged in.
               $('#email').text(result.email);
-              $('#authenticated').removeClass('hidden');
+              $('#authenticated').removeClass('hide');
               $('#logout').click(function() {
                 stub.ajax('POST', '/auth/api/logout/', {}, function() {
                   window.top.location = '/auth/goodbye.html';
@@ -24,8 +24,8 @@
             },
             function(errorMessage, errorStatus) {
               if (errorStatus === 401) {
-                $('#authenticated').addClass('hidden');
-                $('#not-authenticated').removeClass('hidden');
+                $('#authenticated').addClass('hide');
+                $('#not-authenticated').removeClass('hide');
               } else {
                 // Other error.
                 $('body').html(errorMessage);
