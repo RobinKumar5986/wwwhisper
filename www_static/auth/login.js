@@ -56,8 +56,6 @@
   }
 
   executeIfLoggedOut(function() {
-    $('#login-required').removeClass('hide');
-    $('#login').removeClass('hide');
     $('#nothing-shared').addClass('hide');
     // Register a callback to process a BrowserID assertion.
     $('#login').click(function() {

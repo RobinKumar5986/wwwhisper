@@ -13,7 +13,7 @@
 
   <body>
    <div class="container">
-     <header class="jumbotron subhead hide" id="login-required">
+     <header class="jumbotron subhead" id="login-required">
        <h1>Protected site</h1>
        <p class="lead">Access to this site is restricted. Please sign in
          with your email:</p>
@@ -26,7 +26,19 @@
          the site owner to grant you access, or try a different email:
        </p>
      </header>
-     <a href="#" id="login" title="Sign in with BrowserID" class="hide">
+     <noscript>
+         <div id="error-box">
+           <div class="alert alert-error">
+             <div class="alert-message">
+               To sign in JavaScript needs to be enabled. See
+               <a href="http://activatejavascript.org/en/instructions">
+                 instructions </a> to enable JavaScript in your browser.
+             </div>
+           </div>  <!-- /.alert -->
+         </div>  <!-- /.error-box -->
+       </noscript>
+
+     <a href="#" id="login" title="Sign in with BrowserID">
        <img src="/auth/assets/img/sign_in_green.png" alt="Sign in">
      </a>
    </div>
