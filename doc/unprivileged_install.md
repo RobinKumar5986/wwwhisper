@@ -5,7 +5,7 @@
 ### Get, compile and install nginx.
      # Download and unpack the latest stable nginx.
     mkdir -p ~/src; cd ~/src;
-    NGINX_VERSION='nginx-1.2.3';
+    NGINX_VERSION='nginx-1.2.4';
     wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;
     tar xvfz ${NGINX_VERSION}.tar.gz;
     cd ${NGINX_VERSION};
@@ -15,7 +15,7 @@
     ./configure --add-module=./ngx_http_auth_request_module/ \
       --with-http_ssl_module --with-http_sub_module --prefix=$HOME/local/nginx/
      # Compile and install nginx.
-    make; make install;
+    make install;
 
 ### Install wwwhisper.
      # Choose where to put wwwhisper files.
