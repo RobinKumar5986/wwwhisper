@@ -2,8 +2,7 @@
 
 # http://stackoverflow.com/questions/59895/can-a-bash-script-tell-what-directory-its-stored-in
 SCRIPT_DIR="$(cd "$( dirname "$0" )" && pwd)"
-# TODO: change this.
-VIRTUALENV_DIR=${SCRIPT_DIR}/virtualenv
+
 SITE_DIR=
 
 err_quit() {
@@ -47,6 +46,10 @@ if [[ -z ${SITE_DIR} ]]; then
     exit 1
 fi
 
+if [[ -z ${VIRTUALENV_DIR} ]]; then
+    VIRTUALENV_DIR=${SCRIPT_DIR}/virtualenv
+fi
+
 assert_dir_exists ${SITE_DIR}
 # Transform site dir to be an absolute path.
 SITE_DIR="$(cd "${SITE_DIR}" && pwd)"
@@ -61,9 +64,8 @@ exec uwsgi  --socket="${SITE_DIR}/uwsgi.sock"\
  --module="wwwhisper_service.wsgi:application"\
  --master\
  --vacuum\
- --processes=5\
+ --processes=1\
  --chmod-socket=660\
- --harakiri 20\
  --plugins=python\
  --python-path="${SITE_DIR}/django/"\
  --virtualenv="${VIRTUALENV_DIR}"\

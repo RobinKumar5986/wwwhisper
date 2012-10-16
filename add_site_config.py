@@ -21,7 +21,7 @@
 Creates site-specific Django settings files. Creates configuration
 file for supervisor (http://supervisord.org/), which allows to
 start wwwhisper application under the control of the supervisor
-deamon. Initializes database with access control list.
+daemon. Initializes database to store access control list.
 """
 
 import getopt
@@ -61,14 +61,18 @@ Usage:
       -a, --admin-email An email of a user that will be allowed to access
             wwwhisper admin interface after wwwhisper is configured.
             More admin users can be added via the admin interface.
-""" % {'prog': sys.argv[0]}
+      -o, --output-dir A directory to store configuration (defaults to
+            '%(config-dir)s' in the wwwhisper directory).
+      -n, --no-supervisor Do not generate config file for supervisord.
+""" % {'prog': sys.argv[0], 'config-dir': SITES_DIR}
     sys.exit(1)
 
 def generate_secret_key():
-    """Generates a secret key with cryptographically secure generator.
+    """Generates a secret key to be used with django setting file.
 
-    Displays a warning and generates a key that does not parse if the
-    system does not provide a secure generator.
+    Uses cryptographically secure generator. Displays a warning and
+    generates a key that does not parse if the system does not provide
+    a secure generator.
     """
     try:
         secure_generator = random.SystemRandom()
@@ -144,7 +148,7 @@ def is_default_port(scheme, port):
     return default_port(scheme) == port
 
 def create_supervisor_config_file(
-    site_dir_name, root_path, site_config_path, supervisor_config_path):
+    site_dir_name, wwwhisper_path, site_config_path, supervisor_config_path):
     """Creates site-specific supervisor config file.
 
     The file allows to start the wwwhisper application for the site.
@@ -157,7 +161,7 @@ autorestart=true
 stopwaitsecs=2
 stopsignal=INT
 stopasgroup=true
-""" % (site_dir_name, root_path, site_config_path, WWWHISPER_USER,
+""" % (site_dir_name, wwwhisper_path, site_config_path, WWWHISPER_USER,
        WWWHISPER_GROUP)
     write_to_file(
         supervisor_config_path, SUPERVISOR_CONFIG_FILE, settings)
@@ -204,12 +208,20 @@ def parse_url(url):
 def main():
     site_url = None
     admin_email = None
-    root_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    wwwhisper_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    output_path = os.path.join(wwwhisper_path, SITES_DIR)
+    need_supervisor = True
 
     try:
-        optlist, _ = getopt.gnu_getopt(sys.argv[1:],
-                                       's:a:h',
-                                       ['site-url=', 'admin-email=', 'help'])
+        optlist, _ = getopt.gnu_getopt(
+            sys.argv[1:],
+            's:a:o:nh',
+            ['site-url=',
+             'admin-email=',
+             'output-dir=',
+             'no-supervisor',
+             'help'])
+
     except getopt.GetoptError, ex:
         print 'Arguments parsing error: ', ex,
         usage()
@@ -221,6 +233,10 @@ def main():
             site_url = arg
         elif opt in ('-a', '--admin-email'):
             admin_email = arg
+        elif opt in ('-o', '--output-dir'):
+            output_path = arg
+        elif opt in ('-n', '--no-supervisor'):
+            need_supervisor = False
         else:
             assert False, 'unhandled option'
 
@@ -238,7 +254,7 @@ def main():
     # But settings directory name should always include the port.
     site_dir_name = '.'.join([scheme, hostname, port])
 
-    site_config_path = os.path.join(root_path, SITES_DIR, site_dir_name)
+    site_config_path = os.path.join(output_path, site_dir_name)
     django_config_path = os.path.join(site_config_path, DJANGO_CONFIG_DIR)
     db_path = os.path.join(site_config_path, DB_DIR)
     supervisor_config_path = os.path.join(
@@ -249,7 +265,8 @@ def main():
         os.umask(077)
         os.makedirs(django_config_path)
         os.makedirs(db_path)
-        os.makedirs(supervisor_config_path)
+        if need_supervisor:
+            os.makedirs(supervisor_config_path)
     except OSError as ex:
         err_quit('Failed to initialize configuration directory %s: %s.'
                  % (site_config_path, ex))
@@ -257,10 +274,12 @@ def main():
     create_django_config_file(
         site_url, admin_email, django_config_path, db_path)
 
-    create_supervisor_config_file(
-        site_dir_name, root_path, site_config_path, supervisor_config_path)
+    if need_supervisor:
+        create_supervisor_config_file(
+            site_dir_name, wwwhisper_path, site_config_path,
+            supervisor_config_path)
 
-    manage_path = os.path.join(root_path, 'django_wwwhisper', 'manage.py')
+    manage_path = os.path.join(wwwhisper_path, 'django_wwwhisper', 'manage.py')
     # Use Python from the virtual environment to run syncdb.
     exit_status = subprocess.call(
         ['/usr/bin/env', 'python', manage_path, 'syncdb',
