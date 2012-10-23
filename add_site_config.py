@@ -136,8 +136,8 @@ DATABASES = {
 }
 
 SITE_URL = '%s'
-WWWHISPER_INITIAL_ADMINS = (%s)
-WWWHISPER_INITIAL_LOCATIONS = (%s)
+WWWHISPER_INITIAL_ADMINS = (%s,)
+WWWHISPER_INITIAL_LOCATIONS = (%s,)
 """ % (generate_secret_key(),
        os.path.join(db_path, DB_NAME),
        site_url,
