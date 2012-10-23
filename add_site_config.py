@@ -42,6 +42,7 @@ DB_NAME = 'acl_db'
 
 WWWHISPER_USER = 'wwwhisper'
 WWWHISPER_GROUP = 'www-data'
+DEFAULT_INITIAL_LOCATION = '/admin/'
 
 def err_quit(errmsg):
     """Prints an error message and quits."""
@@ -52,6 +53,11 @@ def usage():
     print """
 
 Generates site-specific configuration files and initializes wwwhisper database.
+
+--admin-email and --location affect only initial configuration, wwwhisper
+web application can be used to add/remove locations and grant/revoke access
+to other users.
+
 Usage:
 
   %(prog)s
@@ -59,8 +65,11 @@ Usage:
             scheme://domain(:port). Scheme can be https (recomended) or http.
             Port defaults to 443 for https and 80 for http.
       -a, --admin-email An email of a user that will be allowed to access
-            wwwhisper admin interface after wwwhisper is configured.
-            More admin users can be added via the admin interface.
+            initial locations. Multiple emails can be given with multiple
+            -a directives.
+      -l, --location A location that admin users will be able to access
+            initially (defaults to /admin/). Multiple locations can be given
+            with mutliple -l directives.
       -o, --output-dir A directory to store configuration (defaults to
             '%(config-dir)s' in the wwwhisper directory).
       -n, --no-supervisor Do not generate config file for supervisord.
@@ -108,7 +117,7 @@ def write_to_file(dir_path, file_name, file_content):
     except IOError as ex:
         err_quit('Failed to create file %s: %s.' % (file_path, ex))
 
-def create_django_config_file(site_url, admin_email, django_config_path,
+def create_django_config_file(site_url, emails, locations, django_config_path,
                               db_path):
     """Creates a site specific Django configuration file.
 
@@ -127,11 +136,13 @@ DATABASES = {
 }
 
 SITE_URL = '%s'
-WWWHISPER_ADMINS = ['%s']
+WWWHISPER_INITIAL_ADMINS = (%s)
+WWWHISPER_INITIAL_LOCATIONS = (%s)
 """ % (generate_secret_key(),
        os.path.join(db_path, DB_NAME),
        site_url,
-       admin_email)
+       ", ".join("'" + email + "'" for email in emails),
+       ", ".join("'" + location + "'" for location in locations))
     write_to_file(django_config_path, '__init__.py', '')
     write_to_file(django_config_path, DJANGO_CONFIG_FILE, settings)
 
@@ -207,7 +218,8 @@ def parse_url(url):
 
 def main():
     site_url = None
-    admin_email = None
+    emails = []
+    locations = []
     wwwhisper_path = os.path.dirname(os.path.abspath(sys.argv[0]))
     output_path = os.path.join(wwwhisper_path, SITES_DIR)
     need_supervisor = True
@@ -215,9 +227,10 @@ def main():
     try:
         optlist, _ = getopt.gnu_getopt(
             sys.argv[1:],
-            's:a:o:nh',
+            's:a:l:o:nh',
             ['site-url=',
              'admin-email=',
+             'locations=',
              'output-dir=',
              'no-supervisor',
              'help'])
@@ -232,7 +245,9 @@ def main():
         elif opt in ('-s', '--site-url'):
             site_url = arg
         elif opt in ('-a', '--admin-email'):
-            admin_email = arg
+            emails.append(arg)
+        elif opt in ('-l', '--location'):
+            locations.append(arg)
         elif opt in ('-o', '--output-dir'):
             output_path = arg
         elif opt in ('-n', '--no-supervisor'):
@@ -243,8 +258,10 @@ def main():
 
     if site_url is None:
         err_quit('--site-url is missing.')
-    if admin_email is None:
+    if not emails:
         err_quit('--admin-email is missing.')
+    if not locations:
+        locations.append(DEFAULT_INITIAL_LOCATION)
 
     (scheme, hostname, port) = parse_url(site_url)
     site_url = scheme + '://' + hostname
@@ -272,7 +289,7 @@ def main():
                  % (site_config_path, ex))
 
     create_django_config_file(
-        site_url, admin_email, django_config_path, db_path)
+        site_url, emails, locations, django_config_path, db_path)
 
     if need_supervisor:
         create_supervisor_config_file(

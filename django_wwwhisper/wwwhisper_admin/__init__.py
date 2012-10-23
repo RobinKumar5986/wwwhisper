@@ -28,33 +28,49 @@ from django.contrib.auth import models as contrib_auth_models
 from django.core.exceptions import ImproperlyConfigured
 from wwwhisper_auth import models as auth_models
 
-def enable_access_to_admin(app, created_models, *args, **kwargs):
-    """Configures which users can initially access the admin applications.
+def _create_initial_locations():
+    """Creates all locations listed in WWWHISPER_INITIAL_LOCATIONS setting."""
+    locations_collection = auth_models.LocationsCollection()
+    locations_paths = getattr(settings, 'WWWHISPER_INITIAL_LOCATIONS', [])
+    for path in locations_paths:
+        try:
+            locations_collection.create_item(path)
+        except auth_models.CreationException as ex:
+            raise ImproperlyConfigured('Failed to create location %s: %s'
+                                       % (path, ex))
 
-    The function is invoked when the wwwhisper database is
-    created. Users with emails listed in the WWWHISPER_ADMINS list are
-    granted access to the admin application. Other than that, there is
-    no difference between admin users and other users. The admin
-    application manages access to itself, so it can be used to add and
-    remove users that can perform administrative operations.
+def _create_initial_admins():
+    """Creates all users listed in WWWHISPER_INITIAL_ADMINS setting."""
+    users_collection = auth_models.UsersCollection()
+    emails = getattr(settings, 'WWWHISPER_INITIAL_ADMINS', [])
+    for email in emails:
+        try:
+            user = users_collection.create_item(email)
+        except auth_models.CreationException as ex:
+            raise ImproperlyConfigured('Failed to create admin user %s: %s'
+                                       % (email, ex))
+
+def _grant_admins_access_to_all_locations():
+    for user in auth_models.UsersCollection().all():
+        for location in auth_models.LocationsCollection().all():
+            location.grant_access(user.uuid)
+
+def grant_initial_permission(app, created_models, *args, **kwargs):
+    """Configures initial permissions for wwwhisper protected site.
+
+    Allows users with emails listed on WWWHISPER_INITIAL_ADMINS to
+    access locations listed on WWWHISPER_INITIAL_LOCATIONS. The
+    function is invoked when the wwwhisper database is created.
+    Initial access rights is the only difference between users listed
+    on WWWHISPER_INITIAL_ADMINS and other users. The admin application
+    manages access to itself, so it can be used to add and remove
+    users that can perform administrative operations.
     """
     if (contrib_auth_models.User in created_models and
         kwargs.get('interactive', True)):
-
-        admins_emails = getattr(settings, 'WWWHISPER_ADMINS', None)
-        if admins_emails is None:
-            return
-        users_collection = auth_models.UsersCollection()
-        locations_collection = auth_models.LocationsCollection()
-        admin_location = locations_collection.create_item('/admin')
-
-        for email in admins_emails:
-            try:
-                user = users_collection.create_item(email)
-                admin_location.grant_access(user.uuid)
-            except auth_models.CreationException as ex:
-                raise ImproperlyConfigured('Failed to create admin user %s: %s'
-                                           % (email, ex))
+        _create_initial_locations()
+        _create_initial_admins()
+        _grant_admins_access_to_all_locations()
 
 # Disable default behaviour for admin user creation (interactive
 # question).
@@ -63,8 +79,8 @@ signals.post_syncdb.disconnect(
     sender=contrib_auth_models,
     dispatch_uid = "django.contrib.auth.management.create_superuser")
 
-# Instead, invoke enable_access_to_admin function defined in this module.
+# Instead, invoke grant_initial_permission function defined in this module.
 signals.post_syncdb.connect(
-    enable_access_to_admin,
+    grant_initial_permission,
     sender=contrib_auth_models,
     dispatch_uid = "django.contrib.auth.management.create_superuser")

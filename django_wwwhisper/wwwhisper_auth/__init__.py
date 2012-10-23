@@ -30,33 +30,9 @@ from django.contrib.auth import models as auth_app
 from django.core.exceptions import ImproperlyConfigured
 from wwwhisper_auth import models
 
-def create_admin_users(app, created_models, *args, **kwargs):
-    """Adds admin users to Users table when the table is created.
-
-    Emails of admin users should be listed in settings.py. Admin users
-    can access all locations.
-    """
-    if auth_app.User in created_models:
-        admins_emails = getattr(settings, 'WWWHISPER_ADMINS', None)
-        if admins_emails is None:
-            return
-        for email in admins_emails:
-            users_collection = models.UsersCollection()
-            try:
-                users_collection.create_item(email)
-            except models.CreationException as ex:
-                raise ImproperlyConfigured('Failed to create admin user %s: %s'
-                                           % (email, ex));
-
 # Disable default behaviour for admin user creation (interactive
 # question).
 signals.post_syncdb.disconnect(
     create_superuser,
-    sender=auth_app,
-    dispatch_uid = "django.contrib.auth.management.create_superuser")
-
-# Instead, invoke create_admin_users function defined in this module.
-signals.post_syncdb.connect(
-    create_admin_users,
     sender=auth_app,
     dispatch_uid = "django.contrib.auth.management.create_superuser")
