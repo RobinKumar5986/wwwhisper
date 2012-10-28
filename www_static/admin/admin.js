@@ -263,6 +263,15 @@
     };
 
     /**
+     * Returns true if a path is handled by the admin application.
+     */
+    this.handledByAdmin = function(path) {
+      return path === that.adminPath ||
+        utils.startsWith(path, that.adminPath + '/');
+    };
+
+
+    /**
      * Returns a callback that, when invoked, executes all callbacks
      * from a callbacks array in sequence. Each callback from the
      * array needs to accept a single argument: the next callback to
@@ -288,7 +297,7 @@
      */
     this.addLocation = function(locationPathArg, successCallback) {
       var locationPath = $.trim(locationPathArg);
-      if (utils.startsWith(locationPath, that.adminPath + '/')) {
+      if (that.handledByAdmin(locationPath)) {
         that.errorHandler(
           'Adding sublocations to admin is not supported '+
             '(It could easily cut off access to the admin application.)');
@@ -573,7 +582,7 @@
     function createLocationInfo(location) {
       var locationInfo, allowedUserList, isAdminLocation, isAdminUser;
 
-      isAdminLocation = (location.path === controller.adminPath);
+      isAdminLocation = controller.handledByAdmin(location.path);
 
       locationInfo = view.locationInfo.clone(true)
         .attr('id', locationInfoId(location))
@@ -646,7 +655,7 @@
       var isAdminLocation, sortedLocations;
       sortedLocations = utils.sortByProperty(controller.locations, 'path');
       utils.each(sortedLocations, function(location) {
-        isAdminLocation = (location.path === controller.adminPath);
+        isAdminLocation = controller.handledByAdmin(location.path);
         view.locationPath.clone(true)
           .attr('id', locationPathId(location))
           .attr('location-urn', location.id)
@@ -789,7 +798,7 @@
      * fatal - received error message replaces the current document.
      */
     this.handleError = function(message, status) {
-      if (typeof status !== 'undefined' && status >= 400 && status < 500) {
+      if (typeof status === 'undefined' || (status >= 400 && status < 500)) {
         var error = view.errorMessage.clone(true);
 
         error.removeClass('hide')

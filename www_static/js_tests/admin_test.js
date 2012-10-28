@@ -372,6 +372,14 @@
     mock_stub.verify();
   });
 
+  test('handledByAdmin', function() {
+    controller.adminPath = '/admin';
+    ok(controller.handledByAdmin('/admin'));
+    ok(controller.handledByAdmin('/admin/'));
+    ok(controller.handledByAdmin('/admin/foo/bar'));
+    ok(!controller.handledByAdmin('/admino'));
+  });
+
   test('addLocation refuses to add sublocations to admin', function() {
     controller.adminPath = '/admin';
     controller.addLocation('/admin/api');
