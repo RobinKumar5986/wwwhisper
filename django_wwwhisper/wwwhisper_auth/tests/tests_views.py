@@ -108,6 +108,12 @@ class AuthTest(AuthTestCase):
         response = self.get('/auth/api/is-authorized/?path=%2F%66')
         self.assertEqual(401, response.status_code)
 
+    def test_is_authorized_collapses_slashes(self):
+        location = self.locations_collection.create_item('/f/')
+        location.grant_open_access()
+        response = self.get('/auth/api/is-authorized/?path=///f/')
+        self.assertEqual(200, response.status_code)
+
 class LoginTest(AuthTestCase):
     def test_login_requires_assertion(self):
         response = self.post('/auth/api/login/', {})

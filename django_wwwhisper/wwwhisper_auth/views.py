@@ -74,15 +74,18 @@ class Auth(View):
         which is ignored (this is because nginx does not expose
         encoded path without the query part).
 
-        The method follows 'be conservative in what you accept
-        principle'. The path should be absolute and normalized,
-        without fragment id, otherwise access is denied. Browsers in
-        normal operations perform path normalization and do not send
-        fragment id. Not normalized paths can be a sign of something
-        suspicious happening. It is extremely important that
-        wwwhisper does not perform any tricky path transformations
-        that may not be compatible with transformations done by the
-        HTTP server.
+        The method follows be conservative in what you accept
+        principle. The path should be absolute and normalized, without
+        fragment id, otherwise access is denied. Browsers in normal
+        operations perform path normalization and do not send fragment
+        id. Multiple consecutive '/' separators are permitted, because
+        these are not normalized by browsers, and are used by
+        legitimate applications.  Paths with '/./' and '/../', should
+        not be normally sent by browsers and can be a sign of
+        something suspicious happening. It is extremely important that
+        wwwhisper does not perform any path transformations that are
+        not be compatible with transformations done by the HTTP
+        server.
        """
         encoded_path = self._extract_encoded_path_argument(request)
         if encoded_path is None:
@@ -96,6 +99,7 @@ class Auth(View):
         else:
             stripped_path = url_path.strip_query(encoded_path)
             decoded_path = url_path.decode(stripped_path)
+            decoded_path = url_path.collapse_slashes(decoded_path)
             if not url_path.is_canonical(decoded_path):
                 path_validation_error = 'Path should be absolute and ' \
                     'normalized (starting with / without /../ or /./ or //).'

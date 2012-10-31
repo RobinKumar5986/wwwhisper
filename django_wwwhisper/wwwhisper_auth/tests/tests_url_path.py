@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.test import TestCase
+from wwwhisper_auth.url_path import collapse_slashes
 from wwwhisper_auth.url_path import contains_fragment
 from wwwhisper_auth.url_path import contains_params
 from wwwhisper_auth.url_path import contains_query
@@ -23,6 +24,7 @@ from wwwhisper_auth.url_path import is_canonical
 from wwwhisper_auth.url_path import strip_query
 
 class UrlPathTest(TestCase):
+
     def test_is_canonical(self):
         self.assertTrue(is_canonical('/'))
         self.assertTrue(is_canonical('/foo/bar'))
@@ -40,6 +42,16 @@ class UrlPathTest(TestCase):
         self.assertFalse(is_canonical('/foo//bar'))
         self.assertFalse(is_canonical('/foo/bar//'))
         self.assertFalse(is_canonical('/foo/bar/./foo'))
+
+    def test_collapse_slashes(self):
+        self.assertEqual(collapse_slashes('/'), '/')
+        self.assertEqual(collapse_slashes('/foo/'), '/foo/')
+        self.assertEqual(collapse_slashes('/foo'), '/foo')
+
+        self.assertEqual(collapse_slashes('//'), '/')
+        self.assertEqual(collapse_slashes('///'), '/')
+        self.assertEqual(collapse_slashes('///foo//////bar//'), '/foo/bar/')
+        self.assertEqual(collapse_slashes('///foo// ///bar//'), '/foo/ /bar/')
 
     def test_decode(self):
         self.assertEqual('/foo bar#', decode('/foo%20bar%23'))

@@ -18,6 +18,7 @@
 
 import posixpath
 import urllib
+import re
 
 def strip_query(path):
     """Strips query from a path."""
@@ -30,6 +31,10 @@ def decode(path):
     """Decodes URL encoded characters in path."""
     return urllib.unquote_plus(path)
 
+def collapse_slashes(path):
+    """Replaces repeated path separators ('/') with a single one."""
+    return re.sub('//+', '/', path)
+
 def is_canonical(path):
     """True if path is absolute and normalized.
 
@@ -40,7 +45,7 @@ def is_canonical(path):
     # canonical (it is the same as '/').
     if path == '' or not posixpath.isabs(path) or path.startswith('//'):
         return False
-    # Normpath remove trailing '/'.
+    # Normpath removes trailing '/'.
     normalized_path =  posixpath.normpath(path)
     if (normalized_path != path and normalized_path + '/' != path):
         return False
