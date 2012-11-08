@@ -110,6 +110,12 @@ address and a 'sign out' button.
 Setup
 -----
 
+The easiest way to get started is to setup wwwhisper on OpenShift
+cloud platform from RedHat. Follow [these
+steps](https://github.com/wrr/wwwhisper-openshift) to have wwwhisper
+protected site in few minutes, with SSL and for free. The scripts also
+automatically install some useful applications (a wiki and a blog).
+
 Following steps demonstrate how to install and configure nginx with
 wwwhisper authentication on Debian-derivative distributions (including
 Ubuntu). The steps should be easy to adjust to work on other POSIX
