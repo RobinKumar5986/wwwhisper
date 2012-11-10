@@ -603,7 +603,6 @@
           }
         })
         .end();
-
       allowedUserList = locationInfo.find('.allowed-user-list');
       if (location.hasOwnProperty('openAccess')) {
         // Disable entering email addresses of allowed user: everyone
@@ -622,6 +621,12 @@
           .end()
           .appendTo(allowedUserList);
       } else {
+        // Don't know why, but when the first location on the list is
+        // disabled and the page is refreshed, all locations become
+        // disabled. Placeholder text is valid for them so it doesn't
+        // seem like the first location is cloned.
+        locationInfo.find('.add-allowed-user').attr('disabled', false);
+
         utils.each(
           utils.sortByProperty(location.allowedUsers, 'email'), function(user) {
             isAdminUser = (user.email === controller.adminUserEmail);
