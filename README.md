@@ -27,7 +27,7 @@ site](https://io-mixedbit.rhcloud.com/wiki). The site is configured to
 allow everyone access. If you want to see the demo but don't want to
 create a real Persona account, sign-in with an address like:
 PutAnythingHere@mockmyid.com (Such addresses use [mock Persona
-id](https://mockmyid.com/)).
+id](https://mockmyid.com/) and should not be used for anything important).
 
 Upon visiting a wwwhisper protected site, a user is presented with a
 login prompt:
