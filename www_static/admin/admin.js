@@ -113,7 +113,7 @@
     extractProperty: function(array, propertyName) {
       return $.map(array, function(item) {
         return item[propertyName];
-      })
+      });
     },
 
     /**
@@ -172,7 +172,7 @@
      * Returns true if a user can access a location.
      */
     this.canAccess = function(user, location) {
-      return 'openAccess' in location || utils.inArray(
+      return location.hasOwnProperty('openAccess') || utils.inArray(
         user.id, utils.extractProperty(location.allowedUsers, 'id'));
     };
 
@@ -363,7 +363,7 @@
      * listed users are granted access).
      */
     this.revokeOpenAccess = function(location) {
-      if (!('openAccess' in location)) {
+      if (!location.hasOwnProperty('openAccess')) {
         return;
       }
       stub.ajax(
@@ -554,7 +554,7 @@
         body = 'I have shared ' + website + ' with you.\n'
           + 'Please visit:\n' + locationsString;
       }
-      if (to.length != 0) {
+      if (to.length !== 0) {
         recipent = to[0];
         bcc = to.slice(1).join(',');
       }
@@ -605,7 +605,7 @@
         .end();
 
       allowedUserList = locationInfo.find('.allowed-user-list');
-      if ('openAccess' in location) {
+      if (location.hasOwnProperty('openAccess')) {
         // Disable entering email addresses of allowed user: everyone
         // is allowed.
         locationInfo.find('.add-allowed-user')
