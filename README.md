@@ -22,6 +22,11 @@ which visitors.
 Quick tour
 -----------
 
+You can preview [a demo site](https://io-mixedbit.rhcloud.com/). It is
+configured to allow everyone access. If you want to see the demo but
+don't want to create a real Persona account [use mock
+id](https://mockmyid.com/).
+
 Upon visiting a wwwhisper protected site, a user is presented with a
 login prompt:
 
