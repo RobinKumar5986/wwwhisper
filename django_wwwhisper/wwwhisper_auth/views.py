@@ -119,7 +119,8 @@ class Auth(View):
             logger.debug('%s: access denied.' % (debug_msg))
             return http.HttpResponseNotAuthorized()
 
-        if location is not None and location.open_access:
+        if (location is not None and location.open_access_granted() and
+            not location.open_access_requires_login()):
             logger.debug('%s: authentication not required, access granted.'
                          % (debug_msg))
             return http.HttpResponseOK('Access granted.')

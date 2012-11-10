@@ -172,7 +172,7 @@
      * Returns true if a user can access a location.
      */
     this.canAccess = function(user, location) {
-      return location.openAccess || utils.inArray(
+      return 'openAccess' in location || utils.inArray(
         user.id, utils.extractProperty(location.allowedUsers, 'id'));
     };
 
@@ -343,28 +343,27 @@
     };
 
     /**
-     * Allows not authenticated access to a location.
+     * Allows everyone access to a location. If requireLogin is true,
+     * users will be still asked to sign-in.
      */
-    this.grantOpenAccess = function(location) {
-      if (location.openAccess) {
-        return;
-      }
+    this.grantOpenAccess = function(location, requireLogin) {
       stub.ajax(
         'PUT',
         location.self + 'open-access/',
-        null,
-        function() {
-          location.openAccess = true;
+        {requireLogin: requireLogin},
+        function(result) {
+          location.openAccess = result;
           ui.refresh();
         }
       );
     };
 
     /**
-     * Disallows not authenticated access to a location.
+     * Turns on normal access control for a location (only explicitly
+     * listed users are granted access).
      */
     this.revokeOpenAccess = function(location) {
-      if (!location.openAccess) {
+      if (!('openAccess' in location)) {
         return;
       }
       stub.ajax(
@@ -372,7 +371,7 @@
         location.self + 'open-access/',
         null,
         function() {
-          location.openAccess = false;
+          delete location.openAccess;
           ui.refresh();
         }
       );
@@ -594,7 +593,9 @@
           if (event.which === ENTER_KEY) {
             userId = $.trim($(this).val());
             if (userId === '*') {
-              controller.grantOpenAccess(location);
+              controller.grantOpenAccess(location, false);
+            } else if (userId === '*?') {
+              controller.grantOpenAccess(location, true);
             } else if (userId !== '') {
               controller.grantAccess(userId, location);
             }
@@ -604,16 +605,17 @@
         .end();
 
       allowedUserList = locationInfo.find('.allowed-user-list');
-      if (location.openAccess) {
+      if ('openAccess' in location) {
         // Disable entering email addresses of allowed user: everyone
         // is allowed.
         locationInfo.find('.add-allowed-user')
           .addClass('disabled')
-          .attr('placeholder', 'Location does not require authentication.')
+          .attr('placeholder', 'Everyone is allowed to access the location')
           .attr('disabled', true);
 
         view.allowedUser.clone(true)
-          .find('.user-mail').text('*')
+          .find('.user-mail').text(
+            location.openAccess.requireLogin ? '*?' : '*')
           .end()
           .find('.unshare').click(function() {
             controller.revokeOpenAccess(location);

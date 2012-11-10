@@ -308,11 +308,48 @@ class LocationsCollectionTest(CollectionTestCase):
     def test_grant_open_access(self):
         user = self.users_collection.create_item(TEST_USER_EMAIL)
         location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertFalse(location.open_access_granted())
+        self.assertFalse(location.open_access_requires_login())
         self.assertFalse(location.can_access(user.uuid))
-        location.grant_open_access()
+
+        location.grant_open_access(require_login=False)
+        self.assertTrue(location.open_access_granted())
+        self.assertFalse(location.open_access_requires_login())
         self.assertTrue(location.can_access(user.uuid))
+
         location.revoke_open_access()
+        self.assertFalse(location.open_access_granted())
         self.assertFalse(location.can_access(user.uuid))
+
+    def test_grant_authenticated_open_access(self):
+        user = self.users_collection.create_item(TEST_USER_EMAIL)
+        location = self.locations_collection.create_item(TEST_LOCATION)
+        self.assertFalse(location.open_access_granted())
+        self.assertFalse(location.open_access_requires_login())
+        self.assertFalse(location.can_access(user.uuid))
+
+        location.grant_open_access(require_login=True)
+        self.assertTrue(location.open_access_granted())
+        self.assertTrue(location.open_access_requires_login())
+        self.assertTrue(location.can_access(user.uuid))
+
+        location.revoke_open_access()
+        self.assertFalse(location.open_access_granted())
+        self.assertFalse(location.can_access(user.uuid))
+
+    def test_has_open_location_with_login(self):
+        self.assertFalse(
+            self.locations_collection.has_open_location_with_login())
+        self.locations_collection.create_item('/bar')
+        self.assertFalse(
+            self.locations_collection.has_open_location_with_login())
+        location = self.locations_collection.create_item('/foo')
+        location.grant_open_access(False)
+        self.assertFalse(
+            self.locations_collection.has_open_location_with_login())
+        location.grant_open_access(True)
+        self.assertTrue(
+            self.locations_collection.has_open_location_with_login())
 
     def test_get_allowed_users(self):
         location1 = self.locations_collection.create_item('/foo/bar')

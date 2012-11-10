@@ -50,7 +50,8 @@ class AuthTest(AuthTestCase):
         self.assertEqual(400, response.status_code)
 
     def test_is_authorized_for_not_authenticated_user(self):
-        response = self.get('/auth/api/is-authorized/?path=/bar/')
+        location = self.locations_collection.create_item('/foo/')
+        response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
         self.assertTrue(response.has_header('WWW-Authenticate'))
         self.assertEqual('VerifiedEmail', response['WWW-Authenticate'])
@@ -71,7 +72,7 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_for_open_location(self):
         location = self.locations_collection.create_item('/foo/')
-        location.grant_open_access()
+        location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
 
@@ -79,7 +80,7 @@ class AuthTest(AuthTestCase):
         user = self.users_collection.create_item('foo@example.com')
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         location = self.locations_collection.create_item('/foo/')
-        location.grant_open_access()
+        location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
 
@@ -101,7 +102,7 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_decodes_path(self):
         location = self.locations_collection.create_item('/f/')
-        location.grant_open_access()
+        location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=%2F%66%2F')
         self.assertEqual(200, response.status_code)
 
@@ -110,7 +111,7 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_collapses_slashes(self):
         location = self.locations_collection.create_item('/f/')
-        location.grant_open_access()
+        location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=///f/')
         self.assertEqual(200, response.status_code)
 

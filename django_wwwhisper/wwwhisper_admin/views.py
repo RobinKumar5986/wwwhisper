@@ -95,8 +95,10 @@ class ItemView(http.RestView):
         return http.HttpResponseNoContent()
 
 class OpenAccessView(http.RestView):
-    """Manages resources that define if a location requires authorization.
+    """Manages resources that define if a location is open.
 
+    An open location can be accessed by everyone either without
+    authentication (requireLogin is false) or with authentication.
     Attributes:
         location_collection: The collection that is used to find
         a location to which requests are related.
@@ -104,20 +106,28 @@ class OpenAccessView(http.RestView):
     locations_collection = None
 
     @staticmethod
-    def _attributes_dict(request):
+    def _attributes_dict(request, location):
         """Attributes representing a resource to which a request is related."""
-        return {'self' : full_url(request.path)}
+        return {
+            'self' : full_url(request.path),
+            'requireLogin': location.open_access_requires_login()
+            }
 
-    def put(self, request, location_uuid):
+    def put(self, request, location_uuid, requireLogin):
         """Creates a resource that enables open access to a given location."""
         location = self.locations_collection.find_item(location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
-        if location.open_access:
-            return http.HttpResponseOKJson(self._attributes_dict(request))
+        if location.open_access_granted():
+            if (location.open_access_requires_login()
+                != requireLogin):
+                location.grant_open_access(requireLogin);
+            return http.HttpResponseOKJson(
+                self._attributes_dict(request, location))
 
-        location.grant_open_access()
-        response =  http.HttpResponseCreated(self._attributes_dict(request))
+        location.grant_open_access(require_login=requireLogin)
+        response =  http.HttpResponseCreated(
+            self._attributes_dict(request, location))
         response['Location'] = full_url(request.path)
         return response
 
@@ -126,10 +136,11 @@ class OpenAccessView(http.RestView):
         location = self.locations_collection.find_item(location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
-        if location.open_access is False:
+        if not location.open_access_granted():
             return http.HttpResponseNotFound(
                 'Open access to location disallowed.')
-        return http.HttpResponseOKJson(self._attributes_dict(request))
+        return http.HttpResponseOKJson(
+            self._attributes_dict(request, location))
 
     def delete(self, request, location_uuid):
         """Deletes a resource.
@@ -139,7 +150,7 @@ class OpenAccessView(http.RestView):
         location = self.locations_collection.find_item(location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
-        if location.open_access is False:
+        if not location.open_access_granted():
             return http.HttpResponseNotFound(
                 'Open access to location already disallowed.')
         location.revoke_open_access()

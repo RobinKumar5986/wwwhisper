@@ -35,13 +35,16 @@ class BrowserIDBackend(ModelBackend):
         users_collection: Allows to find a user with a given email.
     """
     users_collection = models.UsersCollection()
+    locations_collection = models.LocationsCollection()
 
     def authenticate(self, assertion):
         """Verifies BrowserID assertion
 
         Returns:
              Object that represents a user with an email verified by
-             the assertion. None if user with such email does not exist.
+             the assertion. If a user with such email does not exists,
+             but there are open locations that require login, the user
+             object is created. In other cases, None is returned.
 
         Raises:
             AssertionVerificationException: verification failed.
@@ -50,4 +53,20 @@ class BrowserIDBackend(ModelBackend):
         if not result:
             raise AssertionVerificationException(
                 'BrowserID assertion verification failed.')
-        return self.users_collection.find_item_by_email(result['email'])
+        email = result['email']
+        user = self.users_collection.find_item_by_email(result['email'])
+        if user is not None:
+            return user
+        try:
+            # The site has open locations that require login, every
+            # user needs to be allowed.
+            #
+            # TODO: user objects created in such way should probably
+            # be marked and automatically deleted on logout or after
+            # some time of inactivity.
+            if self.locations_collection.has_open_location_with_login():
+                return self.users_collection.create_item(email)
+            else:
+                return None
+        except models.CreationException as ex:
+            raise AssertionVerificationException(str(ex))

@@ -97,14 +97,23 @@ class Location(ValidatedModel):
       path: Canonical path of the location.
       uuid: Externally visible UUID of the location, allows to identify a REST
           resource representing the location.
-      open_access: If true, access to the location does not require
-          authentication.
-    """
 
+      open_access: can be:
+        disabled ('n') - only explicitly allowed users can access a location;
+        enabled ('y') - everyone can access a location, no login is required;
+        enabled with authentication ('a') - everyone can access a location
+          but login is required.
+    """
+    OPEN_ACCESS_CHOICES = (
+        ('n', 'no open access'),
+        ('y', 'open access'),
+        ('a', 'open access, login required'),
+        )
     path = models.TextField(primary_key=True)
     uuid = models.CharField(max_length=36, db_index=True,
                             editable=False, unique=True)
-    open_access = models.BooleanField(default=False)
+    open_access = models.CharField(max_length=2, choices=OPEN_ACCESS_CHOICES,
+                                   default='n')
 
     def __unicode__(self):
         return "%s" % (self.path)
@@ -119,17 +128,23 @@ class Location(ValidatedModel):
         """Constructs URL of the location resource."""
         return ('wwwhisper_location', (), {'uuid' : self.uuid})
 
-    def grant_open_access(self):
-        """Allows access to the location without authentication.
-
-        For authenticated users, access is also always allowed.
-        """
-        self.open_access = True
+    def grant_open_access(self, require_login):
+        """Allows open access to the location."""
+        if require_login:
+            self.open_access = 'a'
+        else:
+            self.open_access = 'y'
         self.save()
 
+    def open_access_granted(self):
+        return self.open_access in ('y', 'a')
+
+    def open_access_requires_login(self):
+        return self.open_access == 'a'
+
     def revoke_open_access(self):
-        """Disallows not-authenticated access to the location."""
-        self.open_access = False
+        """Disables open access to the location."""
+        self.open_access = 'n'
         self.save()
 
     def can_access(self, user_uuid):
@@ -142,7 +157,10 @@ class Location(ValidatedModel):
             True if the user is granted permission to access the
             location or it the location is open.
         """
-        return (self.open_access
+        if _find(User, username=user_uuid) is None:
+            return False
+
+        return (self.open_access_granted()
                 or _find(Permission,
                          user__username=user_uuid,
                          http_location=self.path) is not None)
@@ -214,13 +232,17 @@ class Location(ValidatedModel):
 
     def attributes_dict(self):
         """Returns externally visible attributes of the location resource."""
-        return _add_common_attributes(self, {
-                'path': self.path,
-                'openAccess': self.open_access,
-                'allowedUsers': [
-                    user.attributes_dict() for user in self.allowed_users()
-                    ],
-                })
+        result = {
+            'path': self.path,
+            'allowedUsers': [
+                user.attributes_dict() for user in self.allowed_users()
+                ],
+            }
+        if self.open_access_granted():
+            result['openAccess'] = {
+                'requireLogin' : self.open_access_requires_login()
+                }
+        return _add_common_attributes(self, result)
 
 class Permission(ValidatedModel):
     """Connects a location with a user that can access the location.
@@ -405,6 +427,13 @@ class LocationsCollection(Collection):
                 longest_matched_location_len = probed_path_len
                 longest_matched_location = location
         return longest_matched_location
+
+    def has_open_location_with_login(self):
+        for location in Location.objects.all():
+            if (location.open_access_granted() and
+                location.open_access_requires_login()):
+                return True
+        return False
 
 def full_url(absolute_path):
     """Return full url of a resource with a given path."""

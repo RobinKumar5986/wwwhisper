@@ -587,25 +587,36 @@
   });
 
   test('grantOpenAccess.', function() {
-    var location;
+    var location, params;
     location = {
       id: '13',
-      openAccess: false,
       path: '/bar',
       self: 'example.com/locations/13/',
       allowedUsers: []
     };
     controller.locations.push(location);
+    params = {
+      requireLogin: false
+    };
     mock_stub.expectAjaxCall(
-      'PUT', location.self + 'open-access/', null, null);
+      'PUT', location.self + 'open-access/', params, params);
 
-    controller.grantOpenAccess(location);
-    ok(location.openAccess);
+    controller.grantOpenAccess(location, false);
+    deepEqual(location.openAccess, params);
+
+    params = {
+      requireLogin: true
+    };
+    mock_stub.expectAjaxCall(
+      'PUT', location.self + 'open-access/', params, params);
+    controller.grantOpenAccess(location, true);
+    deepEqual(location.openAccess, params);
+
     mock_stub.verify();
   });
 
   test('canAccess for open location.', function() {
-    var location, user;
+    var location, params, user;
     user = {
       id: '17',
       email: 'foo@example.com',
@@ -613,7 +624,6 @@
     };
     location = {
       id: '13',
-      openAccess: false,
       path: '/bar',
       self: 'example.com/locations/13/',
       allowedUsers: []
@@ -621,11 +631,14 @@
     controller.users.push(user);
     controller.locations.push(location);
 
+    params = {
+      requireLogin: false
+    };
     mock_stub.expectAjaxCall(
-      'PUT', location.self + 'open-access/', null, null);
+      'PUT', location.self + 'open-access/', params, null);
 
     ok(!controller.canAccess(user, location));
-    controller.grantOpenAccess(location);
+    controller.grantOpenAccess(location, false);
     ok(controller.canAccess(user, location));
     mock_stub.verify();
   });
@@ -634,7 +647,9 @@
     var location;
     location = {
       id: '13',
-      openAccess: true,
+      openAccess: {
+        requireLogin: false
+      },
       path: '/bar',
       self: 'example.com/locations/13/',
       allowedUsers: []
@@ -644,7 +659,7 @@
       'DELETE', location.self + 'open-access/', null, null);
 
     controller.revokeOpenAccess(location);
-    ok(!location.openAccess);
+    ok(!('openAccess' in location));
     mock_stub.verify();
   });
 
