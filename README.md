@@ -22,10 +22,10 @@ which visitors.
 Quick tour
 -----------
 
-You can preview [a demo site](https://io-mixedbit.rhcloud.com/wiki)
-with wwwwhipser protection layer. The site is configured to allow
-everyone access. If you want to see the demo but don't want to create
-a real Persona account, sign-in with an address like:
+You can preview [a wwwhisper demo
+site](https://io-mixedbit.rhcloud.com/wiki). The site is configured to
+allow everyone access. If you want to see the demo but don't want to
+create a real Persona account, sign-in with an address like:
 PutAnythingHere@mockmyid.com (Such addresses use [mock Persona
 id](https://mockmyid.com/)).
 
