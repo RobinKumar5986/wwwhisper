@@ -609,7 +609,6 @@
         // Disable entering email addresses of allowed user: everyone
         // is allowed.
         locationInfo.find('.add-allowed-user')
-          .addClass('disabled')
           .attr('placeholder', 'Everyone is allowed to access the location')
           .attr('disabled', true);
 
