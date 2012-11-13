@@ -119,8 +119,7 @@ class OpenAccessView(http.RestView):
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
         if location.open_access_granted():
-            if (location.open_access_requires_login()
-                != requireLogin):
+            if (location.open_access_requires_login() != requireLogin):
                 location.grant_open_access(requireLogin);
             return http.HttpResponseOKJson(
                 self._attributes_dict(request, location))
