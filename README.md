@@ -30,7 +30,7 @@ PutAnythingHere@mockmyid.com (Such addresses use [mock Persona
 id](https://mockmyid.com/) and should not be used for anything important).
 
 You can also check [a demo version of the admin
-UI](http://mixedbit.org/admin_demo/).
+UI](http://mixedbit.org/admin/).
 
 Upon visiting a wwwhisper protected site, a user is presented with a
 login prompt:
