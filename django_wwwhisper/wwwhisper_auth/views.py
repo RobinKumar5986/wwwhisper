@@ -47,11 +47,14 @@ class Auth(View):
 
       403: The user is authenticated (the request contains a valid
            session cookie) but is not authorized to access the
-           location. The error should be passed to the user.
+           location. The error should be passed to the user. The
+           'User' header in the returned response containts email of
+           the user.
 
-      200: User is authenticated and authorized to access the
-           location or the location does not require authorization.
-           The original request should be allowed.
+      200: User is authenticated and authorized to access the location
+           or the location does not require authorization. The
+           original request should be allowed. The 'User' header in
+           the returned response containts email of the user.
 
       Any other result code should be passed to the user without
       granting access.
@@ -91,6 +94,15 @@ class Auth(View):
         if encoded_path is None:
             return http.HttpResponseBadRequest(
                 "Auth request should have 'path' argument.")
+
+        # Do not allow requests that contain the 'User' header. The
+        # header is passed to backends and must be guaranteed to be
+        # set by wwwhisper.
+        # This check should already be performed by HTTP server.
+        if request.META.has_key('HTTP_USER'):
+            return http.HttpResponseBadRequest(
+                "Client can not set the 'User' header")
+
         debug_msg = "Auth request to '%s'" % (encoded_path)
 
         path_validation_error = None
@@ -112,12 +124,16 @@ class Auth(View):
 
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)
+            respone = None
 
             if location is not None and location.can_access(user.uuid):
                 logger.debug('%s: access granted.' % (debug_msg))
-                return http.HttpResponseOK('Access granted.')
-            logger.debug('%s: access denied.' % (debug_msg))
-            return http.HttpResponseNotAuthorized()
+                response =  http.HttpResponseOK('Access granted.')
+            else:
+                logger.debug('%s: access denied.' % (debug_msg))
+                response = http.HttpResponseNotAuthorized()
+            response['User'] = user.email
+            return response
 
         if (location is not None and location.open_access_granted() and
             not location.open_access_requires_login()):

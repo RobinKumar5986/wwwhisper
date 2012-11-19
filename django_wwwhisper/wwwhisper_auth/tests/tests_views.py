@@ -54,12 +54,15 @@ class AuthTest(AuthTestCase):
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
         self.assertTrue(response.has_header('WWW-Authenticate'))
+        self.assertFalse(response.has_header('User'))
         self.assertEqual('VerifiedEmail', response['WWW-Authenticate'])
 
     def test_is_authorized_for_not_authorized_user(self):
         self.users_collection.create_item('foo@example.com')
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.get('/auth/api/is-authorized/?path=/foo/')
+        # For an authenticated user 'User' header should be always returned.
+        self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(403, response.status_code)
 
     def test_is_authorized_for_authorized_user(self):
@@ -68,12 +71,14 @@ class AuthTest(AuthTestCase):
         location.grant_access(user.uuid)
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_open_location(self):
         location = self.locations_collection.create_item('/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertFalse(response.has_header('User'))
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_open_location_and_authenticated_user(self):
@@ -82,6 +87,7 @@ class AuthTest(AuthTestCase):
         location = self.locations_collection.create_item('/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_invalid_path(self):
@@ -114,6 +120,15 @@ class AuthTest(AuthTestCase):
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=///f/')
         self.assertEqual(200, response.status_code)
+
+    def test_is_authorized_does_not_allow_requests_with_user_header(self):
+        user = self.users_collection.create_item('foo@example.com')
+        location = self.locations_collection.create_item('/foo/')
+        location.grant_access(user.uuid)
+        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
+                                   HTTP_USER='bar@example.com')
+        self.assertEqual(400, response.status_code)
 
 class LoginTest(AuthTestCase):
     def test_login_requires_assertion(self):
