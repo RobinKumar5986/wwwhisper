@@ -800,12 +800,22 @@
      * client induced HTTP errors (HTTP status codes 400-499) are
      * displayed and automatically hidden after some time.
      *
+     * Authentication needed error (401) indicates that the user
+     * signed-out - admin page is reloaded to show a login prompt.
+     *
      * Other errors (server related status codes 5XX) are considered
      * fatal - received error message replaces the current document.
      */
     this.handleError = function(message, status) {
       if (typeof status === 'undefined' || (status >= 400 && status < 500)) {
         var error = view.errorMessage.clone(true);
+
+        if (status == 401) {
+          message = 'User signed-out, reloading the admin page in 3 seconds...';
+          window.setTimeout(function() {
+            window.location.reload(true);
+          }, 3000);
+        }
 
         error.removeClass('hide')
           .find('.alert-message')
