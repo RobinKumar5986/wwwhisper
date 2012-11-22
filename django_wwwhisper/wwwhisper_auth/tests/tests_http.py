@@ -143,3 +143,13 @@ class RestViewTest(HttpTestCase):
         response = self.client.get(
             '/testview/', HTTP_X_CSRFTOKEN='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
         self.assertEqual(267, response.status_code)
+
+    def test_caching_disabled_for_rest_view_results(self):
+        response = self.get('/testview/')
+        self.assertTrue(response.has_header('Cache-Control'))
+        control = response['Cache-Control']
+        # index throws ValueError if not found.
+        control.index('no-cache')
+        control.index('no-store')
+        control.index('must-revalidate')
+        control.index('max-age=0')

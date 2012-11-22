@@ -25,8 +25,9 @@ from django.http import HttpResponse
 from django.middleware import csrf
 from django.utils.crypto import constant_time_compare
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import patch_cache_control
 from django.views.generic import View
+from functools import wraps
 from wwwhisper_auth import models
 
 import json
@@ -127,6 +128,22 @@ class HttpResponseNotFound(HttpResponse):
         super(HttpResponseNotFound, self).__init__(
             message, mimetype=TEXT_MIME_TYPE, status=404)
 
+def never_ever_cache(decorated_function):
+    """Like Django @never_cache but sets more valid cache disabling headers.
+
+    @never_cache only sets Cache-Control:max-age=0 which is not
+    enough. For example, with max-axe=0 Firefox returns cached results
+    of GET calls when it is restarted.
+    """
+    @wraps(decorated_function)
+    def wrapper(*args, **kwargs):
+        response = decorated_function(*args, **kwargs)
+        patch_cache_control(
+            response, no_cache=True, no_store=True, must_revalidate=True,
+            max_age=0)
+        return response
+    return wrapper
+
 class RestView(View):
     """A common base class for all REST style views.
 
@@ -138,7 +155,7 @@ class RestView(View):
     appropriate error is returned to the client.
     """
 
-    @method_decorator(never_cache)
+    @method_decorator(never_ever_cache)
     def dispatch(self, request, *args, **kwargs):
         """Dispatches a method to a subclass.
 

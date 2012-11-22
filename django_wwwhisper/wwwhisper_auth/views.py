@@ -20,7 +20,6 @@ from django.conf import settings
 from django.contrib import auth
 from django.core.context_processors import csrf
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from functools import wraps
@@ -64,7 +63,7 @@ class Auth(View):
 
     locations_collection = None
 
-    @method_decorator(never_cache)
+    @method_decorator(http.never_ever_cache)
     def get(self, request):
         """Invoked by the HTTP server with a single path argument.
 
@@ -176,7 +175,7 @@ class CsrfToken(View):
     """Establishes Cross Site Request Forgery protection token."""
 
     # TODO: Prevent CSRF protection cookie expiration.
-    @never_cache
+    @method_decorator(http.never_ever_cache)
     @method_decorator(csrf_cookie_http_only)
     @method_decorator(ensure_csrf_cookie)
     def post(self, request):
