@@ -45,13 +45,11 @@
                 window.location = '/auth/logout';
               },
               function(errorMessage, errorStatus) {
-                if (errorStatus === 401) {
-                  // Logget out.
-                  callback();
-                } else {
-                  // Other error.
-                  $('body').html(errorMessage);
-                }
+                // Logget out (errorStatus 401) or some other error.
+                // If error was caused by disabled cookies (CSRF token
+                // missing), Persona dialog will inform the user how
+                // to enable cookies.
+                callback();
               });
   }
 
