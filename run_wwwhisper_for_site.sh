@@ -60,7 +60,7 @@ source ${VIRTUALENV_DIR}/bin/activate \
     || err_quit "Failed to activate virtualenv in ${VIRTUALENV_DIR}."
 
 exec uwsgi  --socket="${SITE_DIR}/uwsgi.sock"\
- --chdir="${SCRIPT_DIR}/django_wwwhisper"\
+ --chdir="${SCRIPT_DIR}/"\
  --module="wwwhisper_service.wsgi:application"\
  --master\
  --vacuum\

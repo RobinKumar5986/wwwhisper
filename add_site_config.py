@@ -296,7 +296,7 @@ def main():
             site_dir_name, wwwhisper_path, site_config_path,
             supervisor_config_path)
 
-    manage_path = os.path.join(wwwhisper_path, 'django_wwwhisper', 'manage.py')
+    manage_path = os.path.join(wwwhisper_path, 'manage.py')
     # Use Python from the virtual environment to run syncdb.
     exit_status = subprocess.call(
         ['/usr/bin/env', 'python', manage_path, 'syncdb',
