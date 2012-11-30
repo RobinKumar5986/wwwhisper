@@ -48,7 +48,7 @@ class HttpResponseOK(HttpResponse):
     def __init__(self, message):
         super(HttpResponseOK, self).__init__(
             message,
-            mimetype=TEXT_MIME_TYPE,
+            content_type=TEXT_MIME_TYPE,
             status=200)
 
 class HttpResponseOKJson(HttpResponse):
@@ -60,7 +60,7 @@ class HttpResponseOKJson(HttpResponse):
     def __init__(self, attributes_dict):
         super(HttpResponseOKJson, self).__init__(
             json.dumps(attributes_dict),
-            mimetype=JSON_MIME_TYPE,
+            content_type=JSON_MIME_TYPE,
             status=200)
 
 class HttpResponseNoContent(HttpResponse):
@@ -85,7 +85,7 @@ class HttpResponseCreated(HttpResponse):
 
         super(HttpResponseCreated, self).__init__(
             json.dumps(attributes_dict),
-            mimetype=JSON_MIME_TYPE,
+            content_type=JSON_MIME_TYPE,
             status=201)
 
 
@@ -98,7 +98,7 @@ class HttpResponseNotAuthenticated(HttpResponse):
     def __init__(self):
         """Sets WWW-Authenticate header required by the HTTP standard."""
         super(HttpResponseNotAuthenticated, self).__init__(
-            'Authentication required.', mimetype=JSON_MIME_TYPE, status=401)
+            'Authentication required.', content_type=JSON_MIME_TYPE, status=401)
         self['WWW-Authenticate'] = 'VerifiedEmail'
 
 class HttpResponseNotAuthorized(HttpResponse):
@@ -106,7 +106,7 @@ class HttpResponseNotAuthorized(HttpResponse):
 
     def __init__(self):
         super(HttpResponseNotAuthorized, self).__init__(
-            'User not authorized.', mimetype=JSON_MIME_TYPE, status=403)
+            'User not authorized.', content_type=JSON_MIME_TYPE, status=403)
 
 class HttpResponseBadRequest(HttpResponse):
     """Request invalid.
@@ -118,7 +118,7 @@ class HttpResponseBadRequest(HttpResponse):
     def __init__(self, message):
         logger.debug('Bad request %s' % (message))
         super(HttpResponseBadRequest, self).__init__(
-            message, mimetype=TEXT_MIME_TYPE, status=400)
+            message, content_type=TEXT_MIME_TYPE, status=400)
 
 class HttpResponseNotFound(HttpResponse):
     """Resource not found."""
@@ -126,7 +126,7 @@ class HttpResponseNotFound(HttpResponse):
     def __init__(self, message):
         logger.debug('Not found %s' % (message))
         super(HttpResponseNotFound, self).__init__(
-            message, mimetype=TEXT_MIME_TYPE, status=404)
+            message, content_type=TEXT_MIME_TYPE, status=404)
 
 def never_ever_cache(decorated_function):
     """Like Django @never_cache but sets more valid cache disabling headers.
@@ -247,6 +247,7 @@ def _csrf_token_valid(request):
     perfect solution, because the header is supported only by the
     newest browsers).
     """
+    # TODO: rename this header to WWWHISPER_CRSFTOKEN.
     header_token = request.META.get('HTTP_X_CSRFTOKEN', '')
     cookie_token = request.COOKIES.get(settings.CSRF_COOKIE_NAME, '')
     if (len(header_token) != csrf.CSRF_KEY_LENGTH or
