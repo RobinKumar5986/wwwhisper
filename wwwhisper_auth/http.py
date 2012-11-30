@@ -68,6 +68,7 @@ class HttpResponseNoContent(HttpResponse):
 
     def __init__(self):
         super(HttpResponseNoContent, self).__init__(status=204)
+        self.__delitem__('Content-Type')
 
 class HttpResponseCreated(HttpResponse):
     """Request succeeded, a resource was created.
@@ -88,7 +89,6 @@ class HttpResponseCreated(HttpResponse):
             content_type=JSON_MIME_TYPE,
             status=201)
 
-
 class HttpResponseNotAuthenticated(HttpResponse):
     """User is not authenticated.
 
@@ -98,7 +98,7 @@ class HttpResponseNotAuthenticated(HttpResponse):
     def __init__(self):
         """Sets WWW-Authenticate header required by the HTTP standard."""
         super(HttpResponseNotAuthenticated, self).__init__(
-            'Authentication required.', content_type=JSON_MIME_TYPE, status=401)
+            'Authentication required.', content_type=TEXT_MIME_TYPE, status=401)
         self['WWW-Authenticate'] = 'VerifiedEmail'
 
 class HttpResponseNotAuthorized(HttpResponse):
@@ -106,7 +106,7 @@ class HttpResponseNotAuthorized(HttpResponse):
 
     def __init__(self):
         super(HttpResponseNotAuthorized, self).__init__(
-            'User not authorized.', content_type=JSON_MIME_TYPE, status=403)
+            'User not authorized.', content_type=TEXT_MIME_TYPE, status=403)
 
 class HttpResponseBadRequest(HttpResponse):
     """Request invalid.
