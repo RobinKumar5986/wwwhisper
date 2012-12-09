@@ -50,6 +50,9 @@ class Auth(View):
            'User' header in the returned response containts email of
            the user.
 
+      400: Request is malformed (suspicious path format, 'User' header
+           set in the request, ...).
+
       200: User is authenticated and authorized to access the location
            or the location does not require authorization. The
            original request should be allowed. The 'User' header in
