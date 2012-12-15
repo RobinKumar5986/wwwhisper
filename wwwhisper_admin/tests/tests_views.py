@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from django.conf import settings
 from wwwhisper_auth.tests.utils import HttpTestCase
-from wwwhisper_auth.models import site_url
 
 import json
 import wwwhisper_auth.models
@@ -23,6 +23,7 @@ import wwwhisper_auth.models
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
 TEST_USER_EMAIL = 'foo@bar.org'
 TEST_LOCATION = '/pub/kika/'
+TEST_SITE = settings.SITE_URL
 
 def uid_regexp():
     return '[0-9a-z-]{36}'
@@ -33,7 +34,7 @@ def extract_uuid(urn):
 class AdminViewTestCase(HttpTestCase):
 
     def setUp(self):
-        wwwhisper_auth.models.create_site(site_url())
+        wwwhisper_auth.models.create_site(TEST_SITE)
 
     def add_user(self, user_name=TEST_USER_EMAIL):
         response = self.post('/admin/api/users/', {'email' : user_name})
@@ -58,7 +59,7 @@ class UserTest(AdminViewTestCase):
         self.assertRegexpMatches(parsed_response_body['id'],
                                  '^urn:uuid:%s$' % uid_regexp())
         self.assertEqual(TEST_USER_EMAIL, parsed_response_body['email'])
-        self_url = '%s/admin/api/users/%s/' % (site_url(), user_uuid)
+        self_url = '%s/admin/api/users/%s/' % (TEST_SITE, user_uuid)
         self.assertEqual(self_url, parsed_response_body['self'])
         self.assertEqual(self_url, response['Location'])
         self.assertEqual(self_url, response['Content-Location'])
@@ -86,7 +87,7 @@ class UserTest(AdminViewTestCase):
         response = self.get('/admin/api/users/')
         self.assertEqual(200, response.status_code)
         parsed_response_body = json.loads(response.content)
-        self.assertEqual('%s/admin/api/users/' % site_url(),
+        self.assertEqual('%s/admin/api/users/' % TEST_SITE,
                          parsed_response_body['self'])
 
         users = parsed_response_body['users']
@@ -133,7 +134,7 @@ class LocationTest(AdminViewTestCase):
                                  '^urn:uuid:%s$' % uid_regexp())
         self.assertEqual(TEST_LOCATION, parsed_response_body['path'])
         self.assertFalse(parsed_response_body.has_key('openAccess'))
-        self_url = '%s/admin/api/locations/%s/' % (site_url(), location_uuid)
+        self_url = '%s/admin/api/locations/%s/' % (TEST_SITE, location_uuid)
         self.assertEqual(self_url, parsed_response_body['self'])
         self.assertEqual(self_url, response['Location'])
         self.assertEqual(self_url, response['Content-Location'])
@@ -241,7 +242,7 @@ class LocationTest(AdminViewTestCase):
         response = self.get('/admin/api/locations/')
         self.assertEqual(200, response.status_code)
         parsed_response_body = json.loads(response.content)
-        self.assertEquals('%s/admin/api/locations/' % site_url(),
+        self.assertEquals('%s/admin/api/locations/' % TEST_SITE,
                           parsed_response_body['self'])
 
         locations = parsed_response_body['locations']

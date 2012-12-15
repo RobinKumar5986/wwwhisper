@@ -26,7 +26,6 @@ from functools import wraps
 from wwwhisper_auth import http
 from wwwhisper_auth import url_path
 from wwwhisper_auth.backend import AssertionVerificationException
-from wwwhisper_auth.models import site_url
 
 import logging
 
@@ -124,10 +123,10 @@ class Auth(View):
 
         user = request.user
         location = self.locations_collection.find_location(
-            site_url(), decoded_path)
+            request.site_id, decoded_path)
 
         if (user and user.is_authenticated() and
-            user.get_profile().site_id == site_url()):
+            user.get_profile().site_id == request.site_id):
             debug_msg += " by '%s'" % (user.email)
             respone = None
 
@@ -215,7 +214,9 @@ class Login(http.RestView):
         if assertion == None:
             return http.HttpResponseBadRequest('BrowserId assertion not set.')
         try:
-            user = auth.authenticate(assertion=assertion)
+            user = auth.authenticate(site_id=request.site_id,
+                                     site_url=request.site_url,
+                                     assertion=assertion)
         except AssertionVerificationException as ex:
             return http.HttpResponseBadRequest(str(ex))
         if user is not None:
@@ -243,8 +244,7 @@ class WhoAmI(http.RestView):
     def get(self, request):
         """Returns an email or an authentication required error."""
         user = request.user
-        # TODO: test whoami for user of a different site.
         if (user and user.is_authenticated() and
-            user.get_profile().site_id == site_url()):
+            user.get_profile().site_id == request.site_id):
             return http.HttpResponseOKJson({'email': user.email})
         return http.HttpResponseNotAuthenticated()

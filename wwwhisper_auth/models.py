@@ -34,27 +34,12 @@ because those ids can be reused after object is deleted.
 Makes sure entered emails and paths are valid.
 """
 
-from django.conf import settings
 from django.contrib.auth.models import User
-from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from wwwhisper_auth import  url_path
 
 import re
 import uuid as uuidgen
-
-_SITE_URL = getattr(settings, 'SITE_URL', None)
-if _SITE_URL is None:
-    raise ImproperlyConfigured(
-        'WWWhisper requires SITE_URL to be set in django settings.py file')
-
-def site_url():
-    """Returns id of a site for which wwwhisper is running.
-
-    This is temporary solution while wwwhisper is changed to handle
-    multiple sites
-    """
-    return _SITE_URL
 
 class CreationException(Exception):
     """Raised when creation of a resource failed."""
@@ -128,8 +113,8 @@ Allows to identify a REST resource representing a user. UUID is stored
 in the username field when User object is created.
 """)
 
-User.attributes_dict = lambda(self): \
-    _add_common_attributes(self, {'email': self.email})
+User.attributes_dict = lambda self, site_url: \
+    _add_common_attributes(self, site_url, {'email': self.email})
 User.attributes_dict.__func__.__doc__ = \
     """Returns externally visible attributes of the user resource."""
 
@@ -290,19 +275,19 @@ class Location(ValidatedModel):
         return [permission.user for permission in
                 Permission.objects.filter(http_location_id=self.id)]
 
-    def attributes_dict(self):
+    def attributes_dict(self, site_url):
         """Returns externally visible attributes of the location resource."""
         result = {
             'path': self.path,
             'allowedUsers': [
-                user.attributes_dict() for user in self.allowed_users()
+                user.attributes_dict(site_url) for user in self.allowed_users()
                 ],
             }
         if self.open_access_granted():
             result['openAccess'] = {
                 'requireLogin' : self.open_access_requires_login()
                 }
-        return _add_common_attributes(self, result)
+        return _add_common_attributes(self, site_url, result)
 
 class Permission(ValidatedModel):
     """Connects a location with a user that can access the location.
@@ -325,10 +310,10 @@ class Permission(ValidatedModel):
                 {'location_uuid' : self.http_location.uuid,
                  'user_uuid': self.user.uuid})
 
-    def attributes_dict(self):
+    def attributes_dict(self, site_url):
         """Returns externally visible attributes of the permission resource."""
         return _add_common_attributes(
-            self, {'user': self.user.attributes_dict()})
+            self, site_url, {'user': self.user.attributes_dict(site_url)})
 
 class Collection(object):
     """A common base class for managing a collection of resources.
@@ -518,20 +503,16 @@ class LocationsCollection(Collection):
                 return True
         return False
 
-def full_url(absolute_path):
-    """Return full url of a resource with a given path."""
-    return site_url() + absolute_path
-
 def _uuid2urn(uuid):
     return 'urn:uuid:' + uuid
 
-def _add_common_attributes(item, attributes_dict):
+def _add_common_attributes(item, site_url, attributes_dict):
     """Inserts common attributes of an item to a given dict.
 
     Attributes that are common for different resource types are a
     'self' link and an 'id' field.
     """
-    attributes_dict['self'] = full_url(item.get_absolute_url())
+    attributes_dict['self'] = site_url + item.get_absolute_url()
     if hasattr(item, 'uuid'):
         attributes_dict['id'] = _uuid2urn(item.uuid)
     return attributes_dict

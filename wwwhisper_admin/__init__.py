@@ -28,6 +28,11 @@ from django.contrib.auth import models as contrib_auth_models
 from django.core.exceptions import ImproperlyConfigured
 from wwwhisper_auth import models as auth_models
 
+SITE_URL = getattr(settings, 'SITE_URL', None)
+if SITE_URL is None:
+    raise ImproperlyConfigured(
+        'WWWhisper requires SITE_URL to be set in django settings.py file')
+
 def _create_site():
     """Creates a site configured in settings.py.
 
@@ -35,10 +40,10 @@ def _create_site():
     multiple sites, but currently it handles only a single one.
     """
     try:
-        auth_models.create_site(auth_models.site_url())
+        auth_models.create_site(SITE_URL)
     except auth_models.CreationException as ex:
         raise ImproperlyConfigured('Failed to create site %s: %s'
-                                   % (auth_models.site_url(), ex))
+                                   % (SITE_URL, ex))
 
 def _create_initial_locations():
     """Creates all locations listed in WWWHISPER_INITIAL_LOCATIONS setting."""
@@ -46,7 +51,7 @@ def _create_initial_locations():
     locations_paths = getattr(settings, 'WWWHISPER_INITIAL_LOCATIONS', [])
     for path in locations_paths:
         try:
-            locations_collection.create_item(auth_models.site_url(), path)
+            locations_collection.create_item(SITE_URL, path)
         except auth_models.CreationException as ex:
             raise ImproperlyConfigured('Failed to create location %s: %s'
                                        % (path, ex))
@@ -57,15 +62,14 @@ def _create_initial_admins():
     emails = getattr(settings, 'WWWHISPER_INITIAL_ADMINS', [])
     for email in emails:
         try:
-            user = users_collection.create_item(auth_models.site_url(), email)
+            user = users_collection.create_item(SITE_URL, email)
         except auth_models.CreationException as ex:
             raise ImproperlyConfigured('Failed to create admin user %s: %s'
                                        % (email, ex))
 
 def _grant_admins_access_to_all_locations():
-    for user in auth_models.UsersCollection().all(auth_models.site_url()):
-        for location in auth_models.LocationsCollection().all(
-            auth_models.site_url()):
+    for user in auth_models.UsersCollection().all(SITE_URL):
+        for location in auth_models.LocationsCollection().all(SITE_URL):
             location.grant_access(user.uuid)
 
 def grant_initial_permission(app, created_models, *args, **kwargs):

@@ -24,17 +24,17 @@ from wwwhisper_auth.tests.utils import HttpTestCase
 import json
 
 INCORRECT_ASSERTION = "ThisAssertionIsFalse"
-TEST_SITE = models.site_url()
+TEST_SITE = settings.SITE_URL
 
 class FakeAssertionVeryfingBackend(ModelBackend):
-    def authenticate(self, assertion):
-        try:
-            if assertion == INCORRECT_ASSERTION:
-                raise backend.AssertionVerificationException(
-                    'Assertion verification failed.')
-            return User.objects.get(email=assertion)
-        except User.DoesNotExist:
-            return None
+    def __init__(self):
+        self.users = models.UsersCollection()
+
+    def authenticate(self, assertion, site_id=TEST_SITE, site_url=TEST_SITE):
+        if assertion == INCORRECT_ASSERTION:
+            raise backend.AssertionVerificationException(
+                'Assertion verification failed.')
+        return self.users.find_item_by_email(site_id, assertion)
 
 class AuthTestCase(HttpTestCase):
     def setUp(self):
@@ -81,7 +81,8 @@ class AuthTest(AuthTestCase):
         models.create_site(site2_id)
         user = self.users.create_item(site2_id, 'foo@example.com')
         location = self.locations.create_item(TEST_SITE, '/foo/')
-        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        self.assertTrue(self.client.login(
+                assertion='foo@example.com', site_id=site2_id))
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
 
@@ -197,3 +198,13 @@ class WhoAmITest(AuthTestCase):
         parsed_response_body = json.loads(response.content)
         self.assertEqual('foo@example.com', parsed_response_body['email'])
 
+    def test_whoami_for_user_of_differen_site(self):
+        site2_id = 'somesite'
+        models.create_site(site2_id)
+        self.users.create_item(site2_id, 'foo@example.com')
+        self.assertTrue(self.client.login(
+                assertion='foo@example.com', site_id=site2_id))
+        # Not authorized.
+        # Request is run for TEST_SITE, but user belongs to site2_id.
+        response = self.get('/auth/api/whoami/')
+        self.assertEqual(401, response.status_code)
