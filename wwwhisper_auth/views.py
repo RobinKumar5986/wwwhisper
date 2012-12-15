@@ -243,6 +243,8 @@ class WhoAmI(http.RestView):
     def get(self, request):
         """Returns an email or an authentication required error."""
         user = request.user
-        if user and user.is_authenticated():
+        # TODO: test whoami for user of a different site.
+        if (user and user.is_authenticated() and
+            user.get_profile().site_id == site_url()):
             return http.HttpResponseOKJson({'email': user.email})
         return http.HttpResponseNotAuthenticated()

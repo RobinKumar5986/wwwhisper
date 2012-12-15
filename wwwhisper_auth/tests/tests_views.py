@@ -196,3 +196,4 @@ class WhoAmITest(AuthTestCase):
         self.assertEqual(200, response.status_code)
         parsed_response_body = json.loads(response.content)
         self.assertEqual('foo@example.com', parsed_response_body['email'])
+
