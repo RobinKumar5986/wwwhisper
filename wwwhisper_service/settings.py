@@ -74,7 +74,6 @@ INSTALLED_APPS = (
 AUTH_PROFILE_MODULE = 'wwwhisper_auth.UserExtras'
 
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
     'wwwhisper_auth.backend.BrowserIDBackend',
 )
 

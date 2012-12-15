@@ -76,6 +76,15 @@ class AuthTest(AuthTestCase):
         self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
 
+    def test_is_authorized_for_user_of_other_site(self):
+        site2_id = 'somesite'
+        models.create_site(site2_id)
+        user = self.users.create_item(site2_id, 'foo@example.com')
+        location = self.locations.create_item(TEST_SITE, '/foo/')
+        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertEqual(401, response.status_code)
+
     def test_is_authorized_for_open_location(self):
         location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_open_access(require_login=False)

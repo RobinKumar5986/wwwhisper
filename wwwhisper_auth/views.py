@@ -126,7 +126,8 @@ class Auth(View):
         location = self.locations_collection.find_location(
             site_url(), decoded_path)
 
-        if user and user.is_authenticated():
+        if (user and user.is_authenticated() and
+            user.get_profile().site_id == site_url()):
             debug_msg += " by '%s'" % (user.email)
             respone = None
 
