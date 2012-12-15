@@ -26,6 +26,7 @@ from functools import wraps
 from wwwhisper_auth import http
 from wwwhisper_auth import url_path
 from wwwhisper_auth.backend import AssertionVerificationException
+from wwwhisper_auth.models import site_url
 
 import logging
 
@@ -122,7 +123,8 @@ class Auth(View):
             return http.HttpResponseBadRequest(path_validation_error)
 
         user = request.user
-        location = self.locations_collection.find_location(decoded_path)
+        location = self.locations_collection.find_location(
+            site_url(), decoded_path)
 
         if user and user.is_authenticated():
             debug_msg += " by '%s'" % (user.email)

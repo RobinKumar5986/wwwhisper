@@ -23,6 +23,7 @@ granting/revoking access to locations.
 from wwwhisper_auth import http
 from wwwhisper_auth.models import CreationException
 from wwwhisper_auth.models import full_url
+from wwwhisper_auth.models import site_url
 
 import logging
 
@@ -48,7 +49,7 @@ class CollectionView(http.RestView):
               used to create the resource.
         Returns json representation of the added resource."""
         try:
-            created_item = self.collection.create_item(**kwargs)
+            created_item = self.collection.create_item(site_url(), **kwargs)
         except CreationException as ex:
             return http.HttpResponseBadRequest(ex)
         attributes_dict = created_item.attributes_dict()
@@ -59,7 +60,8 @@ class CollectionView(http.RestView):
 
     def get(self, request):
         """Returns json representation of all resources in the collection."""
-        items_list = [item.attributes_dict() for item in self.collection.all()]
+        items_list = [item.attributes_dict()
+                      for item in self.collection.all(site_url())]
         return http.HttpResponseOKJson({
                 'self' : full_url(request.path),
                 self.collection.collection_name: items_list
@@ -80,7 +82,7 @@ class ItemView(http.RestView):
 
     def get(self, request, uuid):
         """Returns json representation of a resource with a given uuid."""
-        item = self.collection.find_item(uuid)
+        item = self.collection.find_item(site_url(), uuid)
         if item is None:
             return http.HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())
@@ -88,7 +90,7 @@ class ItemView(http.RestView):
 
     def delete(self, request, uuid):
         """Deletes a resource with a given uuid."""
-        deleted = self.collection.delete_item(uuid)
+        deleted = self.collection.delete_item(site_url(), uuid)
         if not deleted:
             return http.HttpResponseNotFound(
                 '%s not found' % self.collection.item_name.capitalize())
@@ -115,7 +117,8 @@ class OpenAccessView(http.RestView):
 
     def put(self, request, location_uuid, requireLogin):
         """Creates a resource that enables open access to a given location."""
-        location = self.locations_collection.find_item(location_uuid)
+        location = self.locations_collection.find_item(
+            site_url(), location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
         if location.open_access_granted():
@@ -132,7 +135,8 @@ class OpenAccessView(http.RestView):
 
     def get(self, request, location_uuid):
         """Check if a resource that enables open access to a location exists."""
-        location = self.locations_collection.find_item(location_uuid)
+        location = self.locations_collection.find_item(
+            site_url(), location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
         if not location.open_access_granted():
@@ -146,7 +150,8 @@ class OpenAccessView(http.RestView):
 
         Disables open access to a given location.
         """
-        location = self.locations_collection.find_item(location_uuid)
+        location = self.locations_collection.find_item(
+            site_url(), location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
         if not location.open_access_granted():
@@ -169,7 +174,8 @@ class AllowedUsersView(http.RestView):
 
         Grants access to a given location by a given user.
         """
-        location = self.locations_collection.find_item(location_uuid)
+        location = self.locations_collection.find_item(
+            site_url(), location_uuid)
         if not location:
             return http.HttpResponseNotFound('Location not found.')
         try:
@@ -191,7 +197,8 @@ class AllowedUsersView(http.RestView):
         location. If the location is open, but the user is not
         explicitly granted access, not found failure is returned.
         """
-        location = self.locations_collection.find_item(location_uuid)
+        location = self.locations_collection.find_item(
+            site_url(), location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
         try:
@@ -207,7 +214,8 @@ class AllowedUsersView(http.RestView):
         location is open, the user will still be able to access the
         location after this call succeeds.
         """
-        location = self.locations_collection.find_item(location_uuid)
+        location = self.locations_collection.find_item(
+            site_url(), location_uuid)
         if not location:
             return http.HttpResponseNotFound('Location not found.')
         try:

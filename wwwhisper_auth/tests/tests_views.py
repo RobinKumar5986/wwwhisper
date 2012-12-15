@@ -24,6 +24,7 @@ from wwwhisper_auth.tests.utils import HttpTestCase
 import json
 
 INCORRECT_ASSERTION = "ThisAssertionIsFalse"
+TEST_SITE = models.site_url()
 
 class FakeAssertionVeryfingBackend(ModelBackend):
     def authenticate(self, assertion):
@@ -37,8 +38,9 @@ class FakeAssertionVeryfingBackend(ModelBackend):
 
 class AuthTestCase(HttpTestCase):
     def setUp(self):
-        self.locations_collection = models.LocationsCollection()
-        self.users_collection = models.UsersCollection()
+        self.locations = models.LocationsCollection()
+        self.users = models.UsersCollection()
+        models.create_site(TEST_SITE)
 
         settings.AUTHENTICATION_BACKENDS = (
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
@@ -50,7 +52,7 @@ class AuthTest(AuthTestCase):
         self.assertEqual(400, response.status_code)
 
     def test_is_authorized_for_not_authenticated_user(self):
-        location = self.locations_collection.create_item('/foo/')
+        location = self.locations.create_item(TEST_SITE, '/foo/')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
         self.assertTrue(response.has_header('WWW-Authenticate'))
@@ -58,7 +60,7 @@ class AuthTest(AuthTestCase):
         self.assertEqual('VerifiedEmail', response['WWW-Authenticate'])
 
     def test_is_authorized_for_not_authorized_user(self):
-        self.users_collection.create_item('foo@example.com')
+        self.users.create_item(TEST_SITE, 'foo@example.com')
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         # For an authenticated user 'User' header should be always returned.
@@ -66,8 +68,8 @@ class AuthTest(AuthTestCase):
         self.assertEqual(403, response.status_code)
 
     def test_is_authorized_for_authorized_user(self):
-        user = self.users_collection.create_item('foo@example.com')
-        location = self.locations_collection.create_item('/foo/')
+        user = self.users.create_item(TEST_SITE, 'foo@example.com')
+        location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.get('/auth/api/is-authorized/?path=/foo/')
@@ -75,24 +77,24 @@ class AuthTest(AuthTestCase):
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_open_location(self):
-        location = self.locations_collection.create_item('/foo/')
+        location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertFalse(response.has_header('User'))
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_open_location_and_authenticated_user(self):
-        user = self.users_collection.create_item('foo@example.com')
+        user = self.users.create_item(TEST_SITE, 'foo@example.com')
         self.assertTrue(self.client.login(assertion='foo@example.com'))
-        location = self.locations_collection.create_item('/foo/')
+        location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_invalid_path(self):
-        user = self.users_collection.create_item('foo@example.com')
-        location = self.locations_collection.create_item('/foo/')
+        user = self.users.create_item(TEST_SITE, 'foo@example.com')
+        location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
         self.assertTrue(self.client.login(assertion='foo@example.com'))
 
@@ -107,7 +109,7 @@ class AuthTest(AuthTestCase):
                                  'Path should be absolute and normalized')
 
     def test_is_authorized_decodes_path(self):
-        location = self.locations_collection.create_item('/f/')
+        location = self.locations.create_item(TEST_SITE, '/f/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=%2F%66%2F')
         self.assertEqual(200, response.status_code)
@@ -116,14 +118,14 @@ class AuthTest(AuthTestCase):
         self.assertEqual(401, response.status_code)
 
     def test_is_authorized_collapses_slashes(self):
-        location = self.locations_collection.create_item('/f/')
+        location = self.locations.create_item(TEST_SITE, '/f/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=///f/')
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_does_not_allow_requests_with_user_header(self):
-        user = self.users_collection.create_item('foo@example.com')
-        location = self.locations_collection.create_item('/foo/')
+        user = self.users.create_item(TEST_SITE, 'foo@example.com')
+        location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
         self.assertTrue(self.client.login(assertion='foo@example.com'))
         response = self.client.get('/auth/api/is-authorized/?path=/foo/',
@@ -148,7 +150,7 @@ class LoginTest(AuthTestCase):
             response.content, 'Assertion verification failed')
 
     def test_login_succeeds_if_known_user(self):
-        self.users_collection.create_item('foo@example.com')
+        self.users.create_item(TEST_SITE, 'foo@example.com')
         response = self.post('/auth/api/login/',
                              {'assertion' : 'foo@example.com'})
         self.assertEqual(204, response.status_code)
@@ -156,7 +158,7 @@ class LoginTest(AuthTestCase):
 
 class LogoutTest(AuthTestCase):
     def test_authentication_requested_after_logout(self):
-        user = self.users_collection.create_item('foo@example.com')
+        user = self.users.create_item(TEST_SITE, 'foo@example.com')
         self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
 
         response = self.get('/auth/api/is-authorized/?path=/bar/')
@@ -173,7 +175,7 @@ class LogoutTest(AuthTestCase):
 
 class WhoAmITest(AuthTestCase):
     def test_whoami_returns_email_of_logged_in_user(self):
-        self.users_collection.create_item('foo@example.com')
+        self.users.create_item(TEST_SITE, 'foo@example.com')
 
         # Not authorized.
         response = self.get('/auth/api/whoami/')

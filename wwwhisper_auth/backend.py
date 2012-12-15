@@ -33,6 +33,11 @@ class BrowserIDBackend(ModelBackend):
 
     Attributes:
         users_collection: Allows to find a user with a given email.
+
+        locations_collection: Allows to check if a site has open
+            locations that require login. If this is the case and
+            unknown user signs-in, user object for her needs to be
+            created.
     """
     users_collection = models.UsersCollection()
     locations_collection = models.LocationsCollection()
@@ -49,12 +54,13 @@ class BrowserIDBackend(ModelBackend):
         Raises:
             AssertionVerificationException: verification failed.
         """
-        result = verify(assertion=assertion, audience=models.SITE_URL)
+        url = models.site_url()
+        result = verify(assertion=assertion, audience=url)
         if not result:
             raise AssertionVerificationException(
                 'BrowserID assertion verification failed.')
         email = result['email']
-        user = self.users_collection.find_item_by_email(result['email'])
+        user = self.users_collection.find_item_by_email(url, result['email'])
         if user is not None:
             return user
         try:
@@ -64,8 +70,8 @@ class BrowserIDBackend(ModelBackend):
             # TODO: user objects created in such way should probably
             # be marked and automatically deleted on logout or after
             # some time of inactivity.
-            if self.locations_collection.has_open_location_with_login():
-                return self.users_collection.create_item(email)
+            if self.locations_collection.has_open_location_with_login(url):
+                return self.users_collection.create_item(url, email)
             else:
                 return None
         except models.CreationException as ex:

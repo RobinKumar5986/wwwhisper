@@ -14,13 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Data model fot the access control mechanism.
+"""Data model for the access control mechanism.
 
-Stores information about locations, users and permissions. Provides
-methods that map to REST operations that can be performed on users,
-locations and permissions resources. Allows to retrieve externally
-visible attributes of these resources, the attributes are returned as
-a resource representation by REST methods.
+Stores information about sites, locations, users and permissions. A
+site has users, locations (paths) and permissions - rules that define
+which user can access which locations. Sites are isolated. Users and
+locations are associated with a single site and are used only for this
+site.
+
+Provides methods that map to REST operations that can be performed on
+users, locations and permissions resources. Allows to retrieve
+externally visible attributes of these resources, the attributes are
+returned as a resource representation by REST methods.
 
 Resources are identified by an externally visible UUIDs. Standard
 primary key ids are not used for external identification purposes,
@@ -38,10 +43,18 @@ from wwwhisper_auth import  url_path
 import re
 import uuid as uuidgen
 
-SITE_URL = getattr(settings, 'SITE_URL', None)
-if SITE_URL is None:
+_SITE_URL = getattr(settings, 'SITE_URL', None)
+if _SITE_URL is None:
     raise ImproperlyConfigured(
         'WWWhisper requires SITE_URL to be set in django settings.py file')
+
+def site_url():
+    """Returns id of a site for which wwwhisper is running.
+
+    This is temporary solution while wwwhisper is changed to handle
+    multiple sites
+    """
+    return _SITE_URL
 
 class CreationException(Exception):
     """Raised when creation of a resource failed."""
@@ -62,9 +75,51 @@ class ValidatedModel(models.Model):
         self.full_clean()
         return super(ValidatedModel, self).save(*args, **kwargs)
 
+class Site(ValidatedModel):
+    """A site to which access is protected.
+
+    Site has locations and users.
+
+    Attributes:
+      site_id: can be a domain or any other string.
+    """
+    site_id = models.TextField(primary_key=True,
+                               db_index=True)
+
+def create_site(site_id):
+    """Creates a new Site object.
+
+    Args:
+       site_id: A domain or other id of the created site.
+    Raises:
+       CreationException if a site with such id already exists.
+    """
+    if _find(Site, site_id=site_id) is not None:
+        raise CreationException('Site already exists.')
+    return Site.objects.create(site_id=site_id)
+
+def find_site(site_id):
+    return _find(Site, site_id=site_id)
+
+def delete_site(site_id):
+    site = find_site(site_id)
+    if site is None:
+        return False
+    site.delete()
+    return True
+
 # Because Django authentication mechanism is used, users need to be
 # represented by a standard Django User class. But some additions are
 # needed:
+
+class UserExtras(models.Model):
+    """Extends User model to store site to which user object belongs."""
+
+    user = models.OneToOneField(User)
+    site = models.ForeignKey(Site, related_name='+')
+
+    def save(self, *args, **kwargs):
+        return super(UserExtras, self).save(*args, **kwargs)
 
 User.uuid = property(fget=lambda(self): self.username, doc=\
 """Externally visible UUID of a user.
@@ -94,6 +149,7 @@ class Location(ValidatedModel):
     /pub/beer and all its sub-paths.
 
     Attributes:
+      site: Site to which the location belongs.
       path: Canonical path of the location.
       uuid: Externally visible UUID of the location, allows to identify a REST
           resource representing the location.
@@ -109,7 +165,8 @@ class Location(ValidatedModel):
         ('y', 'open access'),
         ('a', 'open access, login required'),
         )
-    path = models.TextField(primary_key=True)
+    site = models.ForeignKey(Site, related_name='+')
+    path = models.TextField(db_index=True)
     uuid = models.CharField(max_length=36, db_index=True,
                             editable=False, unique=True)
     open_access = models.CharField(max_length=2, choices=OPEN_ACCESS_CHOICES,
@@ -147,6 +204,7 @@ class Location(ValidatedModel):
         self.open_access = 'n'
         self.save()
 
+    # TODO: For efficiency this should take the User object, not the uuid.
     def can_access(self, user_uuid):
         """Determines if a user can access the location.
 
@@ -157,13 +215,14 @@ class Location(ValidatedModel):
             True if the user is granted permission to access the
             location or it the location is open.
         """
-        if _find(User, username=user_uuid) is None:
+        if _find(User, username=user_uuid,
+                 userextras__site_id=self.site_id) is None:
             return False
 
         return (self.open_access_granted()
                 or _find(Permission,
                          user__username=user_uuid,
-                         http_location=self.path) is not None)
+                         http_location_id=self.id) is not None)
 
     def grant_access(self, user_uuid):
         """Grants access to the location to a given user.
@@ -178,18 +237,19 @@ class Location(ValidatedModel):
                 granted access to the location.
 
         Raises:
-            LookupError: No user with a given UUID.
+            LookupError: A site to which location belongs has no user
+                with a given UUID.
         """
-        user = _find(User, username=user_uuid)
+        user = _find(User, username=user_uuid, userextras__site_id=self.site_id)
         if user is None:
             raise LookupError('User not found')
         permission = _find(
-            Permission, http_location_id=self.path, user_id=user.id)
+            Permission, http_location_id=self.id, user_id=user.id)
         created = False
         if permission is None:
             created = True
             permission = Permission.objects.create(
-                http_location_id=self.path, user_id=user.id)
+                http_location_id=self.id, user_id=user.id)
             permission.save()
         return (permission, created)
 
@@ -200,8 +260,8 @@ class Location(ValidatedModel):
             user_uuid: string UUID of a user.
 
         Raises:
-            LookupError: No user with a given UUID or the user can not
-                access the location.
+            LookupError: Site has no user with a given UUID or the
+                user can not access the location.
         """
         permission = self.get_permission(user_uuid)
         permission.delete()
@@ -216,11 +276,11 @@ class Location(ValidatedModel):
             LookupError: No user with a given UUID or the user can not
                 access the location.
         """
-        user = _find(User, username=user_uuid)
+        user = _find(User, username=user_uuid, userextras__site_id=self.site_id)
         if user is None:
             raise LookupError('User not found.')
         permission = _find(
-            Permission, http_location_id=self.path, user_id=user.id)
+            Permission, http_location_id=self.id, user_id=user.id)
         if permission is None:
             raise LookupError('User can not access location.')
         return permission
@@ -228,7 +288,7 @@ class Location(ValidatedModel):
     def allowed_users(self):
         """"Returns a list of users that can access the location."""
         return [permission.user for permission in
-                Permission.objects.filter(http_location=self.path)]
+                Permission.objects.filter(http_location_id=self.id)]
 
     def attributes_dict(self):
         """Returns externally visible attributes of the location resource."""
@@ -274,35 +334,41 @@ class Collection(object):
     """A common base class for managing a collection of resources.
 
     Resources in the collection are of the same type and need to be
-    identified by an UUID.
+    identified by an UUID. Each resource belongs to a single site and
+    only this site can manipulate the resource. Because of this, all
+    Collections' methods need to take site_id.
 
     Attributes (Need to be defined in subclasses):
         item_name: Name of a resource stored in the collection.
         model_class: Class that manages storage of resources.
+        site_id_column_name: Name of a column in the model class that stores
+            a site_id of a resource.
         uuid_column_name: Name of a column in the model class that stores
             a resource uuid.
     """
 
-    def all(self):
-        """Returns all items in the collection."""
-        return self.model_class.objects.all()
+    def all(self, site_id):
+        """Returns all items in the collection associated with a site."""
+        filter_args = {self.site_id_column_name: site_id}
+        return self.model_class.objects.filter(**filter_args)
 
-    def find_item(self, uuid):
-        """Finds an item with a given UUID.
+    def find_item(self, site_id, uuid):
+        """Finds an item with a given UUID if it belongs to a given site.
 
         Returns:
            The item or None if not found.
         """
-        filter_args = {self.uuid_column_name: uuid}
+        filter_args = {self.uuid_column_name: uuid,
+                       self.site_id_column_name: site_id}
         return _find(self.model_class, **filter_args)
 
-    def delete_item(self, uuid):
-        """Deletes an item with a given UUID.
+    def delete_item(self, site_id, uuid):
+        """Deletes an item with a given UUID if it belongs to a site.
 
         Returns:
            True if the item existed and was deleted, False if not found.
         """
-        item = self.find_item(uuid)
+        item = self.find_item(site_id, uuid)
         if item is None:
             return False
         item.delete()
@@ -318,28 +384,37 @@ class UsersCollection(Collection):
     item_name = 'user'
     model_class = User
     uuid_column_name = 'username'
+    site_id_column_name = 'userextras__site_id'
 
-    def create_item(self, email):
-        """Creates a new User object.
+    def create_item(self, site_id, email):
+        """Creates a new User object for a given site.
+
+        There may be two different users with the same email but for
+        different sites.
 
         Args:
+            site_id: Id of a site to which the user belongs.
             email: An email of the created user.
-
         Raises:
-            CreationException if the email is invalid or if a user
-            with such email already exists.
+            CreationException if the email is invalid or if a site
+            already has a user with such email.
         """
         encoded_email = _encode_email(email)
         if encoded_email is None:
             raise CreationException('Invalid email format.')
-        if _find(User, email=encoded_email) is not None:
+        if _find(User, email=encoded_email,
+                 userextras__site_id=site_id) is not None:
             raise CreationException('User already exists.')
+        site = _find(Site, site_id=site_id)
+        if site is None:
+            raise CreationException('Invalid site id.')
         user = User.objects.create(
             username=str(uuidgen.uuid4()), email=encoded_email, is_active=True)
+        extras = UserExtras.objects.create(user=user, site=site)
         return user
 
-    def find_item_by_email(self, email):
-        """Finds a user with a given email.
+    def find_item_by_email(self, site_id, email):
+        """Finds a user of a given site with a given email.
 
         Returns:
             A User object or None if not found.
@@ -347,7 +422,8 @@ class UsersCollection(Collection):
         encoded_email = _encode_email(email)
         if encoded_email is None:
             return None
-        return _find(self.model_class, email=encoded_email)
+        return _find(self.model_class, email=encoded_email,
+                     userextras__site_id=site_id)
 
 class LocationsCollection(Collection):
     """Collection of locations resources."""
@@ -355,20 +431,22 @@ class LocationsCollection(Collection):
     item_name = 'location'
     model_class = Location
     uuid_column_name = 'uuid'
+    site_id_column_name = 'site_id'
 
-    def create_item(self, path):
-        """Creates a new Location object.
+    def create_item(self, site_id, path):
+        """Creates a new Location object for a given site.
 
         The location path should be canonical and should not contain
         parts that are not used for access control (query, fragment,
         parameters). Location should not contain non-ascii characters.
 
         Args:
+            site_id: Id of a site to which the location belongs.
             path: A canonical path to the location.
 
         Raises:
-            CreationException if the path is invalid or if a location
-            with such path already exists.
+            CreationException if the path is invalid or if a site
+            already has a location with such path.
         """
 
         if not url_path.is_canonical(path):
@@ -390,15 +468,20 @@ class LocationsCollection(Collection):
             raise CreationException(
                 'Path should contain only ascii characters.')
 
-        if _find(Location, path=path) is not None:
+        site = _find(Site, site_id=site_id)
+        if site is None:
+            raise CreationException('Invalid site id.')
+
+        if _find(Location, path=path, site_id=site_id) is not None:
             raise CreationException('Location already exists.')
-        location = Location.objects.create(path=path)
+
+        location = Location.objects.create(path=path, site=site)
         location.save()
         return location
 
 
-    def find_location(self, canonical_path):
-        """Finds a location that defines access to a given path.
+    def find_location(self, site_id, canonical_path):
+        """Finds a location that defines access to a given path on a given site.
 
         Args:
             canonical_path: The path for which matching location is searched.
@@ -411,7 +494,7 @@ class LocationsCollection(Collection):
         longest_matched_location = None
         longest_matched_location_len = -1
 
-        for location in Location.objects.all():
+        for location in Location.objects.filter(site_id=site_id):
             probed_path = location.path
             probed_path_len = len(probed_path)
             trailing_slash_index = None
@@ -428,8 +511,8 @@ class LocationsCollection(Collection):
                 longest_matched_location = location
         return longest_matched_location
 
-    def has_open_location_with_login(self):
-        for location in Location.objects.all():
+    def has_open_location_with_login(self, site_id):
+        for location in Location.objects.filter(site_id=site_id):
             if (location.open_access_granted() and
                 location.open_access_requires_login()):
                 return True
@@ -437,7 +520,7 @@ class LocationsCollection(Collection):
 
 def full_url(absolute_path):
     """Return full url of a resource with a given path."""
-    return SITE_URL + absolute_path
+    return site_url() + absolute_path
 
 def _uuid2urn(uuid):
     return 'urn:uuid:' + uuid
