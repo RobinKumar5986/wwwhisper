@@ -125,8 +125,11 @@ class Auth(View):
         location = self.locations_collection.find_location(
             request.site_id, decoded_path)
 
+        # Makes sure user is authenticated and belongs to the current
+        # site (auth backend just ensures user exists).
         if (user and user.is_authenticated() and
             user.get_profile().site_id == request.site_id):
+
             debug_msg += " by '%s'" % (user.email)
             respone = None
 
@@ -218,6 +221,7 @@ class Login(http.RestView):
                                      site_url=request.site_url,
                                      assertion=assertion)
         except AssertionVerificationException as ex:
+            logger.debug('Assertion verification failed.')
             return http.HttpResponseBadRequest(str(ex))
         if user is not None:
             auth.login(request, user)
