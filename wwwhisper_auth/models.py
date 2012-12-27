@@ -409,9 +409,8 @@ class UsersCollection(Collection):
             raise CreationException('Invalid site id.')
         while True:
             username = _gen_random_str(USERNAME_LEN)
-            if _find(User, username=username) is not None:
-                continue
-            break;
+            if _find(User, username=username) is None:
+                break
         user = User.objects.create(
             username=username, email=encoded_email, is_active=True)
         extras = UserExtras.objects.create(
