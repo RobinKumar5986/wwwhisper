@@ -40,6 +40,10 @@ from wwwhisper_auth import  url_path
 
 import re
 import uuid as uuidgen
+import random
+
+USERNAME_LEN=10
+assert USERNAME_LEN <= User._meta.get_field('username').max_length
 
 class CreationException(Exception):
     """Raised when creation of a resource failed."""
@@ -102,21 +106,28 @@ class UserExtras(models.Model):
 
     user = models.OneToOneField(User)
     site = models.ForeignKey(Site, related_name='+')
+    # Preferably uuid would be stored in username, but Django limits
+    # the length of the username field to 30 chars.
+    uuid = models.CharField(max_length=36, db_index=True,
+                            editable=False, unique=True)
 
     def save(self, *args, **kwargs):
         return super(UserExtras, self).save(*args, **kwargs)
 
-User.uuid = property(fget=lambda(self): self.username, doc=\
+User.uuid = property(fget=lambda(self): self.get_profile().uuid, doc=\
 """Externally visible UUID of a user.
 
-Allows to identify a REST resource representing a user. UUID is stored
-in the username field when User object is created.
+Allows to identify a REST resource representing a user.
 """)
 
 User.attributes_dict = lambda self, site_url: \
     _add_common_attributes(self, site_url, {'email': self.email})
 User.attributes_dict.__func__.__doc__ = \
     """Returns externally visible attributes of the user resource."""
+
+User.get_absolute_url = models.permalink( \
+    lambda self: \
+        ('wwwhisper_user', (), {'uuid' : self.uuid}))
 
 class Location(ValidatedModel):
     """A location for which access control rules are defined.
@@ -200,13 +211,14 @@ class Location(ValidatedModel):
             True if the user is granted permission to access the
             location or it the location is open.
         """
-        if _find(User, username=user_uuid,
-                 userextras__site_id=self.site_id) is None:
+        user = _find(User, userextras__uuid=user_uuid,
+                     userextras__site_id=self.site_id)
+        if user is None:
             return False
 
         return (self.open_access_granted()
                 or _find(Permission,
-                         user__username=user_uuid,
+                         user_id=user.id,
                          http_location_id=self.id) is not None)
 
     def grant_access(self, user_uuid):
@@ -225,7 +237,8 @@ class Location(ValidatedModel):
             LookupError: A site to which location belongs has no user
                 with a given UUID.
         """
-        user = _find(User, username=user_uuid, userextras__site_id=self.site_id)
+        user = _find(
+            User, userextras__uuid=user_uuid, userextras__site_id=self.site_id)
         if user is None:
             raise LookupError('User not found')
         permission = _find(
@@ -261,7 +274,8 @@ class Location(ValidatedModel):
             LookupError: No user with a given UUID or the user can not
                 access the location.
         """
-        user = _find(User, username=user_uuid, userextras__site_id=self.site_id)
+        user = _find(
+            User, userextras__uuid=user_uuid, userextras__site_id=self.site_id)
         if user is None:
             raise LookupError('User not found.')
         permission = _find(
@@ -368,7 +382,7 @@ class UsersCollection(Collection):
 
     item_name = 'user'
     model_class = User
-    uuid_column_name = 'username'
+    uuid_column_name = 'userextras__uuid'
     site_id_column_name = 'userextras__site_id'
 
     def create_item(self, site_id, email):
@@ -393,9 +407,15 @@ class UsersCollection(Collection):
         site = _find(Site, site_id=site_id)
         if site is None:
             raise CreationException('Invalid site id.')
+        while True:
+            username = _gen_random_str(USERNAME_LEN)
+            if _find(User, username=username) is not None:
+                continue
+            break;
         user = User.objects.create(
-            username=str(uuidgen.uuid4()), email=encoded_email, is_active=True)
-        extras = UserExtras.objects.create(user=user, site=site)
+            username=username, email=encoded_email, is_active=True)
+        extras = UserExtras.objects.create(
+            user=user, site=site, uuid=str(uuidgen.uuid4()))
         return user
 
     def find_item_by_email(self, site_id, email):
@@ -552,3 +572,10 @@ def _is_email_valid(email):
     return re.match(
         "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
         email) != None
+
+def _gen_random_str(length):
+    secure_generator = random.SystemRandom()
+    allowed_chars='abcdefghijklmnopqrstuvwxyz'\
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    return ''.join(
+        [secure_generator.choice(allowed_chars) for i in range(length)])
