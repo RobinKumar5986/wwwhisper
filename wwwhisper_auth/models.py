@@ -200,20 +200,15 @@ class Location(ValidatedModel):
         self.open_access = 'n'
         self.save()
 
-    # TODO: For efficiency this should take the User object, not the uuid.
-    def can_access(self, user_uuid):
+    def can_access(self, user):
         """Determines if a user can access the location.
-
-        Args:
-            user_uuid: string UUID of a user.
 
         Returns:
             True if the user is granted permission to access the
             location or it the location is open.
         """
-        user = _find(User, userextras__uuid=user_uuid,
-                     userextras__site_id=self.site_id)
-        if user is None:
+        # Sanity check (this should normally be ensured by the caller).
+        if user.get_profile().site_id != self.site_id:
             return False
 
         return (self.open_access_granted()

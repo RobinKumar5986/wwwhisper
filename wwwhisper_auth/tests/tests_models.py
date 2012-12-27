@@ -268,11 +268,11 @@ class LocationsCollectionTest(CollectionTestCase):
     def test_grant_access(self):
         user = self.users.create_item(TEST_SITE, TEST_USER_EMAIL)
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
         (perm, created) = location.grant_access(user.uuid)
         self.assertTrue(created)
         self.assertIsNotNone(perm)
-        self.assertTrue(location.can_access(user.uuid))
+        self.assertTrue(location.can_access(user))
 
     def test_grant_access_for_not_existing_user(self):
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
@@ -284,7 +284,7 @@ class LocationsCollectionTest(CollectionTestCase):
     def test_grant_access_for_user_of_different_site(self):
         user = self.users.create_item(TEST_SITE, TEST_USER_EMAIL)
         location = self.locations.create_item(TEST_SITE2, TEST_LOCATION)
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
         self.assertRaisesRegexp(LookupError,
                                 'User not found',
                                 location.grant_access,
@@ -294,7 +294,7 @@ class LocationsCollectionTest(CollectionTestCase):
         user = self.users.create_item(TEST_SITE, TEST_USER_EMAIL)
         location = self.locations.create_item(TEST_SITE2, TEST_LOCATION)
         location.grant_open_access(require_login=True)
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
 
     def test_grant_access_if_already_granted(self):
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
@@ -305,7 +305,7 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertFalse(created2)
         self.assertEqual(permission1, permission2)
         self.assertEqual(TEST_USER_EMAIL, permission1.user.email)
-        self.assertTrue(location.can_access(user.uuid))
+        self.assertTrue(location.can_access(user))
 
     def test_grant_access_to_deleted_location(self):
         user = self.users.create_item(TEST_SITE, TEST_USER_EMAIL)
@@ -319,9 +319,9 @@ class LocationsCollectionTest(CollectionTestCase):
         user = self.users.create_item(TEST_SITE, TEST_USER_EMAIL)
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
         location.grant_access(user.uuid)
-        self.assertTrue(location.can_access(user.uuid))
+        self.assertTrue(location.can_access(user))
         location.revoke_access(user.uuid)
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
 
     def test_revoke_not_granted_access(self):
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
@@ -344,20 +344,20 @@ class LocationsCollectionTest(CollectionTestCase):
     def test_deleting_user_revokes_access(self):
         user = self.users.create_item(TEST_SITE, TEST_USER_EMAIL)
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
         location.grant_access(user.uuid)
-        self.assertTrue(location.can_access(user.uuid))
+        self.assertTrue(location.can_access(user))
         self.users.delete_item(TEST_SITE, user.uuid)
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
 
     def test_deleting_location_revokes_access(self):
         user = self.users.create_item(TEST_SITE, TEST_USER_EMAIL)
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
         location.grant_access(user.uuid)
-        self.assertTrue(location.can_access(user.uuid))
+        self.assertTrue(location.can_access(user))
         self.locations.delete_item(TEST_SITE, location.uuid)
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
 
     def test_revoke_access_for_not_existing_user(self):
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
@@ -434,7 +434,7 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertEqual(
             location2,
             self.locations.find_location(TEST_SITE, '/foo/bar/baz/bam'))
-        self.assertFalse(location2.can_access(user.uuid))
+        self.assertFalse(location2.can_access(user))
 
     def test_trailing_slash_respected(self):
         location = self.locations.create_item(TEST_SITE, '/foo/bar/')
@@ -456,32 +456,32 @@ class LocationsCollectionTest(CollectionTestCase):
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
         self.assertFalse(location.open_access_granted())
         self.assertFalse(location.open_access_requires_login())
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
 
         location.grant_open_access(require_login=False)
         self.assertTrue(location.open_access_granted())
         self.assertFalse(location.open_access_requires_login())
-        self.assertTrue(location.can_access(user.uuid))
+        self.assertTrue(location.can_access(user))
 
         location.revoke_open_access()
         self.assertFalse(location.open_access_granted())
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
 
     def test_grant_authenticated_open_access(self):
         user = self.users.create_item(TEST_SITE, TEST_USER_EMAIL)
         location = self.locations.create_item(TEST_SITE, TEST_LOCATION)
         self.assertFalse(location.open_access_granted())
         self.assertFalse(location.open_access_requires_login())
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
 
         location.grant_open_access(require_login=True)
         self.assertTrue(location.open_access_granted())
         self.assertTrue(location.open_access_requires_login())
-        self.assertTrue(location.can_access(user.uuid))
+        self.assertTrue(location.can_access(user))
 
         location.revoke_open_access()
         self.assertFalse(location.open_access_granted())
-        self.assertFalse(location.can_access(user.uuid))
+        self.assertFalse(location.can_access(user))
 
     def test_has_open_location_with_login(self):
         self.assertFalse(self.locations.has_open_location_with_login(TEST_SITE))

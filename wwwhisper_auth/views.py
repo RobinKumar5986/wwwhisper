@@ -133,7 +133,7 @@ class Auth(View):
             debug_msg += " by '%s'" % (user.email)
             respone = None
 
-            if location is not None and location.can_access(user.uuid):
+            if location is not None and location.can_access(user):
                 logger.debug('%s: access granted.' % (debug_msg))
                 response =  http.HttpResponseOK('Access granted.')
             else:
