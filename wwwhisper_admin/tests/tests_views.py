@@ -133,7 +133,7 @@ class LocationTest(AdminViewTestCase):
         self.assertRegexpMatches(parsed_response_body['id'],
                                  '^urn:uuid:%s$' % uid_regexp())
         self.assertEqual(TEST_LOCATION, parsed_response_body['path'])
-        self.assertFalse(parsed_response_body.has_key('openAccess'))
+        self.assertTrue('openAccess' not in parsed_response_body)
         self_url = '%s/admin/api/locations/%s/' % (TEST_SITE, location_uuid)
         self.assertEqual(self_url, parsed_response_body['self'])
         self.assertEqual(self_url, response['Location'])
@@ -149,7 +149,7 @@ class LocationTest(AdminViewTestCase):
 
     def test_grant_open_access_to_location(self):
         location = self.add_location()
-        self.assertFalse(location.has_key('openAccess'))
+        self.assertTrue('openAccess' not in location)
 
         open_access_url = location['self'] + 'open-access/'
         put_response = self.put(open_access_url, {'requireLogin' : False})
@@ -161,12 +161,12 @@ class LocationTest(AdminViewTestCase):
 
         # Get location again and make sure openAccess attribute is now true.
         location = json.loads(self.get(location['self']).content)
-        self.assertTrue(location.has_key('openAccess'))
+        self.assertTrue('openAccess' in location)
         self.assertFalse(location['openAccess']['requireLogin'])
 
     def test_grant_authenticated_open_access_to_location(self):
         location = self.add_location()
-        self.assertFalse(location.has_key('openAccess'))
+        self.assertTrue('openAccess' not in location)
 
         open_access_url = location['self'] + 'open-access/'
         put_response = self.put(open_access_url, {'requireLogin' : True})

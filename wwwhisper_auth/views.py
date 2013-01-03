@@ -101,7 +101,7 @@ class Auth(View):
         # header is passed to backends and must be guaranteed to be
         # set by wwwhisper.
         # This check should already be performed by HTTP server.
-        if request.META.has_key('HTTP_USER'):
+        if 'HTTP_USER' in request.META:
             return http.HttpResponseBadRequest(
                 "Client can not set the 'User' header")
 
@@ -174,7 +174,7 @@ def csrf_cookie_http_only(decorated_function):
     @wraps(decorated_function)
     def wrapper(*args, **kwargs):
         response = decorated_function(*args, **kwargs)
-        if response.cookies.has_key(settings.CSRF_COOKIE_NAME):
+        if settings.CSRF_COOKIE_NAME in response.cookies:
             response.cookies[settings.CSRF_COOKIE_NAME]['httponly'] = True
         return response
     return wrapper

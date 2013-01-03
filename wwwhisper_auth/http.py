@@ -167,9 +167,8 @@ class RestView(View):
         # Cross-Origin Resource Sharing allows cross origin Ajax GET
         # requests, each such request must have the 'Origin' header
         # set. Drop such requests.
-        if request.META.has_key('HTTP_ORIGIN'):
-            origin = request.META['HTTP_ORIGIN']
-            if origin != models.SITE_URL:
+        origin = request.META.get('HTTP_ORIGIN', None)
+        if origin is not None and origin != request.site_url:
                 return HttpResponseBadRequest(
                     'Cross origin requests not allowed.')
 
@@ -192,7 +191,7 @@ class RestView(View):
 
                 json_args = json.loads(request.body)
                 for k in json_args:
-                    if kwargs.has_key(k):
+                    if k in kwargs:
                         return HttpResponseBadRequest(
                             'Invalid argument passed in the request body.')
                     else:
