@@ -42,7 +42,7 @@ import re
 import uuid as uuidgen
 import random
 
-USERNAME_LEN=10
+USERNAME_LEN=7
 assert USERNAME_LEN <= User._meta.get_field('username').max_length
 
 class CreationException(Exception):
