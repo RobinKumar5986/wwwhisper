@@ -14,7 +14,7 @@
   var utils = {
 
     /**
-     * Throws an assertion if condition is false.
+     * Throws if condition is false.
      */
     assert: function(condition, message) {
       function AssertionError(message) {
