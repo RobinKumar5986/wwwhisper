@@ -11,3 +11,4 @@ DATABASES = {
 
 SITE_URL = 'http://localhost:8080'
 WWWHISPER_ADMINS = ['alice@example.com']
+WWWHISPER_STATIC = 'www_static'

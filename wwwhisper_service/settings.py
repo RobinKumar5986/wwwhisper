@@ -3,10 +3,22 @@
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 
-try:
-    from site_settings import *
-except ImportError:
+
+# If WWWHISPER_STATIC is set, auth request returns html documents to
+# be displayed to the user along with 401 and 403 responses. This is
+# not always needed, for example nginx_auth_request module can not
+# pass returned response body to the user, so needs to obtain this
+# documents from a separate location or with a separate request.
+WWWHISPER_STATIC = None
+
+import sys
+
+TESTING = sys.argv[1:2] == ['test']
+
+if TESTING:
     from test_site_settings import *
+else:
+    from site_settings import *
 
 
 # Local time zone for this installation. Choices can be found here:
@@ -84,6 +96,8 @@ ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: "/admin/api/users/%s/" % u.username,
 }
 
+if TESTING:
+    WWWHISPER_STATIC = None
 
 if DEBUG:
     LOGGING = {

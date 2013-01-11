@@ -58,6 +58,8 @@ class AuthTest(AuthTestCase):
         self.assertTrue(response.has_header('WWW-Authenticate'))
         self.assertFalse(response.has_header('User'))
         self.assertEqual('VerifiedEmail', response['WWW-Authenticate'])
+        self.assertRegexpMatches(response['Content-Type'], "text/plain")
+        self.assertEqual('Authentication required.', response.content)
 
     def test_is_authorized_for_not_authorized_user(self):
         self.users.create_item(TEST_SITE, 'foo@example.com')
@@ -66,6 +68,8 @@ class AuthTest(AuthTestCase):
         # For an authenticated user 'User' header should be always returned.
         self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(403, response.status_code)
+        self.assertRegexpMatches(response['Content-Type'], "text/plain")
+        self.assertEqual('User not authorized.', response.content)
 
     def test_is_authorized_for_authorized_user(self):
         user = self.users.create_item(TEST_SITE, 'foo@example.com')
@@ -84,7 +88,6 @@ class AuthTest(AuthTestCase):
         self.assertTrue(self.client.login(
                 assertion='foo@example.com', site_id=site2_id))
         response = self.get('/auth/api/is-authorized/?path=/foo/')
-        self.assertEqual(401, response.status_code)
 
     def test_is_authorized_for_open_location(self):
         location = self.locations.create_item(TEST_SITE, '/foo/')
@@ -141,6 +144,49 @@ class AuthTest(AuthTestCase):
         response = self.client.get('/auth/api/is-authorized/?path=/foo/',
                                    HTTP_USER='bar@example.com')
         self.assertEqual(400, response.status_code)
+
+    def test_caching_disabled_for_auth_request_results(self):
+        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertTrue(response.has_header('Cache-Control'))
+        control = response['Cache-Control']
+        # index throws ValueError if not found.
+        control.index('no-cache')
+        control.index('no-store')
+        control.index('must-revalidate')
+        control.index('max-age=0')
+
+class AuthStaticAssetsTest(AuthTestCase):
+    def setUp(self):
+        settings.WWWHISPER_STATIC = './www_static'
+        super(AuthStaticAssetsTest, self).setUp()
+
+    def test_is_authorized_for_not_authenticated_user(self):
+        location = self.locations.create_item(TEST_SITE, '/foo/')
+        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
+                                   HTTP_ACCEPT='text/plain, text/html')
+        self.assertEqual(401, response.status_code)
+        self.assertRegexpMatches(response['Content-Type'], 'text/html')
+        self.assertRegexpMatches(response.content, '<body')
+
+        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
+                                   HTTP_ACCEPT='text/plain')
+        self.assertEqual(401, response.status_code)
+        self.assertRegexpMatches(response['Content-Type'], 'text/plain')
+
+    def test_html_response_is_authorized_for_not_authorized_user(self):
+        self.users.create_item(TEST_SITE, 'foo@example.com')
+        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
+                                   HTTP_ACCEPT='*/*')
+        self.assertEqual(403, response.status_code)
+        self.assertRegexpMatches(response['Content-Type'], 'text/html')
+        self.assertRegexpMatches(response.content, '<body')
+
+        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
+                                   HTTP_ACCEPT='text/plain, audio/*')
+        self.assertEqual(403, response.status_code)
+        self.assertRegexpMatches(response['Content-Type'], 'text/plain')
+
 
 class LoginTest(AuthTestCase):
     def test_login_requires_assertion(self):

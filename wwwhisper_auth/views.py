@@ -28,8 +28,16 @@ from wwwhisper_auth import url_path
 from wwwhisper_auth.backend import AssertionVerificationException
 
 import logging
+import os
 
 logger = logging.getLogger(__name__)
+
+class Asset:
+    """Represents a static file to be returned by auth request."""
+
+    def __init__(self, *args):
+        assert settings.WWWHISPER_STATIC is not None
+        self.body = file(os.path.join(settings.WWWHISPER_STATIC, *args)).read()
 
 class Auth(View):
     """Handles auth request from the HTTP server.
@@ -41,8 +49,8 @@ class Auth(View):
     trying to access. The result of the request determines the action
     to be performed by the HTTP server:
 
-      401: The user is not authenticated (no valid session cookie set).
-           and should be presented with a login page.
+      401: The user is not authenticated (no valid session cookie
+           set).
 
       403: The user is authenticated (the request contains a valid
            session cookie) but is not authorized to access the
@@ -65,6 +73,18 @@ class Auth(View):
     """
 
     locations_collection = None
+
+    def __init__(self, *args, **kwargs):
+        super(Auth, self).__init__(*args, **kwargs)
+        if settings.WWWHISPER_STATIC is not None:
+            self.assets = {
+                http.HttpResponseNotAuthenticated :
+                    Asset('auth', 'login.html'),
+                http.HttpResponseNotAuthorized :
+                    Asset('auth', 'not_authorized.html'),
+                }
+        else:
+            self.assets = None
 
     @method_decorator(http.never_ever_cache)
     def get(self, request):
@@ -138,7 +158,8 @@ class Auth(View):
                 response =  http.HttpResponseOK('Access granted.')
             else:
                 logger.debug('%s: access denied.' % (debug_msg))
-                response = http.HttpResponseNotAuthorized()
+                response = http.HttpResponseNotAuthorized(
+                    self._html_body(request, http.HttpResponseNotAuthorized))
             response['User'] = user.email
             return response
 
@@ -148,7 +169,19 @@ class Auth(View):
                          % (debug_msg))
             return http.HttpResponseOK('Access granted.')
         logger.debug('%s: user not authenticated.' % (debug_msg))
-        return http.HttpResponseNotAuthenticated()
+        return http.HttpResponseNotAuthenticated(
+            self._html_body(request, http.HttpResponseNotAuthenticated))
+
+    def _html_body(self, request, response_class):
+        """Returns html response body suitable for a given class of response.
+
+        Returns None if request does not accept html or static files are not
+        configured.
+        """
+        if (self.assets and
+            http.accepts_html(request.META.get('HTTP_ACCEPT'))):
+            return self.assets[response_class].body
+        return None
 
     @staticmethod
     def _extract_encoded_path_argument(request):

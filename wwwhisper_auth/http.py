@@ -32,12 +32,25 @@ from wwwhisper_auth import models
 
 import json
 import logging
+import re
 import traceback
 
 logger = logging.getLogger(__name__)
 
-TEXT_MIME_TYPE = "text/plain; charset=utf-8"
-JSON_MIME_TYPE = "application/json; charset=utf-8"
+TEXT_MIME_TYPE = 'text/plain; charset=utf-8'
+HTML_MIME_TYPE = 'text/html; charset=utf-8'
+JSON_MIME_TYPE = 'application/json; charset=utf-8'
+
+_accepts_html_re = re.compile('text/(html|\*)|(\*/\*)')
+
+def accepts_html(accept_header):
+    """Checks if the 'Accept' header accepts html response.
+
+    Args:
+       accept_header: A string, for example 'audio/*, text/plain, text/*'
+    """
+    return (accept_header is not None
+            and _accepts_html_re.search(accept_header) is not None)
 
 class HttpResponseOK(HttpResponse):
     """"Request succeeded.
@@ -95,18 +108,26 @@ class HttpResponseNotAuthenticated(HttpResponse):
     Request can be retried after successul authentication.
     """
 
-    def __init__(self):
+    def __init__(self, html_response=None):
         """Sets WWW-Authenticate header required by the HTTP standard."""
+        if html_response is None:
+            body, content_type = 'Authentication required.', TEXT_MIME_TYPE
+        else:
+            body, content_type = html_response, HTML_MIME_TYPE
         super(HttpResponseNotAuthenticated, self).__init__(
-            'Authentication required.', content_type=TEXT_MIME_TYPE, status=401)
+            body, content_type=content_type, status=401)
         self['WWW-Authenticate'] = 'VerifiedEmail'
 
 class HttpResponseNotAuthorized(HttpResponse):
     """User is authenticated but is not authorized to access a resource."""
 
-    def __init__(self):
+    def __init__(self, html_response=None):
+        if html_response is None:
+            body, content_type = 'User not authorized.', TEXT_MIME_TYPE
+        else:
+            body, content_type = html_response, HTML_MIME_TYPE
         super(HttpResponseNotAuthorized, self).__init__(
-            'User not authorized.', content_type=TEXT_MIME_TYPE, status=403)
+            body, content_type=content_type, status=403)
 
 class HttpResponseBadRequest(HttpResponse):
     """Request invalid.

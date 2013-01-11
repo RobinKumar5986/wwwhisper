@@ -15,11 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf import settings
+from django.conf.urls.defaults import patterns, url
 from django.http import HttpResponse
+from django.test import TestCase
+from django.test.client import Client
+from wwwhisper_auth.http import accepts_html
 from wwwhisper_auth.http import RestView
 from wwwhisper_auth.tests.utils import HttpTestCase
-from django.conf.urls.defaults import patterns, url
-from django.test.client import Client
 
 class TestView(RestView):
     def get(self, request):
@@ -153,3 +155,19 @@ class RestViewTest(HttpTestCase):
         control.index('no-store')
         control.index('must-revalidate')
         control.index('max-age=0')
+
+
+class AcceptHeaderUtilsTest(TestCase):
+    def test_accepts_html(self):
+        self.assertTrue(accepts_html('text/html'))
+        self.assertTrue(accepts_html('text/*'))
+        self.assertTrue(accepts_html('*/*'))
+        self.assertTrue(accepts_html('audio/*, text/plain, text/*'))
+        self.assertTrue(accepts_html(
+                'text/*;q=0.3, text/html;q=0.7, text/html;level=1, ' +
+                'text/html;level=2;q=0.4, */*;q=0.5'))
+
+        self.assertFalse(accepts_html('text/plain'))
+        self.assertFalse(accepts_html('audio/*'))
+        self.assertFalse(accepts_html('text/x-dvi; q=0.8, text/x-c'))
+        self.assertFalse(accepts_html(None))
