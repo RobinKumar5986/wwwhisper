@@ -52,7 +52,8 @@ MIDDLEWARE_CLASSES = (
     'wwwhisper_auth.site.SiteMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware'
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'wwwhisper_auth.protect_cookies.ProtectCookiesMiddleware',
 )
 
 # Don't use just sessionid, to avoid collision with apps protected by wwwhisper.
@@ -61,14 +62,6 @@ CSRF_COOKIE_NAME = 'wwwhisper-csrftoken'
 
 # Make session cookie valid only until a browser closes.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
-
-SESSION_COOKIE_HTTPONLY = True
-
-# If HTTPS is used, ask the browser to never send session and csrf
-# protection cookies over HTTP.
-if SITE_URL[:8] == 'https://':
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
 
 ROOT_URLCONF = 'wwwhisper_service.urls'
 
