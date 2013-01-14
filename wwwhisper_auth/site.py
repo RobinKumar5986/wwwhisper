@@ -18,13 +18,19 @@ from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from wwwhisper_auth import http
 
-SITE_URL = getattr(settings, 'SITE_URL', None)
-if SITE_URL is None:
-    raise ImproperlyConfigured(
-        'WWWhisper requires SITE_URL to be set in django settings.py file')
-
 SITE_URL_FROM_FRONT_END = getattr(
     settings, 'SITE_URL_FROM_FRONT_END', False)
+
+SITE_URL = getattr(settings, 'SITE_URL', None)
+
+if not SITE_URL and not SITE_URL_FROM_FRONTEND:
+    raise ImproperlyConfigured(
+        'wwwhisper requires either SITE_URL or SITE_URL_FROM_FRONTEND ' +
+        'to be set in Django settings.py file')
+
+if SITE_URL and SITE_URL_FROM_FRONT_END:
+    raise ImproperlyConfigured(
+        'SITE_URL and SITE_URL_FROM_FRONTEND can not be set together.')
 
 class SiteMiddleware(object):
     #TODO: document.
@@ -33,11 +39,11 @@ class SiteMiddleware(object):
     def _is_https(self, url):
         return (url[:8].lower() == 'https://')
 
-    def __init__(self, site_url=SITE_URL,
-                 site_url_from_front_end=SITE_URL_FROM_FRONT_END):
-        self.site_url = site_url
-        self.site_url_from_front_end = site_url_from_front_end
-        self.https = self._is_https(self.site_url)
+    def __init__(self, site_url=SITE_URL):
+        self.site_url_from_front_end = (site_url is None)
+        if not self.site_url_from_front_end:
+            self.site_url = site_url
+            self.https = self._is_https(self.site_url)
 
     """Sets site id and site url for a request."""
     def process_request(self, request):

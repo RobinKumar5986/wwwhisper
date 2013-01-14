@@ -27,7 +27,7 @@ class SiteMiddlewareTest(TestCase):
 
     def test_site_from_settings(self):
         site_url = 'http://foo.example.org'
-        middleware = SiteMiddleware(site_url, site_url_from_front_end=False)
+        middleware = SiteMiddleware(site_url)
         r = self.create_request()
 
         self.assertIsNone(middleware.process_request(r))
@@ -36,8 +36,7 @@ class SiteMiddlewareTest(TestCase):
 
     def test_site_from_frontend(self):
         site_url = 'http://foo.example.org'
-        middleware = SiteMiddleware('http://ignore.com',
-                                    site_url_from_front_end=True)
+        middleware = SiteMiddleware(None)
         r = self.create_request()
         r.META['HTTP_SITE_URL'] = site_url
         self.assertIsNone(middleware.process_request(r))
@@ -47,33 +46,28 @@ class SiteMiddlewareTest(TestCase):
 
     def test_missing_site_from_frontend(self):
         r = self.create_request()
-        middleware = SiteMiddleware('http://ignore.com',
-                                    site_url_from_front_end=True)
+        middleware = SiteMiddleware(None)
         response = middleware.process_request(r)
         self.assertEqual(400, response.status_code)
 
 
     def test_is_https(self):
         r = self.create_request()
-        middleware = SiteMiddleware('http://foo.com',
-                                    site_url_from_front_end=False)
+        middleware = SiteMiddleware('http://foo.com')
         self.assertIsNone(middleware.process_request(r))
         self.assertFalse(r.https)
 
-        middleware = SiteMiddleware('https://foo.com',
-                                    site_url_from_front_end=False)
+        middleware = SiteMiddleware('https://foo.com')
         self.assertIsNone(middleware.process_request(r))
         self.assertTrue(r.https)
 
-        middleware = SiteMiddleware('https://foo.com',
-                                    site_url_from_front_end=True)
+        middleware = SiteMiddleware(None)
         r.META['HTTP_SITE_URL'] = 'http://bar.example.org'
         self.assertIsNone(middleware.process_request(r))
         self.assertFalse(r.https)
 
 
-        middleware = SiteMiddleware('https://foo.com',
-                                    site_url_from_front_end=True)
+        middleware = SiteMiddleware(None)
         r.META['HTTP_SITE_URL'] = 'https://bar.example.org'
         self.assertIsNone(middleware.process_request(r))
         self.assertTrue(r.https)
