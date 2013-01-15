@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012 Jan Wrobel <wrr@mixedbit.org>
+# Copyright (C) 2012,2013 Jan Wrobel <wrr@mixedbit.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 
 """Views that handle user authentication and authorization."""
 
-from django.conf import settings
 from django.contrib import auth
 from django.core.context_processors import csrf
 from django.utils.decorators import method_decorator
@@ -31,13 +30,6 @@ import logging
 import os
 
 logger = logging.getLogger(__name__)
-
-class Asset:
-    """Represents a static file to be returned by auth request."""
-
-    def __init__(self, *args):
-        assert settings.WWWHISPER_STATIC is not None
-        self.body = file(os.path.join(settings.WWWHISPER_STATIC, *args)).read()
 
 class Auth(View):
     """Handles auth request from the HTTP server.
@@ -73,18 +65,7 @@ class Auth(View):
     """
 
     locations_collection = None
-
-    def __init__(self, *args, **kwargs):
-        super(Auth, self).__init__(*args, **kwargs)
-        if settings.WWWHISPER_STATIC is not None:
-            self.assets = {
-                http.HttpResponseNotAuthenticated :
-                    Asset('auth', 'login.html'),
-                http.HttpResponseNotAuthorized :
-                    Asset('auth', 'not_authorized.html'),
-                }
-        else:
-            self.assets = None
+    assets = None
 
     @method_decorator(http.never_ever_cache)
     def get(self, request):
