@@ -29,9 +29,6 @@ from django.core.exceptions import ImproperlyConfigured
 from wwwhisper_auth import models as auth_models
 
 SITE_URL = getattr(settings, 'SITE_URL', None)
-if SITE_URL is None:
-    raise ImproperlyConfigured(
-        'WWWhisper requires SITE_URL to be set in django settings.py file')
 
 def _create_site():
     """Creates a site configured in settings.py.
@@ -97,8 +94,13 @@ signals.post_syncdb.disconnect(
     sender=contrib_auth_models,
     dispatch_uid = "django.contrib.auth.management.create_superuser")
 
-# Instead, invoke grant_initial_permission function defined in this module.
-signals.post_syncdb.connect(
-    grant_initial_permission,
-    sender=contrib_auth_models,
-    dispatch_uid = "django.contrib.auth.management.create_superuser")
+if SITE_URL:
+    # Instead, invoke grant_initial_permission function defined in this module.
+    signals.post_syncdb.connect(
+        grant_initial_permission,
+        sender=contrib_auth_models,
+        dispatch_uid = "django.contrib.auth.management.create_superuser")
+
+#TODO:  A utility script to handle initialization for SITE_URL_FROM_FRONT_END.
+
+
