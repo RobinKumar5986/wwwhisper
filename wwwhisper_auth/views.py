@@ -180,19 +180,6 @@ class Auth(View):
             return None
         return args[len('?path='):]
 
-def csrf_cookie_http_only(decorated_function):
-    """Enables 'httponly' flag for CSRF protection cookie.
-
-    The flag protects the cookie from javascript access.
-    """
-    @wraps(decorated_function)
-    def wrapper(*args, **kwargs):
-        response = decorated_function(*args, **kwargs)
-        if settings.CSRF_COOKIE_NAME in response.cookies:
-            response.cookies[settings.CSRF_COOKIE_NAME]['httponly'] = True
-        return response
-    return wrapper
-
 class CsrfToken(View):
     """Establishes Cross Site Request Forgery protection token."""
 
