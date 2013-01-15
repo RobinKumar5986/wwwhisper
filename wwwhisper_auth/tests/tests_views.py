@@ -21,6 +21,7 @@ from wwwhisper_auth import backend
 from wwwhisper_auth import models
 from wwwhisper_auth.tests.utils import HttpTestCase
 
+import wwwhisper_auth.urls
 import json
 
 INCORRECT_ASSERTION = "ThisAssertionIsFalse"
@@ -158,7 +159,12 @@ class AuthTest(AuthTestCase):
 class AuthStaticAssetsTest(AuthTestCase):
     def setUp(self):
         settings.WWWHISPER_STATIC = './www_static'
+        reload(wwwhisper_auth.urls)
         super(AuthStaticAssetsTest, self).setUp()
+
+    def tearDown(self):
+        settings.WWWHISPER_STATIC = None
+        reload(wwwhisper_auth.urls)
 
     def test_is_authorized_for_not_authenticated_user(self):
         location = self.locations.create_item(TEST_SITE, '/foo/')
