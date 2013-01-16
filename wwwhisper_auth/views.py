@@ -129,7 +129,7 @@ class Auth(View):
         # Makes sure user is authenticated and belongs to the current
         # site (auth backend just ensures user exists).
         if (user and user.is_authenticated() and
-            user.get_profile().site_id == request.site_id):
+            request.session.get('site_id', None) == request.site_id):
 
             debug_msg += " by '%s'" % (user.email)
             respone = None
@@ -201,6 +201,7 @@ class CsrfToken(View):
         script, css or image and for example invoked js error handler
         with part of the response body .
         """
+        # TODO: can this request not hit db?
         csrf_token = csrf(request).values()[0]
         return http.HttpResponseOKJson({'csrfToken': str(csrf_token)})
 
@@ -224,6 +225,12 @@ class Login(http.RestView):
             return http.HttpResponseBadRequest(str(ex))
         if user is not None:
             auth.login(request, user)
+
+            # Store all user data needed by Auth view in session, this
+            # way, user table does not need to be queried during this
+            # performance critical request (sessions are cached).
+            # TODO: store also email for whoami calls.
+            request.session['site_id'] = request.site_id
             logger.debug('%s successfully logged.' % (user.email))
             return http.HttpResponseNoContent()
         else:

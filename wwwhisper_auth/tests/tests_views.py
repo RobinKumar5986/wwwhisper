@@ -47,6 +47,36 @@ class AuthTestCase(HttpTestCase):
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
         super(AuthTestCase, self).setUp()
 
+    def login(self, email, site_id=TEST_SITE):
+        self.assertTrue(self.client.login(assertion=email, site_id=site_id))
+        # Real login not only sets user object but also site_id in session.
+        s = self.client.session
+        s['site_id'] = site_id
+        s.save()
+
+class LoginTest(AuthTestCase):
+    def test_login_requires_assertion(self):
+        response = self.post('/auth/api/login/', {})
+        self.assertEqual(400, response.status_code)
+
+    def test_login_fails_if_unknown_user(self):
+        response = self.post('/auth/api/login/',
+                             {'assertion' : 'foo@example.com'})
+        self.assertEqual(403, response.status_code)
+
+    def test_login_fails_if_incorrect_assertion(self):
+        response = self.post('/auth/api/login/',
+                             {'assertion' : INCORRECT_ASSERTION})
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(
+            response.content, 'Assertion verification failed')
+
+    def test_login_succeeds_if_known_user(self):
+        self.users.create_item(TEST_SITE, 'foo@example.com')
+        response = self.post('/auth/api/login/',
+                             {'assertion' : 'foo@example.com'})
+        self.assertEqual(204, response.status_code)
+
 class AuthTest(AuthTestCase):
     def test_is_authorized_requires_path_parameter(self):
         response = self.get('/auth/api/is-authorized/?pat=/foo')
@@ -64,7 +94,7 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_for_not_authorized_user(self):
         self.users.create_item(TEST_SITE, 'foo@example.com')
-        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        self.login('foo@example.com')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         # For an authenticated user 'User' header should be always returned.
         self.assertEqual('foo@example.com', response['User'])
@@ -76,18 +106,30 @@ class AuthTest(AuthTestCase):
         user = self.users.create_item(TEST_SITE, 'foo@example.com')
         location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
-        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        self.login('foo@example.com')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
+
+    # This should never happen for sessions stored server side.
+    def test_is_authorized_for_authorized_user_if_site_id_missing(self):
+        user = self.users.create_item(TEST_SITE, 'foo@example.com')
+        location = self.locations.create_item(TEST_SITE, '/foo/')
+        location.grant_access(user.uuid)
+        self.login('foo@example.com')
+        # Remove site_id from session.
+        s = self.client.session;
+        del s['site_id']
+        s.save()
+        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertEqual(401, response.status_code)
 
     def test_is_authorized_for_user_of_other_site(self):
         site2_id = 'somesite'
         models.create_site(site2_id)
         user = self.users.create_item(site2_id, 'foo@example.com')
         location = self.locations.create_item(TEST_SITE, '/foo/')
-        self.assertTrue(self.client.login(
-                assertion='foo@example.com', site_id=site2_id))
+        self.login('foo@example.com', site2_id)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
 
     def test_is_authorized_for_open_location(self):
@@ -99,7 +141,7 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_for_open_location_and_authenticated_user(self):
         user = self.users.create_item(TEST_SITE, 'foo@example.com')
-        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        self.login('foo@example.com')
         location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
@@ -110,7 +152,7 @@ class AuthTest(AuthTestCase):
         user = self.users.create_item(TEST_SITE, 'foo@example.com')
         location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
-        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        self.login('foo@example.com')
 
         response = self.get('/auth/api/is-authorized/?path=/bar/../foo/')
         self.assertEqual(400, response.status_code)
@@ -141,7 +183,7 @@ class AuthTest(AuthTestCase):
         user = self.users.create_item(TEST_SITE, 'foo@example.com')
         location = self.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
-        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        self.login('foo@example.com')
         response = self.client.get('/auth/api/is-authorized/?path=/foo/',
                                    HTTP_USER='bar@example.com')
         self.assertEqual(400, response.status_code)
@@ -181,7 +223,7 @@ class AuthStaticAssetsTest(AuthTestCase):
 
     def test_html_response_is_authorized_for_not_authorized_user(self):
         self.users.create_item(TEST_SITE, 'foo@example.com')
-        self.assertTrue(self.client.login(assertion='foo@example.com'))
+        self.login('foo@example.com')
         response = self.client.get('/auth/api/is-authorized/?path=/foo/',
                                    HTTP_ACCEPT='*/*')
         self.assertEqual(403, response.status_code)
@@ -192,30 +234,6 @@ class AuthStaticAssetsTest(AuthTestCase):
                                    HTTP_ACCEPT='text/plain, audio/*')
         self.assertEqual(403, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/plain')
-
-
-class LoginTest(AuthTestCase):
-    def test_login_requires_assertion(self):
-        response = self.post('/auth/api/login/', {})
-        self.assertEqual(400, response.status_code)
-
-    def test_login_fails_if_unknown_user(self):
-        response = self.post('/auth/api/login/',
-                             {'assertion' : 'foo@example.com'})
-        self.assertEqual(403, response.status_code)
-
-    def test_login_fails_if_incorrect_assertion(self):
-        response = self.post('/auth/api/login/',
-                             {'assertion' : INCORRECT_ASSERTION})
-        self.assertEqual(400, response.status_code)
-        self.assertRegexpMatches(
-            response.content, 'Assertion verification failed')
-
-    def test_login_succeeds_if_known_user(self):
-        self.users.create_item(TEST_SITE, 'foo@example.com')
-        response = self.post('/auth/api/login/',
-                             {'assertion' : 'foo@example.com'})
-        self.assertEqual(204, response.status_code)
 
 
 class LogoutTest(AuthTestCase):
@@ -254,8 +272,7 @@ class WhoAmITest(AuthTestCase):
         site2_id = 'somesite'
         models.create_site(site2_id)
         self.users.create_item(site2_id, 'foo@example.com')
-        self.assertTrue(self.client.login(
-                assertion='foo@example.com', site_id=site2_id))
+        self.login('foo@example.com', site2_id)
         # Not authorized.
         # Request is run for TEST_SITE, but user belongs to site2_id.
         response = self.get('/auth/api/whoami/')
