@@ -540,12 +540,12 @@ def _find(model_class, **kwargs):
     Returns:
         An item that satisfies expression or None.
     """
-    item = model_class.objects.filter(**kwargs)
-    count = item.count()
+    items = [item for item in model_class.objects.filter(**kwargs).iterator()]
+    count = len(items)
     assert count <= 1
     if count == 0:
         return None
-    return item.get()
+    return items[0]
 
 def _encode_email(email):
     """Encodes and validates email address.
