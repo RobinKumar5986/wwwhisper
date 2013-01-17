@@ -17,6 +17,7 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from wwwhisper_auth import http
+from wwwhisper_auth import models
 
 SITE_URL_FROM_FRONT_END = getattr(
     settings, 'SITE_URL_FROM_FRONT_END', False)
@@ -34,7 +35,6 @@ if SITE_URL and SITE_URL_FROM_FRONT_END:
 
 class SiteMiddleware(object):
     #TODO: document.
-    #TODO: allow to pass site id from backend.
 
     def _is_https(self, url):
         return (url[:8].lower() == 'https://')
@@ -48,13 +48,14 @@ class SiteMiddleware(object):
     """Sets site id and site url for a request."""
     def process_request(self, request):
         if self.site_url_from_front_end:
-            request.site_id = None
+            # TODO: Clean this case.
+            request.site = None
             request.site_url = request.META.get('HTTP_SITE_URL', None)
             if (request.site_url is None):
                 return http.HttpResponseBadRequest('Missing SITE_URL header')
             request.https = self._is_https(request.site_url)
         else:
-            request.site_id = self.site_url
+            request.site = models.find_site(self.site_url)
             request.site_url = self.site_url
             request.https = self.https
         return None

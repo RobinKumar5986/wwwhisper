@@ -124,12 +124,12 @@ class Auth(View):
 
         user = request.user
         location = self.locations_collection.find_location(
-            request.site_id, decoded_path)
+            request.site.site_id, decoded_path)
 
         # Makes sure user is authenticated and belongs to the current
         # site (auth backend just ensures user exists).
         if (user and user.is_authenticated() and
-            request.session.get('site_id', None) == request.site_id):
+            request.session.get('site_id', None) == request.site.site_id):
 
             debug_msg += " by '%s'" % (user.email)
             respone = None
@@ -217,7 +217,7 @@ class Login(http.RestView):
         if assertion == None:
             return http.HttpResponseBadRequest('BrowserId assertion not set.')
         try:
-            user = auth.authenticate(site_id=request.site_id,
+            user = auth.authenticate(site_id=request.site.site_id,
                                      site_url=request.site_url,
                                      assertion=assertion)
         except AssertionVerificationException as ex:
@@ -230,7 +230,7 @@ class Login(http.RestView):
             # way, user table does not need to be queried during this
             # performance critical request (sessions are cached).
             # TODO: store also email for whoami calls.
-            request.session['site_id'] = request.site_id
+            request.session['site_id'] = request.site.site_id
             logger.debug('%s successfully logged.' % (user.email))
             return http.HttpResponseNoContent()
         else:
@@ -255,6 +255,6 @@ class WhoAmI(http.RestView):
         """Returns an email or an authentication required error."""
         user = request.user
         if (user and user.is_authenticated() and
-            user.get_profile().site_id == request.site_id):
+            user.get_profile().site_id == request.site.site_id):
             return http.HttpResponseOKJson({'email': user.email})
         return http.HttpResponseNotAuthenticated()

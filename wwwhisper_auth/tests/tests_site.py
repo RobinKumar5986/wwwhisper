@@ -16,6 +16,7 @@
 
 from django.test import TestCase
 from wwwhisper_auth.site import SiteMiddleware
+from wwwhisper_auth import models
 from mock import Mock
 
 class SiteMiddlewareTest(TestCase):
@@ -27,11 +28,21 @@ class SiteMiddlewareTest(TestCase):
 
     def test_site_from_settings(self):
         site_url = 'http://foo.example.org'
+        models.create_site(site_url)
         middleware = SiteMiddleware(site_url)
         r = self.create_request()
 
         self.assertIsNone(middleware.process_request(r))
-        self.assertEqual(site_url, r.site_id)
+        self.assertEqual(site_url, r.site.site_id)
+        self.assertEqual(site_url, r.site_url)
+
+    def test_site_from_settings_if_no_such_site(self):
+        site_url = 'http://foo.example.org'
+        middleware = SiteMiddleware(site_url)
+        r = self.create_request()
+
+        self.assertIsNone(middleware.process_request(r))
+        self.assertIsNone(r.site)
         self.assertEqual(site_url, r.site_url)
 
     def test_site_from_frontend(self):
@@ -40,9 +51,8 @@ class SiteMiddlewareTest(TestCase):
         r = self.create_request()
         r.META['HTTP_SITE_URL'] = site_url
         self.assertIsNone(middleware.process_request(r))
-        self.assertEqual(None, r.site_id)
+        self.assertEqual(None, r.site)
         self.assertEqual(site_url, r.site_url)
-
 
     def test_missing_site_from_frontend(self):
         r = self.create_request()
