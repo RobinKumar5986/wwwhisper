@@ -78,6 +78,11 @@ class Site(ValidatedModel):
                                db_index=True)
     #mod_id = models.IntegerField(default=0)
 
+    def __init__(self, *args, **kwargs):
+        super(Site, self).__init__(*args, **kwargs)
+        self.locations = LocationsCollection(self.site_id)
+        self.users = UsersCollection(self.site_id)
+
 def create_site(site_id):
     """Creates a new Site object.
 
@@ -335,8 +340,7 @@ class Collection(object):
 
     Resources in the collection are of the same type and need to be
     identified by an UUID. Each resource belongs to a single site and
-    only this site can manipulate the resource. Because of this, all
-    Collections' methods need to take site_id.
+    only this site can manipulate the resource.
 
     Attributes (Need to be defined in subclasses):
         item_name: Name of a resource stored in the collection.
@@ -346,6 +350,9 @@ class Collection(object):
         uuid_column_name: Name of a column in the model class that stores
             a resource uuid.
     """
+
+    def __init__(self, site_id):
+        self.site_id = site_id
 
     def all(self, site_id):
         """Returns all items in the collection associated with a site."""
@@ -385,6 +392,9 @@ class UsersCollection(Collection):
     model_class = User
     uuid_column_name = 'userextras__uuid'
     site_id_column_name = 'userextras__site_id'
+
+    def __init__(self, site_id):
+        super(UsersCollection, self).__init__(site_id)
 
     def create_item(self, site_id, email):
         """Creates a new User object for a given site.
@@ -437,6 +447,9 @@ class LocationsCollection(Collection):
     model_class = Location
     uuid_column_name = 'uuid'
     site_id_column_name = 'site_id'
+
+    def __init__(self, site_id):
+        super(LocationsCollection, self).__init__(site_id)
 
     def create_item(self, site_id, path):
         """Creates a new Location object for a given site.
@@ -579,16 +592,3 @@ def _gen_random_str(length):
         'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     return ''.join(
         [secure_generator.choice(allowed_chars) for i in range(length)])
-
-
-locations_collection = LocationsCollection()
-users_collection = UsersCollection()
-
-Site.locations = property(fget=lambda(self): locations_collection, doc=\
-"""
-""")
-
-Site.users = property(fget=lambda(self): users_collection, doc=\
-"""
-""")
-

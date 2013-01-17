@@ -52,8 +52,8 @@ class SitesTest(TestCase):
 
 class CollectionTestCase(TestCase):
     def setUp(self):
-        self.locations = models.LocationsCollection()
-        self.users = models.UsersCollection()
+        self.locations = models.LocationsCollection(TEST_SITE)
+        self.users = models.UsersCollection(TEST_SITE)
 
 class UsersCollectionTest(CollectionTestCase):
     def setUp(self):
