@@ -31,42 +31,36 @@ from wwwhisper_auth import models as auth_models
 SITE_URL = getattr(settings, 'SITE_URL', None)
 
 def _create_site():
-    """Creates a site configured in settings.py.
-
-    This is intermediate approach, wwwhisper is prepared to handle
-    multiple sites, but currently it handles only a single one.
-    """
+    """Creates a site configured in settings.py."""
     try:
-        auth_models.create_site(SITE_URL)
+        return auth_models.create_site(SITE_URL)
     except auth_models.CreationException as ex:
         raise ImproperlyConfigured('Failed to create site %s: %s'
                                    % (SITE_URL, ex))
 
-def _create_initial_locations():
+def _create_initial_locations(site):
     """Creates all locations listed in WWWHISPER_INITIAL_LOCATIONS setting."""
-    locations_collection = auth_models.LocationsCollection()
     locations_paths = getattr(settings, 'WWWHISPER_INITIAL_LOCATIONS', [])
     for path in locations_paths:
         try:
-            locations_collection.create_item(SITE_URL, path)
+            site.locations.create_item(SITE_URL, path)
         except auth_models.CreationException as ex:
             raise ImproperlyConfigured('Failed to create location %s: %s'
                                        % (path, ex))
 
-def _create_initial_admins():
+def _create_initial_admins(site):
     """Creates all users listed in WWWHISPER_INITIAL_ADMINS setting."""
-    users_collection = auth_models.UsersCollection()
     emails = getattr(settings, 'WWWHISPER_INITIAL_ADMINS', [])
     for email in emails:
         try:
-            user = users_collection.create_item(SITE_URL, email)
+            user = site.users.create_item(SITE_URL, email)
         except auth_models.CreationException as ex:
             raise ImproperlyConfigured('Failed to create admin user %s: %s'
                                        % (email, ex))
 
-def _grant_admins_access_to_all_locations():
-    for user in auth_models.UsersCollection().all(SITE_URL):
-        for location in auth_models.LocationsCollection().all(SITE_URL):
+def _grant_admins_access_to_all_locations(site):
+    for user in site.users.all(SITE_URL):
+        for location in site.locations.all(SITE_URL):
             location.grant_access(user.uuid)
 
 def grant_initial_permission(app, created_models, *args, **kwargs):
@@ -82,10 +76,10 @@ def grant_initial_permission(app, created_models, *args, **kwargs):
     """
     if (contrib_auth_models.User in created_models and
         kwargs.get('interactive', True)):
-        _create_site()
-        _create_initial_locations()
-        _create_initial_admins()
-        _grant_admins_access_to_all_locations()
+        site = _create_site()
+        _create_initial_locations(site)
+        _create_initial_admins(site)
+        _grant_admins_access_to_all_locations(site)
 
 # Disable default behaviour for admin user creation (interactive
 # question).
