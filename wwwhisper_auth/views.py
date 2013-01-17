@@ -64,7 +64,6 @@ class Auth(View):
       Auth view does not need to be externally accessible.
     """
 
-    locations_collection = None
     assets = None
 
     @method_decorator(http.never_ever_cache)
@@ -123,7 +122,7 @@ class Auth(View):
             return http.HttpResponseBadRequest(path_validation_error)
 
         user = request.user
-        location = self.locations_collection.find_location(
+        location = request.site.locations.find_location(
             request.site.site_id, decoded_path)
 
         # Makes sure user is authenticated and belongs to the current
@@ -217,7 +216,7 @@ class Login(http.RestView):
         if assertion == None:
             return http.HttpResponseBadRequest('BrowserId assertion not set.')
         try:
-            user = auth.authenticate(site_id=request.site.site_id,
+            user = auth.authenticate(site=request.site,
                                      site_url=request.site_url,
                                      assertion=assertion)
         except AssertionVerificationException as ex:

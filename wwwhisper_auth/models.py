@@ -579,3 +579,16 @@ def _gen_random_str(length):
         'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     return ''.join(
         [secure_generator.choice(allowed_chars) for i in range(length)])
+
+
+locations_collection = LocationsCollection()
+users_collection = UsersCollection()
+
+Site.locations = property(fget=lambda(self): locations_collection, doc=\
+"""
+""")
+
+Site.users = property(fget=lambda(self): users_collection, doc=\
+"""
+""")
+

@@ -18,7 +18,6 @@
 
 from django.contrib.auth.backends import ModelBackend
 from django_browserid.base import verify
-from wwwhisper_auth import models
 
 class AssertionVerificationException(Exception):
     """Raised when BrowserId assertion was not verified successfully."""
@@ -30,21 +29,11 @@ class BrowserIDBackend(ModelBackend):
     Similar backend is defined in django_browserid application. It is not
     used here, because it does not allow to distinguish between an
     assertion verification error and an unknown user.
-
-    Attributes:
-        users_collection: Allows to find a user with a given email.
-
-        locations_collection: Allows to check if a site has open
-            locations that require login. If this is the case and
-            unknown user signs-in, user object for her needs to be
-            created.
     """
-    users_collection = models.UsersCollection()
-    locations_collection = models.LocationsCollection()
 
     # TODO: Put site_url in the model and find it based on id. Allow
     # for aliases.
-    def authenticate(self, site_id, site_url, assertion):
+    def authenticate(self, site, site_url, assertion):
         """Verifies BrowserID assertion
 
         Returns:
@@ -61,8 +50,7 @@ class BrowserIDBackend(ModelBackend):
             raise AssertionVerificationException(
                 'BrowserID assertion verification failed.')
         email = result['email']
-        user = self.users_collection.find_item_by_email(
-            site_id, result['email'])
+        user = site.users.find_item_by_email(site.site_id, result['email'])
         if user is not None:
             return user
         try:
@@ -72,8 +60,8 @@ class BrowserIDBackend(ModelBackend):
             # TODO: user objects created in such way should probably
             # be marked and automatically deleted on logout or after
             # some time of inactivity.
-            if self.locations_collection.has_open_location_with_login(site_id):
-                return self.users_collection.create_item(site_id, email)
+            if site.locations.has_open_location_with_login(site.site_id):
+                return site.users.create_item(site.site_id, email)
             else:
                 return None
         except models.CreationException as ex:

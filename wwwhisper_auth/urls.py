@@ -26,7 +26,6 @@ from wwwhisper_auth.assets import Asset
 from wwwhisper_auth.http import HttpResponseNotAuthenticated
 from wwwhisper_auth.http import HttpResponseNotAuthorized
 from wwwhisper_auth.views import Auth, CsrfToken, Login, Logout, WhoAmI
-from wwwhisper_auth.models import LocationsCollection
 
 import logging
 
@@ -50,7 +49,5 @@ urlpatterns = patterns(
     url(r'^login/$', Login.as_view()),
     url(r'^logout/$', Logout.as_view()),
     url(r'^whoami/$', WhoAmI.as_view()),
-    url(r'^is-authorized/$', Auth.as_view(
-            locations_collection=LocationsCollection(),
-            assets=assets)),
+    url(r'^is-authorized/$', Auth.as_view(assets=assets)),
     )

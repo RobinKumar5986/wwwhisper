@@ -31,27 +31,29 @@ class FakeAssertionVeryfingBackend(ModelBackend):
     def __init__(self):
         self.users = models.UsersCollection()
 
-    def authenticate(self, assertion, site_id=TEST_SITE, site_url=TEST_SITE):
+    def authenticate(self, assertion, site, site_url=TEST_SITE):
         if assertion == INCORRECT_ASSERTION:
             raise backend.AssertionVerificationException(
                 'Assertion verification failed.')
-        return self.users.find_item_by_email(site_id, assertion)
+        return self.users.find_item_by_email(site.site_id, assertion)
 
 class AuthTestCase(HttpTestCase):
     def setUp(self):
         self.locations = models.LocationsCollection()
         self.users = models.UsersCollection()
-        models.create_site(TEST_SITE)
+        self.site = models.create_site(TEST_SITE)
 
         settings.AUTHENTICATION_BACKENDS = (
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
         super(AuthTestCase, self).setUp()
 
-    def login(self, email, site_id=TEST_SITE):
-        self.assertTrue(self.client.login(assertion=email, site_id=site_id))
+    def login(self, email, site=None):
+        if site is None:
+            site = self.site
+        self.assertTrue(self.client.login(assertion=email, site=site))
         # Real login not only sets user object but also site_id in session.
         s = self.client.session
-        s['site_id'] = site_id
+        s['site_id'] = site.site_id
         s.save()
 
 class LoginTest(AuthTestCase):
@@ -125,11 +127,10 @@ class AuthTest(AuthTestCase):
         self.assertEqual(401, response.status_code)
 
     def test_is_authorized_for_user_of_other_site(self):
-        site2_id = 'somesite'
-        models.create_site(site2_id)
-        user = self.users.create_item(site2_id, 'foo@example.com')
+        site2 = models.create_site('somesite')
+        user = self.users.create_item(site2.site_id, 'foo@example.com')
         location = self.locations.create_item(TEST_SITE, '/foo/')
-        self.login('foo@example.com', site2_id)
+        self.login('foo@example.com', site2)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
 
     def test_is_authorized_for_open_location(self):
@@ -269,10 +270,9 @@ class WhoAmITest(AuthTestCase):
         self.assertEqual('foo@example.com', parsed_response_body['email'])
 
     def test_whoami_for_user_of_differen_site(self):
-        site2_id = 'somesite'
-        models.create_site(site2_id)
-        self.users.create_item(site2_id, 'foo@example.com')
-        self.login('foo@example.com', site2_id)
+        site2 = models.create_site('somesite')
+        self.users.create_item(site2.site_id, 'foo@example.com')
+        self.login('foo@example.com', site2)
         # Not authorized.
         # Request is run for TEST_SITE, but user belongs to site2_id.
         response = self.get('/auth/api/whoami/')

@@ -20,6 +20,7 @@ Expose REST interface for adding/removing locations and users and for
 granting/revoking access to locations.
 """
 
+from functools import wraps
 from wwwhisper_auth import http
 from wwwhisper_auth.models import CreationException
 
@@ -30,6 +31,13 @@ logger = logging.getLogger(__name__)
 def _full_url(request):
     return request.site_url + request.path
 
+def set_collection(decorated_function):
+    @wraps(decorated_function)
+    def wrapper(self, request, **kwargs):
+        self.collection = getattr(request.site, self.collection_name)
+        return decorated_function(self, request, **kwargs)
+    return wrapper
+
 class CollectionView(http.RestView):
     """Generic view over a collection of resources.
 
@@ -37,11 +45,12 @@ class CollectionView(http.RestView):
     collection and to add new resources to the collection.
 
     Attributes:
-        collection: The collection that view represents (extends
-        wwwhisper_auth.models.Collection).
+        collection_name: Name of the collection that view represents.
     """
-    collection = None
 
+    collection_name = None
+
+    @set_collection
     def post(self, request, **kwargs):
         """Ads a new resource to the collection.
 
@@ -60,6 +69,7 @@ class CollectionView(http.RestView):
         response['Content-Location'] = attributes_dict['self']
         return response
 
+    @set_collection
     def get(self, request):
         """Returns json representation of all resources in the collection."""
         items_list = [item.attributes_dict(request.site_url)
@@ -76,12 +86,13 @@ class ItemView(http.RestView):
     the resource.
 
     Attributes:
-        collection: The collection that view uses to retrieve the resource
-        (extends wwwhisper_auth.models.Collection).
+        collection_name: Name of the collection that view uses to retrieve
+           the resource.
     """
 
-    collection = None
+    collection_name = None
 
+    @set_collection
     def get(self, request, uuid):
         """Returns json representation of a resource with a given uuid."""
         item = self.collection.find_item(request.site.site_id, uuid)
@@ -90,6 +101,7 @@ class ItemView(http.RestView):
                 '%s not found' % self.collection.item_name.capitalize())
         return http.HttpResponseOKJson(item.attributes_dict(request.site_url))
 
+    @set_collection
     def delete(self, request, uuid):
         """Deletes a resource with a given uuid."""
         deleted = self.collection.delete_item(request.site.site_id, uuid)
@@ -103,11 +115,7 @@ class OpenAccessView(http.RestView):
 
     An open location can be accessed by everyone either without
     authentication (requireLogin is false) or with authentication.
-    Attributes:
-        location_collection: The collection that is used to find
-        a location to which requests are related.
     """
-    locations_collection = None
 
     @staticmethod
     def _attributes_dict(request, location):
@@ -119,7 +127,7 @@ class OpenAccessView(http.RestView):
 
     def put(self, request, location_uuid, requireLogin):
         """Creates a resource that enables open access to a given location."""
-        location = self.locations_collection.find_item(
+        location = request.site.locations.find_item(
             request.site.site_id, location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
@@ -138,7 +146,7 @@ class OpenAccessView(http.RestView):
 
     def get(self, request, location_uuid):
         """Check if a resource that enables open access to a location exists."""
-        location = self.locations_collection.find_item(
+        location = request.site.locations.find_item(
             request.site.site_id, location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
@@ -153,7 +161,7 @@ class OpenAccessView(http.RestView):
 
         Disables open access to a given location.
         """
-        location = self.locations_collection.find_item(
+        location = request.site.locations.find_item(
             request.site.site_id, location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
@@ -164,20 +172,14 @@ class OpenAccessView(http.RestView):
         return http.HttpResponseNoContent()
 
 class AllowedUsersView(http.RestView):
-    """Manages resources that define which users can access locations.
-
-    Attributes:
-        location_collection: The collection that is used to find
-        location to which requests are related.
-    """
-    locations_collection = None
+    """Manages resources that define which users can access locations."""
 
     def put(self, request, location_uuid, user_uuid):
         """Creates a resource.
 
         Grants access to a given location by a given user.
         """
-        location = self.locations_collection.find_item(
+        location = request.site.locations.find_item(
             request.site.site_id, location_uuid)
         if not location:
             return http.HttpResponseNotFound('Location not found.')
@@ -200,7 +202,7 @@ class AllowedUsersView(http.RestView):
         location. If the location is open, but the user is not
         explicitly granted access, not found failure is returned.
         """
-        location = self.locations_collection.find_item(
+        location = request.site.locations.find_item(
             request.site.site_id, location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
@@ -218,7 +220,7 @@ class AllowedUsersView(http.RestView):
         location is open, the user will still be able to access the
         location after this call succeeds.
         """
-        location = self.locations_collection.find_item(
+        location = request.site.locations.find_item(
             request.site.site_id, location_uuid)
         if not location:
             return http.HttpResponseNotFound('Location not found.')
