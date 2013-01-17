@@ -70,10 +70,13 @@ class Site(ValidatedModel):
     Site has locations and users.
 
     Attributes:
-      site_id: can be a domain or any other string.
+      site_id: Can be a domain or any other string.
+      #mod_id: Changed after any modification of the site data. Allows
+      #    to determine when caches need to be updated
     """
     site_id = models.TextField(primary_key=True,
                                db_index=True)
+    #mod_id = models.IntegerField(default=0)
 
 def create_site(site_id):
     """Creates a new Site object.
@@ -128,6 +131,9 @@ User.attributes_dict.__func__.__doc__ = \
 User.get_absolute_url = models.permalink( \
     lambda self: \
         ('wwwhisper_user', (), {'uuid' : self.uuid}))
+
+User.site_id = property(fget=lambda(self): self.get_profile().site_id, doc=\
+"""Id of a site to which user belongs.""")
 
 class Location(ValidatedModel):
     """A location for which access control rules are defined.
@@ -208,7 +214,7 @@ class Location(ValidatedModel):
             location or it the location is open.
         """
         # Sanity check (this should normally be ensured by the caller).
-        if user.get_profile().site_id != self.site_id:
+        if user.site_id != self.site_id:
             return False
 
         return (self.open_access_granted()
