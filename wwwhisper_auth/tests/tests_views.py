@@ -28,19 +28,14 @@ INCORRECT_ASSERTION = "ThisAssertionIsFalse"
 TEST_SITE = settings.SITE_URL
 
 class FakeAssertionVeryfingBackend(ModelBackend):
-    def __init__(self):
-        self.users = models.UsersCollection()
-
     def authenticate(self, assertion, site, site_url=TEST_SITE):
         if assertion == INCORRECT_ASSERTION:
             raise backend.AssertionVerificationException(
                 'Assertion verification failed.')
-        return self.users.find_item_by_email(site.site_id, assertion)
+        return site.users.find_item_by_email(site.site_id, assertion)
 
 class AuthTestCase(HttpTestCase):
     def setUp(self):
-        self.locations = models.LocationsCollection()
-        self.users = models.UsersCollection()
         self.site = models.create_site(TEST_SITE)
 
         settings.AUTHENTICATION_BACKENDS = (
@@ -74,7 +69,7 @@ class LoginTest(AuthTestCase):
             response.content, 'Assertion verification failed')
 
     def test_login_succeeds_if_known_user(self):
-        self.users.create_item(TEST_SITE, 'foo@example.com')
+        self.site.users.create_item(TEST_SITE, 'foo@example.com')
         response = self.post('/auth/api/login/',
                              {'assertion' : 'foo@example.com'})
         self.assertEqual(204, response.status_code)
@@ -85,7 +80,7 @@ class AuthTest(AuthTestCase):
         self.assertEqual(400, response.status_code)
 
     def test_is_authorized_for_not_authenticated_user(self):
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
         self.assertTrue(response.has_header('WWW-Authenticate'))
@@ -95,7 +90,7 @@ class AuthTest(AuthTestCase):
         self.assertEqual('Authentication required.', response.content)
 
     def test_is_authorized_for_not_authorized_user(self):
-        self.users.create_item(TEST_SITE, 'foo@example.com')
+        self.site.users.create_item(TEST_SITE, 'foo@example.com')
         self.login('foo@example.com')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         # For an authenticated user 'User' header should be always returned.
@@ -105,8 +100,8 @@ class AuthTest(AuthTestCase):
         self.assertEqual('User not authorized.', response.content)
 
     def test_is_authorized_for_authorized_user(self):
-        user = self.users.create_item(TEST_SITE, 'foo@example.com')
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        user = self.site.users.create_item(TEST_SITE, 'foo@example.com')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
         self.login('foo@example.com')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
@@ -115,8 +110,8 @@ class AuthTest(AuthTestCase):
 
     # This should never happen for sessions stored server side.
     def test_is_authorized_for_authorized_user_if_site_id_missing(self):
-        user = self.users.create_item(TEST_SITE, 'foo@example.com')
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        user = self.site.users.create_item(TEST_SITE, 'foo@example.com')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
         self.login('foo@example.com')
         # Remove site_id from session.
@@ -128,30 +123,30 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_for_user_of_other_site(self):
         site2 = models.create_site('somesite')
-        user = self.users.create_item(site2.site_id, 'foo@example.com')
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        user = self.site.users.create_item(site2.site_id, 'foo@example.com')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         self.login('foo@example.com', site2)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
 
     def test_is_authorized_for_open_location(self):
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertFalse(response.has_header('User'))
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_open_location_and_authenticated_user(self):
-        user = self.users.create_item(TEST_SITE, 'foo@example.com')
+        user = self.site.users.create_item(TEST_SITE, 'foo@example.com')
         self.login('foo@example.com')
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_invalid_path(self):
-        user = self.users.create_item(TEST_SITE, 'foo@example.com')
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        user = self.site.users.create_item(TEST_SITE, 'foo@example.com')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
         self.login('foo@example.com')
 
@@ -166,7 +161,7 @@ class AuthTest(AuthTestCase):
                                  'Path should be absolute and normalized')
 
     def test_is_authorized_decodes_path(self):
-        location = self.locations.create_item(TEST_SITE, '/f/')
+        location = self.site.locations.create_item(TEST_SITE, '/f/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=%2F%66%2F')
         self.assertEqual(200, response.status_code)
@@ -175,14 +170,14 @@ class AuthTest(AuthTestCase):
         self.assertEqual(401, response.status_code)
 
     def test_is_authorized_collapses_slashes(self):
-        location = self.locations.create_item(TEST_SITE, '/f/')
+        location = self.site.locations.create_item(TEST_SITE, '/f/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=///f/')
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_does_not_allow_requests_with_user_header(self):
-        user = self.users.create_item(TEST_SITE, 'foo@example.com')
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        user = self.site.users.create_item(TEST_SITE, 'foo@example.com')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         location.grant_access(user.uuid)
         self.login('foo@example.com')
         response = self.client.get('/auth/api/is-authorized/?path=/foo/',
@@ -210,7 +205,7 @@ class AuthStaticAssetsTest(AuthTestCase):
         reload(wwwhisper_auth.urls)
 
     def test_is_authorized_for_not_authenticated_user(self):
-        location = self.locations.create_item(TEST_SITE, '/foo/')
+        location = self.site.locations.create_item(TEST_SITE, '/foo/')
         response = self.client.get('/auth/api/is-authorized/?path=/foo/',
                                    HTTP_ACCEPT='text/plain, text/html')
         self.assertEqual(401, response.status_code)
@@ -223,7 +218,7 @@ class AuthStaticAssetsTest(AuthTestCase):
         self.assertRegexpMatches(response['Content-Type'], 'text/plain')
 
     def test_html_response_is_authorized_for_not_authorized_user(self):
-        self.users.create_item(TEST_SITE, 'foo@example.com')
+        self.site.users.create_item(TEST_SITE, 'foo@example.com')
         self.login('foo@example.com')
         response = self.client.get('/auth/api/is-authorized/?path=/foo/',
                                    HTTP_ACCEPT='*/*')
@@ -239,7 +234,7 @@ class AuthStaticAssetsTest(AuthTestCase):
 
 class LogoutTest(AuthTestCase):
     def test_authentication_requested_after_logout(self):
-        user = self.users.create_item(TEST_SITE, 'foo@example.com')
+        user = self.site.users.create_item(TEST_SITE, 'foo@example.com')
         self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
 
         response = self.get('/auth/api/is-authorized/?path=/bar/')
@@ -256,7 +251,7 @@ class LogoutTest(AuthTestCase):
 
 class WhoAmITest(AuthTestCase):
     def test_whoami_returns_email_of_logged_in_user(self):
-        self.users.create_item(TEST_SITE, 'foo@example.com')
+        self.site.users.create_item(TEST_SITE, 'foo@example.com')
 
         # Not authorized.
         response = self.get('/auth/api/whoami/')
@@ -271,7 +266,7 @@ class WhoAmITest(AuthTestCase):
 
     def test_whoami_for_user_of_differen_site(self):
         site2 = models.create_site('somesite')
-        self.users.create_item(site2.site_id, 'foo@example.com')
+        self.site.users.create_item(site2.site_id, 'foo@example.com')
         self.login('foo@example.com', site2)
         # Not authorized.
         # Request is run for TEST_SITE, but user belongs to site2_id.
