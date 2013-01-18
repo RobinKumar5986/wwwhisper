@@ -34,9 +34,10 @@ because those ids can be reused after object is deleted.
 Makes sure entered emails and paths are valid.
 """
 
-from django.forms import ValidationError
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import signals
+from django.forms import ValidationError
 from wwwhisper_auth import  url_path
 
 import re
@@ -104,6 +105,19 @@ def delete_site(site_id):
     site.delete()
     return True
 
+# def post_save(sender, instance=None, **kwargs):
+#     print "Saved " + str(instance.__class__)
+
+# for b in module.__dict__:
+#     print "FOOO " + str(b)
+
+# signals.post_save.connect(post_save, weak=False)
+
+# # post_save is not invoked after delete
+# def post_delete(sender, instance=None, **kwargs):
+#     print "Deleted " + str(instance.__class__)
+# signals.post_delete.connect(post_delete, weak=False)
+
 # Because Django authentication mechanism is used, users need to be
 # represented by a standard Django User class. But some additions are
 # needed:
@@ -117,9 +131,6 @@ class UserExtras(models.Model):
     # the length of the username field to 30 chars.
     uuid = models.CharField(max_length=36, db_index=True,
                             editable=False, unique=True)
-
-    def save(self, *args, **kwargs):
-        return super(UserExtras, self).save(*args, **kwargs)
 
 User.uuid = property(fget=lambda(self): self.get_profile().uuid, doc=\
 """Externally visible UUID of a user.
@@ -484,7 +495,6 @@ class LocationsCollection(Collection):
             raise ValidationError('Location already exists.')
 
         location = Location.objects.create(path=path, site_id=self.site_id)
-        location.save()
         return location
 
 
