@@ -16,6 +16,7 @@
 
 """Authentication backend used by wwwhisper_auth."""
 
+from django.forms import ValidationError
 from django.contrib.auth.backends import ModelBackend
 from django_browserid.base import verify
 
@@ -64,5 +65,5 @@ class BrowserIDBackend(ModelBackend):
                 return site.users.create_item(site.site_id, email)
             else:
                 return None
-        except models.CreationException as ex:
+        except ValidationError as ex:
             raise AssertionVerificationException(str(ex))

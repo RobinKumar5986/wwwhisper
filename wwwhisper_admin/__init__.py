@@ -19,7 +19,7 @@
 The package exposes REST API for specifying which users can access
 which locations.
 """
-
+from django.forms import ValidationError
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db.models import signals
@@ -34,7 +34,7 @@ def _create_site():
     """Creates a site configured in settings.py."""
     try:
         return auth_models.create_site(SITE_URL)
-    except auth_models.CreationException as ex:
+    except ValidationError as ex:
         raise ImproperlyConfigured('Failed to create site %s: %s'
                                    % (SITE_URL, ex))
 
@@ -44,7 +44,7 @@ def _create_initial_locations(site):
     for path in locations_paths:
         try:
             site.locations.create_item(SITE_URL, path)
-        except auth_models.CreationException as ex:
+        except ValidationError as ex:
             raise ImproperlyConfigured('Failed to create location %s: %s'
                                        % (path, ex))
 
@@ -54,7 +54,7 @@ def _create_initial_admins(site):
     for email in emails:
         try:
             user = site.users.create_item(SITE_URL, email)
-        except auth_models.CreationException as ex:
+        except ValidationError as ex:
             raise ImproperlyConfigured('Failed to create admin user %s: %s'
                                        % (email, ex))
 

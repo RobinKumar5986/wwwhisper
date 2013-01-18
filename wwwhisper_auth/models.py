@@ -34,6 +34,7 @@ because those ids can be reused after object is deleted.
 Makes sure entered emails and paths are valid.
 """
 
+from django.forms import ValidationError
 from django.contrib.auth.models import User
 from django.db import models
 from wwwhisper_auth import  url_path
@@ -44,10 +45,6 @@ import random
 
 USERNAME_LEN=7
 assert USERNAME_LEN <= User._meta.get_field('username').max_length
-
-class CreationException(Exception):
-    """Raised when creation of a resource failed."""
-    pass
 
 class ValidatedModel(models.Model):
     """Base class for all model classes.
@@ -89,10 +86,8 @@ def create_site(site_id):
     Args:
        site_id: A domain or other id of the created site.
     Raises:
-       CreationException if a site with such id already exists.
+       ValidationError if a site with such id already exists.
     """
-    if _find(Site, site_id=site_id) is not None:
-        raise CreationException('Site already exists.')
     return Site.objects.create(site_id=site_id)
 
 def find_site(site_id):
@@ -102,6 +97,10 @@ def delete_site(site_id):
     site = find_site(site_id)
     if site is None:
         return False
+    # Users need to be deleted manually, because User object does not
+    # have a foreign key to the Site (unlike UserExtras and
+    # Location).
+    map(lambda user: user.delete(), site.users.all())
     site.delete()
     return True
 
@@ -338,9 +337,11 @@ class Permission(ValidatedModel):
 class Collection(object):
     """A common base class for managing a collection of resources.
 
+    All resources in a collection belong to a common site and only
+    this site can manipulate the resouces.
+
     Resources in the collection are of the same type and need to be
-    identified by an UUID. Each resource belongs to a single site and
-    only this site can manipulate the resource.
+    identified by an UUID.
 
     Attributes (Need to be defined in subclasses):
         item_name: Name of a resource stored in the collection.
@@ -354,28 +355,28 @@ class Collection(object):
     def __init__(self, site_id):
         self.site_id = site_id
 
-    def all(self, site_id):
-        """Returns all items in the collection associated with a site."""
-        filter_args = {self.site_id_column_name: site_id}
+    def all(self):
+        """Returns all items in the collection."""
+        filter_args = {self.site_id_column_name: self.site_id}
         return self.model_class.objects.filter(**filter_args)
 
-    def find_item(self, site_id, uuid):
-        """Finds an item with a given UUID if it belongs to a given site.
+    def find_item(self, uuid):
+        """Finds an item with a given UUID.
 
         Returns:
            The item or None if not found.
         """
         filter_args = {self.uuid_column_name: uuid,
-                       self.site_id_column_name: site_id}
+                       self.site_id_column_name: self.site_id}
         return _find(self.model_class, **filter_args)
 
-    def delete_item(self, site_id, uuid):
-        """Deletes an item with a given UUID if it belongs to a site.
+    def delete_item(self, uuid):
+        """Deletes an item with a given UUID.
 
         Returns:
            True if the item existed and was deleted, False if not found.
         """
-        item = self.find_item(site_id, uuid)
+        item = self.find_item(uuid)
         if item is None:
             return False
         item.delete()
@@ -396,28 +397,25 @@ class UsersCollection(Collection):
     def __init__(self, site_id):
         super(UsersCollection, self).__init__(site_id)
 
-    def create_item(self, site_id, email):
-        """Creates a new User object for a given site.
+    def create_item(self, email):
+        """Creates a new User object for the site.
 
         There may be two different users with the same email but for
         different sites.
 
-        Args:
-            site_id: Id of a site to which the user belongs.
-            email: An email of the created user.
         Raises:
-            CreationException if the email is invalid or if a site
+            ValidationError if the email is invalid or if a site
             already has a user with such email.
         """
         encoded_email = _encode_email(email)
         if encoded_email is None:
-            raise CreationException('Invalid email format.')
+            raise ValidationError('Invalid email format.')
         if _find(User, email=encoded_email,
-                 userextras__site_id=site_id) is not None:
-            raise CreationException('User already exists.')
-        site = _find(Site, site_id=site_id)
+                 userextras__site_id=self.site_id) is not None:
+            raise ValidationError('User already exists.')
+        site = _find(Site, site_id=self.site_id)
         if site is None:
-            raise CreationException('Invalid site id.')
+            raise ValidationError('site no longer exists.')
         while True:
             username = _gen_random_str(USERNAME_LEN)
             if _find(User, username=username) is None:
@@ -428,7 +426,7 @@ class UsersCollection(Collection):
             user=user, site=site, uuid=str(uuidgen.uuid4()))
         return user
 
-    def find_item_by_email(self, site_id, email):
+    def find_item_by_email(self, email):
         """Finds a user of a given site with a given email.
 
         Returns:
@@ -438,7 +436,7 @@ class UsersCollection(Collection):
         if encoded_email is None:
             return None
         return _find(self.model_class, email=encoded_email,
-                     userextras__site_id=site_id)
+                     userextras__site_id=self.site_id)
 
 class LocationsCollection(Collection):
     """Collection of locations resources."""
@@ -451,55 +449,47 @@ class LocationsCollection(Collection):
     def __init__(self, site_id):
         super(LocationsCollection, self).__init__(site_id)
 
-    def create_item(self, site_id, path):
-        """Creates a new Location object for a given site.
+    def create_item(self, path):
+        """Creates a new Location object for the site.
 
         The location path should be canonical and should not contain
         parts that are not used for access control (query, fragment,
         parameters). Location should not contain non-ascii characters.
 
-        Args:
-            site_id: Id of a site to which the location belongs.
-            path: A canonical path to the location.
-
         Raises:
-            CreationException if the path is invalid or if a site
+            ValidationError if the path is invalid or if a site
             already has a location with such path.
         """
 
         if not url_path.is_canonical(path):
-            raise CreationException(
+            raise ValidationError(
                 'Path should be absolute and normalized (starting with / '\
                     'without /../ or /./ or //).')
         if url_path.contains_fragment(path):
-            raise CreationException(
+            raise ValidationError(
                 "Path should not contain fragment ('#' part).")
         if url_path.contains_query(path):
-            raise CreationException(
+            raise ValidationError(
                 "Path should not contain query ('?' part).")
         if url_path.contains_params(path):
-            raise CreationException(
+            raise ValidationError(
                 "Path should not contain parameters (';' part).")
         try:
             path.encode('ascii')
         except UnicodeError:
-            raise CreationException(
+            raise ValidationError(
                 'Path should contain only ascii characters.')
 
-        site = _find(Site, site_id=site_id)
-        if site is None:
-            raise CreationException('Invalid site id.')
+        if _find(Location, path=path, site_id=self.site_id) is not None:
+            raise ValidationError('Location already exists.')
 
-        if _find(Location, path=path, site_id=site_id) is not None:
-            raise CreationException('Location already exists.')
-
-        location = Location.objects.create(path=path, site=site)
+        location = Location.objects.create(path=path, site_id=self.site_id)
         location.save()
         return location
 
 
-    def find_location(self, site_id, canonical_path):
-        """Finds a location that defines access to a given path on a given site.
+    def find_location(self, canonical_path):
+        """Finds a location that defines access to a given path on the site.
 
         Args:
             canonical_path: The path for which matching location is searched.
@@ -512,7 +502,7 @@ class LocationsCollection(Collection):
         longest_matched_location = None
         longest_matched_location_len = -1
 
-        for location in Location.objects.filter(site_id=site_id):
+        for location in Location.objects.filter(site_id=self.site_id):
             probed_path = location.path
             probed_path_len = len(probed_path)
             trailing_slash_index = None
@@ -529,8 +519,8 @@ class LocationsCollection(Collection):
                 longest_matched_location = location
         return longest_matched_location
 
-    def has_open_location_with_login(self, site_id):
-        for location in Location.objects.filter(site_id=site_id):
+    def has_open_location_with_login(self):
+        for location in Location.objects.filter(site_id=self.site_id):
             if (location.open_access_granted() and
                 location.open_access_requires_login()):
                 return True

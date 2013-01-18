@@ -122,8 +122,7 @@ class Auth(View):
             return http.HttpResponseBadRequest(path_validation_error)
 
         user = request.user
-        location = request.site.locations.find_location(
-            request.site.site_id, decoded_path)
+        location = request.site.locations.find_location(decoded_path)
 
         # Makes sure user is authenticated and belongs to the current
         # site (auth backend just ensures user exists).
