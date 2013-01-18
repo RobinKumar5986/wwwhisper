@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012 Jan Wrobel <wrr@mixedbit.org>
+# Copyright (C) 2012, 2013 Jan Wrobel <wrr@mixedbit.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,8 +36,10 @@ Makes sure entered emails and paths are valid.
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.db.models import F
 from django.db.models import signals
 from django.forms import ValidationError
+from functools import wraps
 from wwwhisper_auth import  url_path
 
 import re
@@ -72,14 +74,20 @@ class Site(ValidatedModel):
       #mod_id: Changed after any modification of the site data. Allows
       #    to determine when caches need to be updated
     """
+    __MAX_MOD_ID = 2000000000
     site_id = models.TextField(primary_key=True,
                                db_index=True)
-    #mod_id = models.IntegerField(default=0)
+    mod_id = models.IntegerField(default=0)
 
     def __init__(self, *args, **kwargs):
         super(Site, self).__init__(*args, **kwargs)
-        self.locations = LocationsCollection(self.site_id)
-        self.users = UsersCollection(self.site_id)
+        self.locations = LocationsCollection(self)
+        self.users = UsersCollection(self)
+
+    def site_modified(self):
+        # TODO: do all updates within a transaction.
+        self.mod_id += 1
+        self.save()
 
 def create_site(site_id):
     """Creates a new Site object.
@@ -92,6 +100,7 @@ def create_site(site_id):
     return Site.objects.create(site_id=site_id)
 
 def find_site(site_id):
+    Site.objects.get(site_id=site_id).mod_id
     return _find(Site, site_id=site_id)
 
 def delete_site(site_id):
@@ -105,6 +114,16 @@ def delete_site(site_id):
     site.delete()
     return True
 
+def modify_site(decorated_function):
+    @wraps(decorated_function)
+    def wrapper(self, *args, **kwargs):
+        result = decorated_function(self, *args, **kwargs)
+        # If no exception.
+        self.site.site_modified()
+        return result
+    return wrapper
+
+#        save()
 # def post_save(sender, instance=None, **kwargs):
 #     print "Saved " + str(instance.__class__)
 
@@ -202,6 +221,7 @@ class Location(ValidatedModel):
         """Constructs URL of the location resource."""
         return ('wwwhisper_location', (), {'uuid' : self.uuid})
 
+    @modify_site
     def grant_open_access(self, require_login):
         """Allows open access to the location."""
         if require_login:
@@ -216,6 +236,7 @@ class Location(ValidatedModel):
     def open_access_requires_login(self):
         return self.open_access == 'a'
 
+    @modify_site
     def revoke_open_access(self):
         """Disables open access to the location."""
         self.open_access = 'n'
@@ -237,6 +258,7 @@ class Location(ValidatedModel):
                          user_id=user.id,
                          http_location_id=self.id) is not None)
 
+    @modify_site
     def grant_access(self, user_uuid):
         """Grants access to the location to a given user.
 
@@ -267,6 +289,7 @@ class Location(ValidatedModel):
             permission.save()
         return (permission, created)
 
+    @modify_site
     def revoke_access(self, user_uuid):
         """Revokes access to the location from a given user.
 
@@ -363,12 +386,12 @@ class Collection(object):
             a resource uuid.
     """
 
-    def __init__(self, site_id):
-        self.site_id = site_id
+    def __init__(self, site):
+        self.site = site
 
     def all(self):
         """Returns all items in the collection."""
-        filter_args = {self.site_id_column_name: self.site_id}
+        filter_args = {self.site_id_column_name: self.site.site_id}
         return self.model_class.objects.filter(**filter_args)
 
     def find_item(self, uuid):
@@ -378,9 +401,10 @@ class Collection(object):
            The item or None if not found.
         """
         filter_args = {self.uuid_column_name: uuid,
-                       self.site_id_column_name: self.site_id}
+                       self.site_id_column_name: self.site.site_id}
         return _find(self.model_class, **filter_args)
 
+    @modify_site
     def delete_item(self, uuid):
         """Deletes an item with a given UUID.
 
@@ -405,9 +429,10 @@ class UsersCollection(Collection):
     uuid_column_name = 'userextras__uuid'
     site_id_column_name = 'userextras__site_id'
 
-    def __init__(self, site_id):
-        super(UsersCollection, self).__init__(site_id)
+    def __init__(self, site):
+        super(UsersCollection, self).__init__(site)
 
+    @modify_site
     def create_item(self, email):
         """Creates a new User object for the site.
 
@@ -422,9 +447,9 @@ class UsersCollection(Collection):
         if encoded_email is None:
             raise ValidationError('Invalid email format.')
         if _find(User, email=encoded_email,
-                 userextras__site_id=self.site_id) is not None:
+                 userextras__site_id=self.site.site_id) is not None:
             raise ValidationError('User already exists.')
-        site = _find(Site, site_id=self.site_id)
+        site = _find(Site, site_id=self.site.site_id)
         if site is None:
             raise ValidationError('site no longer exists.')
         while True:
@@ -447,7 +472,7 @@ class UsersCollection(Collection):
         if encoded_email is None:
             return None
         return _find(self.model_class, email=encoded_email,
-                     userextras__site_id=self.site_id)
+                     userextras__site_id=self.site.site_id)
 
 class LocationsCollection(Collection):
     """Collection of locations resources."""
@@ -457,9 +482,10 @@ class LocationsCollection(Collection):
     uuid_column_name = 'uuid'
     site_id_column_name = 'site_id'
 
-    def __init__(self, site_id):
-        super(LocationsCollection, self).__init__(site_id)
+    def __init__(self, site):
+        super(LocationsCollection, self).__init__(site)
 
+    @modify_site
     def create_item(self, path):
         """Creates a new Location object for the site.
 
@@ -491,10 +517,10 @@ class LocationsCollection(Collection):
             raise ValidationError(
                 'Path should contain only ascii characters.')
 
-        if _find(Location, path=path, site_id=self.site_id) is not None:
+        if _find(Location, path=path, site=self.site) is not None:
             raise ValidationError('Location already exists.')
 
-        location = Location.objects.create(path=path, site_id=self.site_id)
+        location = Location.objects.create(path=path, site=self.site)
         return location
 
 
@@ -512,7 +538,7 @@ class LocationsCollection(Collection):
         longest_matched_location = None
         longest_matched_location_len = -1
 
-        for location in Location.objects.filter(site_id=self.site_id):
+        for location in Location.objects.filter(site=self.site):
             probed_path = location.path
             probed_path_len = len(probed_path)
             trailing_slash_index = None
@@ -530,7 +556,7 @@ class LocationsCollection(Collection):
         return longest_matched_location
 
     def has_open_location_with_login(self):
-        for location in Location.objects.filter(site_id=self.site_id):
+        for location in Location.objects.filter(site=self.site):
             if (location.open_access_granted() and
                 location.open_access_requires_login()):
                 return True
