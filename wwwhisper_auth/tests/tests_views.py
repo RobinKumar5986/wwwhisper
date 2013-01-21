@@ -282,7 +282,7 @@ class SessionCacheTest(AuthTestCase):
                              {'assertion' : 'foo@example.com'})
         self.assertEqual(204, response.status_code)
         s = self.client.session
-        user = s['user']
+        user = s['user-data']
         self.assertIsNotNone(user)
         self.assertIsNotNone(user.uuid)
         self.assertEqual('foo@example.com', user.email)
@@ -299,5 +299,5 @@ class SessionCacheTest(AuthTestCase):
         response = self.post('/auth/api/logout/', {})
         self.assertEqual(204, response.status_code)
         s = self.client.session
-        self.assertFalse(s.has_key('user'))
+        self.assertFalse(s.has_key('user-data'))
         self.assertNotEqual(mod_id, self.site.mod_id)
