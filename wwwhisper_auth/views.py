@@ -31,7 +31,7 @@ import os
 
 logger = logging.getLogger(__name__)
 
-class CachedUser:
+class UserData:
     def __init__(self, user):
         self.id = user.id
         self.uuid = user.uuid
@@ -59,8 +59,8 @@ def get_user(request):
     user = request.user
     if not user.is_authenticated() or user.site_id != request.site.site_id:
         return None
-    cached_user = CachedUser(user)
-    request.session['user'] = cached_user
+    cached_user = UserData(user)
+    request.session['user-data'] = cached_user
     return cached_user
 
 class Auth(View):
@@ -255,7 +255,7 @@ class Login(http.RestView):
             # Store all user data needed by Auth view in session, this
             # way, user table does not need to be queried during the
             # performance critical request (sessions are cached).
-            request.session['user'] = CachedUser(user)
+            request.session['user-data'] = UserData(user)
             logger.debug('%s successfully logged.' % (user.email))
             return http.HttpResponseNoContent()
         else:
