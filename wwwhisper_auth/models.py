@@ -36,7 +36,7 @@ Makes sure entered emails and paths are valid.
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import F
+from django.db.models import F # TODO: remove.
 from django.db.models import signals
 from django.forms import ValidationError
 from functools import wraps
@@ -75,8 +75,7 @@ class Site(ValidatedModel):
       #    to determine when caches need to be updated
     """
     __MAX_MOD_ID = 2000000000
-    site_id = models.TextField(primary_key=True,
-                               db_index=True)
+    site_id = models.TextField(primary_key=True, db_index=True, editable=False)
     mod_id = models.IntegerField(default=0)
 
     def __init__(self, *args, **kwargs):

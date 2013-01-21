@@ -51,7 +51,7 @@ class BrowserIDBackend(ModelBackend):
             raise AssertionVerificationException(
                 'BrowserID assertion verification failed.')
         email = result['email']
-        user = site.users.find_item_by_email(site.site_id, result['email'])
+        user = site.users.find_item_by_email(result['email'])
         if user is not None:
             return user
         try:
@@ -61,8 +61,8 @@ class BrowserIDBackend(ModelBackend):
             # TODO: user objects created in such way should probably
             # be marked and automatically deleted on logout or after
             # some time of inactivity.
-            if site.locations.has_open_location_with_login(site.site_id):
-                return site.users.create_item(site.site_id, email)
+            if site.locations.has_open_location_with_login():
+                return site.users.create_item(email)
             else:
                 return None
         except ValidationError as ex:
