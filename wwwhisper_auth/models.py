@@ -239,6 +239,10 @@ class Location(ValidatedModel):
                             Permission.objects.filter(http_location=self)]
         self.cache_mod_id = self.site.mod_id
 
+    @check_cache
+    def permissions(self):
+        return self._cached_permissions
+
     def __unicode__(self):
         return "%s" % (self.path)
 
@@ -273,7 +277,6 @@ class Location(ValidatedModel):
         self.open_access = 'n'
         self.save()
 
-    @check_cache
     def can_access(self, user):
         """Determines if a user can access the location.
 
@@ -286,7 +289,7 @@ class Location(ValidatedModel):
             return False
         return (self.open_access_granted()
                 or filter(lambda perm: perm.user_id == user.id,
-                          self._cached_permissions) != [])
+                          self.permissions()) != [])
 
     @modify_site
     def grant_access(self, user_uuid):
@@ -354,8 +357,7 @@ class Location(ValidatedModel):
 
     def allowed_users(self):
         """"Returns a list of users that can access the location."""
-        return [permission.user for permission in
-                Permission.objects.filter(http_location_id=self.id)]
+        return [permission.user for permission in self.permissions()]
 
     def attributes_dict(self, site_url):
         """Returns externally visible attributes of the location resource."""
@@ -429,20 +431,21 @@ class Collection(object):
     def all(self):
         return self._cached_items
 
-    @check_cache
-    def find_item(self, uuid):
-        """Finds an item with a given UUID.
+    def get_unique(self, filter_fun):
+        """Finds a unique item that satisfies a given filter.
 
         Returns:
            The item or None if not found.
         """
-        # TODO: is uuid_column_name still needed?
-        result = [item for item in self.all() if item.uuid == uuid]
+        result = filter(filter_fun, self.all())
         count = len(result)
         assert count <= 1
         if count == 0:
             return None
         return result[0]
+
+    def find_item(self, uuid):
+        return self.get_unique(lambda item: item.uuid == uuid)
 
     @modify_site
     def delete_item(self, uuid):
@@ -503,16 +506,10 @@ class UsersCollection(Collection):
         return user
 
     def find_item_by_email(self, email):
-        """Finds a user of a given site with a given email.
-
-        Returns:
-            A User object or None if not found.
-        """
         encoded_email = _encode_email(email)
         if encoded_email is None:
             return None
-        return _find(self.model_class, email=encoded_email,
-                     userextras__site_id=self.site.site_id)
+        return self.get_unique(lambda user: user.email == encoded_email)
 
 class LocationsCollection(Collection):
     """Collection of locations resources."""

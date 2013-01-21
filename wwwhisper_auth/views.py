@@ -40,15 +40,15 @@ class UserData:
         self.mod_id = user.site.mod_id
 
 def get_user(request):
-    """Retrieves up-to-date User object associated with a given request.
+    """Retrieves up-to-date user object associated with a given request.
 
-    User if retrieved from the session key-value store if the site was
-    not modified since the user object was put there. If the site was
-    modified, User is retrieved from the DB and the session is
-    updated.
+    The user object is retrieved from the session key-value store if
+    the site was not modified since the object was put there. If the
+    site was modified, the user is retrieved from the DB and the
+    session is updated.
     """
 
-    cached_user = request.session.get('user', None)
+    cached_user = request.session.get('user-data', None)
     if cached_user is not None:
         if cached_user.site_id != request.site.site_id:
             return None
@@ -279,8 +279,7 @@ class WhoAmI(http.RestView):
 
     def get(self, request):
         """Returns an email or an authentication required error."""
-        user = request.user
-        if (user and user.is_authenticated() and
-            user.get_profile().site_id == request.site.site_id):
+        user = get_user(request)
+        if user is not None:
             return http.HttpResponseOKJson({'email': user.email})
         return http.HttpResponseNotAuthenticated()
