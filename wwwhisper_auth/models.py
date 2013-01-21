@@ -88,7 +88,7 @@ class Site(ValidatedModel):
 
     def site_modified(self):
         # TODO: do all updates within a transaction.
-        self.mod_id += 1
+        self.mod_id = (self.mod_id + 1) % self.__MAX_MOD_ID
         self.save()
 
 #TODO: document caching mechanism.
@@ -185,8 +185,11 @@ User.get_absolute_url = models.permalink( \
     lambda self: \
         ('wwwhisper_user', (), {'uuid' : self.uuid}))
 
+User.site = property(fget=lambda(self): self.get_profile().site, doc=\
+"""Site to which the user belongs.""")
+
 User.site_id = property(fget=lambda(self): self.get_profile().site_id, doc=\
-"""Id of a site to which user belongs.""")
+"""Id of a site to which the user belongs.""")
 
 class Location(ValidatedModel):
     """A location for which access control rules are defined.

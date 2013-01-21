@@ -46,9 +46,9 @@ class AuthTestCase(HttpTestCase):
             site = self.site
         self.assertTrue(self.client.login(assertion=email, site=site))
         # Real login not only sets user object but also site_id in session.
-        s = self.client.session
-        s['site_id'] = site.site_id
-        s.save()
+        #s = self.client.session
+        #s['site_id'] = site.site_id
+        #s.save()
 
 class LoginTest(AuthTestCase):
     def test_login_requires_assertion(self):
@@ -106,19 +106,6 @@ class AuthTest(AuthTestCase):
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
-
-    # This should never happen for sessions stored on the server side.
-    def test_is_authorized_for_authorized_user_if_site_id_missing(self):
-        user = self.site.users.create_item('foo@example.com')
-        location = self.site.locations.create_item('/foo/')
-        location.grant_access(user.uuid)
-        self.login('foo@example.com')
-        # Remove site_id from session.
-        s = self.client.session;
-        del s['site_id']
-        s.save()
-        response = self.get('/auth/api/is-authorized/?path=/foo/')
-        self.assertEqual(401, response.status_code)
 
     def test_is_authorized_for_user_of_other_site(self):
         site2 = models.create_site('somesite')
@@ -286,3 +273,31 @@ class CsrfTokenTest(AuthTestCase):
     def test_csrf_cookie_http_only(self):
         response = self.post('/auth/api/csrftoken/', {})
         self.assertTrue(response.cookies[settings.CSRF_COOKIE_NAME]['httponly'])
+
+
+class SessionCacheTest(AuthTestCase):
+    def test_user_cached_in_session(self):
+        self.site.users.create_item('foo@example.com')
+        response = self.post('/auth/api/login/',
+                             {'assertion' : 'foo@example.com'})
+        self.assertEqual(204, response.status_code)
+        s = self.client.session
+        user = s['user']
+        self.assertIsNotNone(user)
+        self.assertIsNotNone(user.uuid)
+        self.assertEqual('foo@example.com', user.email)
+        self.assertEqual(self.site.site_id, user.site_id)
+        self.assertEqual(self.site.mod_id, user.mod_id)
+
+
+    def test_logout_invalidates_user_cache_and_updates_site(self):
+        self.site.users.create_item('foo@example.com')
+        response = self.post('/auth/api/login/',
+                             {'assertion' : 'foo@example.com'})
+        self.assertEqual(204, response.status_code)
+        mod_id = self.site.mod_id
+        response = self.post('/auth/api/logout/', {})
+        self.assertEqual(204, response.status_code)
+        s = self.client.session
+        self.assertFalse(s.has_key('user'))
+        self.assertNotEqual(mod_id, self.site.mod_id)

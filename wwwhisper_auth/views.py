@@ -31,6 +31,38 @@ import os
 
 logger = logging.getLogger(__name__)
 
+class CachedUser:
+    def __init__(self, user):
+        self.id = user.id
+        self.uuid = user.uuid
+        self.email = user.email
+        self.site_id = user.site_id
+        self.mod_id = user.site.mod_id
+
+def get_user(request):
+    """Retrieves up-to-date User object associated with a given request.
+
+    User if retrieved from the session key-value store if the site was
+    not modified since the user object was put there. If the site was
+    modified, User is retrieved from the DB and the session is
+    updated.
+    """
+
+    cached_user = request.session.get('user', None)
+    if cached_user is not None:
+        if cached_user.site_id != request.site.site_id:
+            return None
+        if cached_user.mod_id == request.site.mod_id:
+            return cached_user
+    # Makes sure user is authenticated and belongs to the current
+    # site (auth backend just ensures user exists).
+    user = request.user
+    if not user.is_authenticated() or user.site_id != request.site.site_id:
+        return None
+    cached_user = CachedUser(user)
+    request.session['user'] = cached_user
+    return cached_user
+
 class Auth(View):
     """Handles auth request from the HTTP server.
 
@@ -121,12 +153,9 @@ class Auth(View):
             logger.debug('%s: incorrect path.' % (debug_msg))
             return http.HttpResponseBadRequest(path_validation_error)
 
-        user = request.user
+        user = get_user(request)
         location = request.site.locations.find_location(decoded_path)
-        # Makes sure user is authenticated and belongs to the current
-        # site (auth backend just ensures user exists).
-        if (user and user.is_authenticated() and
-            request.session.get('site_id', None) == request.site.site_id):
+        if user is not None:
 
             debug_msg += " by '%s'" % (user.email)
             respone = None
@@ -224,10 +253,9 @@ class Login(http.RestView):
             auth.login(request, user)
 
             # Store all user data needed by Auth view in session, this
-            # way, user table does not need to be queried during this
+            # way, user table does not need to be queried during the
             # performance critical request (sessions are cached).
-            # TODO: store also email for whoami calls.
-            request.session['site_id'] = request.site.site_id
+            request.session['user'] = CachedUser(user)
             logger.debug('%s successfully logged.' % (user.email))
             return http.HttpResponseNoContent()
         else:
@@ -242,8 +270,9 @@ class Logout(http.RestView):
     def post(self, request):
         """Logs a user out (invalidates a session cookie)."""
         auth.logout(request)
+        # Modify site, so other Django processes reject cached user session.
+        request.site.site_modified()
         return http.HttpResponseNoContent()
-
 
 class WhoAmI(http.RestView):
     """Allows to obtain an email of a currently logged in user."""
