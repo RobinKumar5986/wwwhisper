@@ -54,10 +54,15 @@ CACHES = {
     }
 }
 
+if DEBUG:
+    INTERNAL_IPS = ('127.0.0.1',)
+
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 MIDDLEWARE_CLASSES = (
+    #'wwwhisper_service.profile.ProfileMiddleware',
     'django.middleware.common.CommonMiddleware',
+    #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'wwwhisper_auth.site.SiteMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -85,6 +90,9 @@ INSTALLED_APPS = (
     'wwwhisper_auth',
     'wwwhisper_admin'
 )
+
+if DEBUG:
+    INSTALLED_APPS += ('debug_toolbar',)
 
 AUTH_PROFILE_MODULE = 'wwwhisper_auth.UserExtras'
 

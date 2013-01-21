@@ -2,3 +2,4 @@ Django>=1.4.3,<=1.5.0
 git+git://github.com/mozilla/django-browserid.git#egg=django-browserid
 uwsgi
 mock
+django-debug-toolbar
