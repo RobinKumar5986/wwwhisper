@@ -37,7 +37,6 @@ class FakeAssertionVeryfingBackend(ModelBackend):
 class AuthTestCase(HttpTestCase):
     def setUp(self):
         self.site = models.create_site(TEST_SITE)
-
         settings.AUTHENTICATION_BACKENDS = (
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
         super(AuthTestCase, self).setUp()

@@ -81,13 +81,19 @@ class Site(ValidatedModel):
 
     def __init__(self, *args, **kwargs):
         super(Site, self).__init__(*args, **kwargs)
+
+    def lazy_init(self):
         self.locations = LocationsCollection(self)
         self.users = UsersCollection(self)
+        self.locations = LocationsCollection(self)
 
     def site_modified(self):
         # TODO: do all updates within a transaction.
         self.mod_id += 1
         self.save()
+
+#TODO: document caching mechanism.
+site_cache = {}
 
 def create_site(site_id):
     """Creates a new Site object.
@@ -97,45 +103,53 @@ def create_site(site_id):
     Raises:
        ValidationError if a site with such id already exists.
     """
-    return Site.objects.create(site_id=site_id)
+    site =  Site.objects.create(site_id=site_id)
+    site.lazy_init()
+    site_cache[site_id] = site
+    return site
 
 def find_site(site_id):
-    Site.objects.get(site_id=site_id).mod_id
-    return _find(Site, site_id=site_id)
+    site = _find(Site, site_id=site_id)
+    if site is None:
+        site_cache.pop(site_id, None)
+        return None
+    cached_site = site_cache.get(site_id, None)
+    if (cached_site is not None and
+        cached_site.mod_id == site.mod_id):
+        return cached_site
+    site.lazy_init()
+    site_cache[site_id] = site
+    return site
 
 def delete_site(site_id):
+    site_cache.pop(site_id, None)
     site = find_site(site_id)
     if site is None:
         return False
     # Users need to be deleted manually, because User object does not
     # have a foreign key to the Site (unlike UserExtras and
-    # Location).
+    # Locations).
     map(lambda user: user.delete(), site.users.all())
     site.delete()
     return True
 
-def modify_site(decorated_function):
-    @wraps(decorated_function)
+def modify_site(decorated_method):
+    @wraps(decorated_method)
     def wrapper(self, *args, **kwargs):
-        result = decorated_function(self, *args, **kwargs)
+        result = decorated_method(self, *args, **kwargs)
         # If no exception.
         self.site.site_modified()
         return result
     return wrapper
 
-#        save()
-# def post_save(sender, instance=None, **kwargs):
-#     print "Saved " + str(instance.__class__)
+def check_cache(decorated_method):
+    @wraps(decorated_method)
+    def wrapper(self, *args, **kwargs):
+        if self.site.mod_id != self.cache_mod_id:
+            self.update_cache()
+        return decorated_method(self, *args, **kwargs)
+    return wrapper
 
-# for b in module.__dict__:
-#     print "FOOO " + str(b)
-
-# signals.post_save.connect(post_save, weak=False)
-
-# # post_save is not invoked after delete
-# def post_delete(sender, instance=None, **kwargs):
-#     print "Deleted " + str(instance.__class__)
-# signals.post_delete.connect(post_delete, weak=False)
 
 # Because Django authentication mechanism is used, users need to be
 # represented by a standard Django User class. But some additions are
@@ -151,7 +165,13 @@ class UserExtras(models.Model):
     uuid = models.CharField(max_length=36, db_index=True,
                             editable=False, unique=True)
 
-User.uuid = property(fget=lambda(self): self.get_profile().uuid, doc=\
+def user_uuid(self):
+    if hasattr(self, '_cached_uuid'):
+        return self._cached_uuid
+    self._cached_uuid = self.get_profile().uuid
+    return self._cached_uuid
+
+User.uuid = property(fget=user_uuid, doc=\
 """Externally visible UUID of a user.
 
 Allows to identify a REST resource representing a user.
@@ -208,6 +228,15 @@ class Location(ValidatedModel):
     open_access = models.CharField(max_length=2, choices=OPEN_ACCESS_CHOICES,
                                    default='n')
 
+    def __init__(self, *args, **kwargs):
+        super(Location, self).__init__(*args, **kwargs)
+        self.update_cache()
+
+    def update_cache(self):
+        self._cached_permissions = [p for p in
+                            Permission.objects.filter(http_location=self)]
+        self.cache_mod_id = self.site.mod_id
+
     def __unicode__(self):
         return "%s" % (self.path)
 
@@ -242,6 +271,7 @@ class Location(ValidatedModel):
         self.open_access = 'n'
         self.save()
 
+    @check_cache
     def can_access(self, user):
         """Determines if a user can access the location.
 
@@ -252,11 +282,9 @@ class Location(ValidatedModel):
         # Sanity check (this should normally be ensured by the caller).
         if user.site_id != self.site_id:
             return False
-
         return (self.open_access_granted()
-                or _find(Permission,
-                         user_id=user.id,
-                         http_location_id=self.id) is not None)
+                or filter(lambda perm: perm.user_id == user.id,
+                          self._cached_permissions) != [])
 
     @modify_site
     def grant_access(self, user_uuid):
@@ -286,7 +314,6 @@ class Location(ValidatedModel):
             created = True
             permission = Permission.objects.create(
                 http_location_id=self.id, user_id=user.id)
-            permission.save()
         return (permission, created)
 
     @modify_site
@@ -388,21 +415,32 @@ class Collection(object):
 
     def __init__(self, site):
         self.site = site
+        self.update_cache()
 
-    def all(self):
-        """Returns all items in the collection."""
+    def update_cache(self):
         filter_args = {self.site_id_column_name: self.site.site_id}
-        return self.model_class.objects.filter(**filter_args)
+        self._cached_items = [item for item in
+                      self.model_class.objects.filter(**filter_args)]
+        self.cache_mod_id = self.site.mod_id
 
+    @check_cache
+    def all(self):
+        return self._cached_items
+
+    @check_cache
     def find_item(self, uuid):
         """Finds an item with a given UUID.
 
         Returns:
            The item or None if not found.
         """
-        filter_args = {self.uuid_column_name: uuid,
-                       self.site_id_column_name: self.site.site_id}
-        return _find(self.model_class, **filter_args)
+        # TODO: is uuid_column_name still needed?
+        result = [item for item in self.all() if item.uuid == uuid]
+        count = len(result)
+        assert count <= 1
+        if count == 0:
+            return None
+        return result[0]
 
     @modify_site
     def delete_item(self, uuid):
@@ -524,6 +562,7 @@ class LocationsCollection(Collection):
         return location
 
 
+    @check_cache
     def find_location(self, canonical_path):
         """Finds a location that defines access to a given path on the site.
 
@@ -538,7 +577,7 @@ class LocationsCollection(Collection):
         longest_matched_location = None
         longest_matched_location_len = -1
 
-        for location in Location.objects.filter(site=self.site):
+        for location in self.all():
             probed_path = location.path
             probed_path_len = len(probed_path)
             trailing_slash_index = None

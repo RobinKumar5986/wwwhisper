@@ -123,7 +123,6 @@ class Auth(View):
 
         user = request.user
         location = request.site.locations.find_location(decoded_path)
-
         # Makes sure user is authenticated and belongs to the current
         # site (auth backend just ensures user exists).
         if (user and user.is_authenticated() and
