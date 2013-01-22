@@ -16,9 +16,26 @@
 
 import os
 
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_control
+from django.views.decorators.cache import cache_page
+from django.views.generic import View
+from wwwhisper_auth import http
+
+
 class Asset:
     """Stores a static file to be returned by requests."""
 
     def __init__(self, prefix, *args):
         assert prefix is not None
         self.body = file(os.path.join(prefix, *args)).read()
+
+class HtmlFileView(View):
+    """ A view to serve a single static HTML file."""
+
+    asset = None
+
+    @method_decorator(cache_page(60 * 60 * 5))
+    @method_decorator(cache_control(private=True))
+    def get(self, request):
+        return http.HttpResponseHtmlOK(self.asset.body)

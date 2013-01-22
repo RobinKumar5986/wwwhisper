@@ -1,15 +1,19 @@
 # Django settings for wwwhisper_service project.
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 
-# If WWWHISPER_STATIC is set, auth request returns html documents to
-# be displayed to the user along with 401 and 403 responses. This is
-# not always needed, for example nginx_auth_request module can not
-# pass returned response body to the user, so needs to obtain this
-# documents from a separate location or with a separate request.
-WWWHISPER_STATIC = None
+# If WWWHISPER_STATIC is set, wwwhisper serves static html resources
+# needed for login and for the admin application (this is not needed
+# if these resources are served directly by a frontend server).
+#
+# In addition, auth request returns html documents to be displayed to
+# the user along with 401 and 403 responses. This is also not always
+# needed. For example nginx_auth_request module can not pass returned
+# response body to the user, so needs to obtain this documents from a
+# separate location or with a separate request.
+WWWHISPER_STATIC = 'www_static'
 
 import sys
 

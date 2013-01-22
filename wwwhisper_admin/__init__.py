@@ -43,7 +43,7 @@ def _create_initial_locations(site):
     locations_paths = getattr(settings, 'WWWHISPER_INITIAL_LOCATIONS', [])
     for path in locations_paths:
         try:
-            site.locations.create_item(SITE_URL, path)
+            site.locations.create_item(path)
         except ValidationError as ex:
             raise ImproperlyConfigured('Failed to create location %s: %s'
                                        % (path, ex))
@@ -53,14 +53,14 @@ def _create_initial_admins(site):
     emails = getattr(settings, 'WWWHISPER_INITIAL_ADMINS', [])
     for email in emails:
         try:
-            user = site.users.create_item(SITE_URL, email)
+            user = site.users.create_item(email)
         except ValidationError as ex:
             raise ImproperlyConfigured('Failed to create admin user %s: %s'
                                        % (email, ex))
 
 def _grant_admins_access_to_all_locations(site):
-    for user in site.users.all(SITE_URL):
-        for location in site.locations.all(SITE_URL):
+    for user in site.users.all():
+        for location in site.locations.all():
             location.grant_access(user.uuid)
 
 def grant_initial_permission(app, created_models, *args, **kwargs):

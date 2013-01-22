@@ -64,6 +64,18 @@ class HttpResponseOK(HttpResponse):
             content_type=TEXT_MIME_TYPE,
             status=200)
 
+class HttpResponseHtmlOK(HttpResponse):
+    """"Request succeeded.
+
+    Response contains html.
+    """
+
+    def __init__(self, body):
+        super(HttpResponseHtmlOK, self).__init__(
+            body,
+            content_type=HTML_MIME_TYPE,
+            status=200)
+
 class HttpResponseOKJson(HttpResponse):
     """"Request succeeded.
 
@@ -105,7 +117,7 @@ class HttpResponseCreated(HttpResponse):
 class HttpResponseNotAuthenticated(HttpResponse):
     """User is not authenticated.
 
-    Request can be retried after successul authentication.
+    Resource can be retried after successul authentication.
     """
 
     def __init__(self, html_response=None):
