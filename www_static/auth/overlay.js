@@ -38,6 +38,8 @@
       emailToDisplay = result.email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
     }
     $('#email').text(emailToDisplay);
+    $('#wwwhisper-iframe', window.parent.document).attr('frameBorder', 0);
+    $('#wwwhisper-iframe', window.parent.document).attr('scrolling', 'no');
     $('#wwwhisper-overlay').removeClass('hide');
     $('#logout').click(function() {
       stub.ajax('POST', '/auth/api/logout/', {}, function() {
