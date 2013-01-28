@@ -24,7 +24,6 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.middleware import csrf
 from django.utils.crypto import constant_time_compare
-from django.utils.decorators import method_decorator
 from django.views.decorators.cache import patch_cache_control
 from django.views.generic import View
 from functools import wraps
@@ -188,7 +187,7 @@ class RestView(View):
     appropriate error is returned to the client.
     """
 
-    @method_decorator(never_ever_cache)
+    @never_ever_cache
     def dispatch(self, request, *args, **kwargs):
         """Dispatches a method to a subclass.
 

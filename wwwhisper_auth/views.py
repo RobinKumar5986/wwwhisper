@@ -98,7 +98,7 @@ class Auth(View):
 
     assets = None
 
-    @method_decorator(http.never_ever_cache)
+    @http.never_ever_cache
     def get(self, request):
         """Invoked by the HTTP server with a single path argument.
 
@@ -209,7 +209,7 @@ class Auth(View):
 class CsrfToken(View):
     """Establishes Cross Site Request Forgery protection token."""
 
-    @method_decorator(http.never_ever_cache)
+    @http.never_ever_cache
     @method_decorator(ensure_csrf_cookie)
     def post(self, request):
         """Returns CSRF protection token in a cookie and a response body.
