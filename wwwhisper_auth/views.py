@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012,2013 Jan Wrobel <wrr@mixedbit.org>
+# Copyright (C) 2012, 2013 Jan Wrobel <wrr@mixedbit.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,10 +16,14 @@
 
 """Views that handle user authentication and authorization."""
 
+from django.conf import settings
 from django.contrib import auth
 from django.core.context_processors import csrf
 from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_control
+from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.vary import vary_on_headers
 from django.views.generic import View
 from functools import wraps
 from wwwhisper_auth import http
@@ -227,17 +231,12 @@ class CsrfToken(View):
 class Login(http.RestView):
     """Allows a user to authenticates with BrowserID."""
 
-    @method_decorator(ensure_csrf_cookie)
     def post(self, request, assertion):
         """Logs a user in (establishes a session cookie).
 
         Verifies BrowserID assertion and check that a user with an
         email verified by the BrowserID is known (added to users
         list).
-
-        Login also extends expiration period of the CSRF cookie, this
-        way, if the CSRF cookie is already set and /auth/csrftoken is
-        not invoked, the token won't expire.
         """
         if assertion == None:
             return http.HttpResponseBadRequest('BrowserId assertion not set.')
@@ -271,11 +270,18 @@ class Logout(http.RestView):
         auth.logout(request)
         # Modify site, so other Django processes reject cached user session.
         request.site.site_modified()
-        return http.HttpResponseNoContent()
+        response = http.HttpResponseNoContent()
+        response.delete_cookie(settings.SESSION_COOKIE_NAME)
+        response.delete_cookie(settings.CSRF_COOKIE_NAME)
+        return response
 
-class WhoAmI(http.RestView):
+class WhoAmI(View):
     """Allows to obtain an email of a currently logged in user."""
 
+    @http.disallow_cross_site_request
+    @method_decorator(cache_page(60 * 60 * 5))
+    @method_decorator(cache_control(private=True))
+    @vary_on_headers('Cookie')
     def get(self, request):
         """Returns an email or an authentication required error."""
         user = get_user(request)
