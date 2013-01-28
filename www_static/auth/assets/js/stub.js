@@ -14,7 +14,18 @@
    * parameters to JSON.
    */
   function Stub() {
-    var csrfToken = null, errorHandler = null, that = this;
+    var errorHandler = null, that = this;
+
+    function error(errorHandlerArg, message, status) {
+      if (typeof errorHandlerArg !== 'undefined') {
+        errorHandlerArg(message, status);
+      } else if (errorHandler !== null) {
+        errorHandler(message, status);
+      } else {
+        // No error handler. Fatal error:
+        $('html').html(message);
+      }
+    }
 
     /**
      * Helper private function, in addition to all arguments accepted
@@ -29,33 +40,58 @@
         headers: headersDict,
         success: successCallback,
         error: function(jqXHR) {
-          if (typeof errorHandlerArg !== 'undefined') {
-            errorHandlerArg(jqXHR.responseText, jqXHR.status);
-          } else if (errorHandler !== null) {
-            errorHandler(jqXHR.responseText, jqXHR.status);
-          } else {
-            // No error handler. Fatal error:
-            $('html').html(jqXHR.responseText);
-          }
+          error(errorHandlerArg, jqXHR.responseText, jqXHR.status);
         }
       };
       if (params !== null) {
         settings['data'] = JSON.stringify(params);
         settings['contentType'] = 'application/json; charset=utf-8';
-      };
+      }
       $.ajax(settings);
     }
 
+    function strip(str) {
+      return str.replace(/^\s+|\s+$/g, '');
+    }
+
+    function getCookie(cookie_name) {
+      var i, name, value, params, cookies = document.cookie.split(";");
+      for (i = 0; i < cookies.length; i += 1) {
+        params = cookies[i].split('=');
+        if (params.length >= 2) {
+          name = strip(params.shift());
+          value = strip(params.shift());
+          if (name == cookie_name) {
+            return value;
+          }
+        }
+      }
+      return null;
+    }
+
     /**
-     * Private function that retrieves csrf protection token and
-     * invokes a callback on success.
+     * Retrieves csrf protection token and invokes a callback on
+     * success.
      */
     function getCsrfToken(nextCallback, errorHandlerArg) {
-      ajaxCommon('POST', '/auth/api/csrftoken/', null, null,
-                 function(result) {
-                   csrfToken = result.csrfToken;
-                   nextCallback();
-                 }, errorHandlerArg);
+      var token = getCookie('wwwhisper-csrftoken');
+      if (token !== null) {
+        // Token is set in a cookie.
+        nextCallback(token);
+      } else {
+        // No token in a cookie, set it with an ajax call.
+        ajaxCommon('GET', '/auth/api/csrftoken/', null, null,
+                   function(result) {
+                     // Call succeeded, examine the cookie again.
+                     token = getCookie('wwwhisper-csrftoken');
+                     if (token !== null) {
+                       nextCallback(token);
+                     } else {
+                       // This can happen if cookies are disabled.
+                       error(errorHandlerArg, 'Failed to establish csrf token');
+                     }
+                   }, errorHandlerArg);
+      }
     }
 
     /**
@@ -72,17 +108,10 @@
       */
     this.ajax = function(method, resource, params, successCallback,
                          errorHandlerArg) {
-      if (csrfToken === null) {
-        // Each HTTP method call, except the one that returns a csrf
-        // protection token needs to carry the token. Get the token
-        // and reexecute the call.
-        getCsrfToken(function() {
-          that.ajax(method, resource, params, successCallback, errorHandlerArg);
-        }, errorHandlerArg);
-        return;
-      }
-      ajaxCommon(method, resource, params, {'X-CSRFToken' : csrfToken},
-                 successCallback, errorHandlerArg);
+      getCsrfToken(function(csrfToken) {
+        ajaxCommon(method, resource, params, {'X-CSRFToken' : csrfToken},
+                   successCallback, errorHandlerArg);
+      }, errorHandlerArg);
     };
 
     /**

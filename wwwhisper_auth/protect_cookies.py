@@ -16,17 +16,13 @@
 
 
 class ProtectCookiesMiddleware(object):
-    """Sets 'httponly' and (optionally) 'secure' flag for all cookies.
+    """Sets 'secure' flag for all cookies if request is over https.
 
-    'httponly' flag protects cookies from JavaScript access.
-
-    'secure' flag prevents cookies from being sent with HTTP
-    requests. The flag is set if page is served over HTTPS.
+    The flag prevents cookies from being sent with HTTP requests.
     """
 
     def process_response(self, request, response):
         for cookie in response.cookies.itervalues():
-            cookie['httponly'] = True
             if request.https:
                 cookie['secure'] = True
         return response

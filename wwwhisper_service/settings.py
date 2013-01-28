@@ -80,6 +80,7 @@ CSRF_COOKIE_NAME = 'wwwhisper-csrftoken'
 
 # Make session cookie valid only until a browser closes.
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_HTTPONLY = True
 
 ROOT_URLCONF = 'wwwhisper_service.urls'
 

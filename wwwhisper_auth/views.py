@@ -211,35 +211,34 @@ class CsrfToken(View):
 
     @http.never_ever_cache
     @method_decorator(ensure_csrf_cookie)
-    def post(self, request):
-        """Returns CSRF protection token in a cookie and a response body.
+    def get(self, request):
+        """Sets a cookie with CSRF protection token.
 
-        The method must be called before any CSRF protected HTTP
-        method is called (all HTTP methods of views that extend
-        RestView). Returned token must be set in 'X-CSRFToken' header
-        when the protected method is called, otherwise the call
-        fails. It is enough to get the token once and reuse it for all
-        subsequent calls to CSRF protected methods.
-
-        POST is used instead of GET as an extra precaution against
-        token leakage to sites from different origin. The token could
-        possibly leak if a browser interpreted returned json as
-        script, css or image and for example invoked js error handler
-        with part of the response body .
+        The method must be called if the cookie is missing before any
+        CSRF protected HTTP method is called (all HTTP methods of
+        views that extend RestView). Returned token must be set in
+        'X-CSRFToken' header when the protected method is called,
+        otherwise the call fails. It is enough to get the token once
+        and reuse it for all subsequent calls to CSRF protected
+        methods.
         """
-        # TODO: can this request not hit db?
-        csrf_token = csrf(request).values()[0]
-        return http.HttpResponseOKJson({'csrfToken': str(csrf_token)})
+        return http.HttpResponseNoContent()
 
 class Login(http.RestView):
     """Allows a user to authenticates with BrowserID."""
 
+    @method_decorator(ensure_csrf_cookie)
     def post(self, request, assertion):
         """Logs a user in (establishes a session cookie).
 
         Verifies BrowserID assertion and check that a user with an
         email verified by the BrowserID is known (added to users
-        list)."""
+        list).
+
+        Login also extends expiration period of the CSRF cookie, this
+        way, if the CSRF cookie is already set and /auth/csrftoken is
+        not invoked, the token won't expire.
+        """
         if assertion == None:
             return http.HttpResponseBadRequest('BrowserId assertion not set.')
         try:
