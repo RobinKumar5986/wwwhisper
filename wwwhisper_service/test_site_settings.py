@@ -9,5 +9,5 @@ DATABASES = {
     }
 }
 
-SITE_URL = 'http://localhost:8080'
+SITE_URL = 'https://localhost:8080'
 WWWHISPER_ADMINS = ['alice@example.com']

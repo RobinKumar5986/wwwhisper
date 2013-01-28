@@ -260,19 +260,16 @@ class WhoAmITest(AuthTestCase):
 
 class CsrfTokenTest(AuthTestCase):
 
-    def test_token_in_body_matches_cookie(self):
-        response = self.post('/auth/api/csrftoken/', {})
-        self.assertEqual(200, response.status_code)
-        parsed_response_body = json.loads(response.content)
-        self.assertTrue(len(parsed_response_body['csrfToken']) > 20)
-        self.assertEqual(
-            response.cookies[settings.CSRF_COOKIE_NAME].coded_value,
-            parsed_response_body['csrfToken'])
+    def test_token_returned_in_cookie(self):
+        response = self.get('/auth/api/csrftoken/')
+        self.assertEqual(204, response.status_code)
+        self.assertTrue(
+            len(response.cookies[settings.CSRF_COOKIE_NAME].coded_value) > 20)
 
     # Ensures that ProtectCookiesMiddleware is applied.
     def test_csrf_cookie_http_only(self):
-        response = self.post('/auth/api/csrftoken/', {})
-        self.assertTrue(response.cookies[settings.CSRF_COOKIE_NAME]['httponly'])
+        response = self.get('/auth/api/csrftoken/')
+        self.assertTrue(response.cookies[settings.CSRF_COOKIE_NAME]['secure'])
 
 
 class SessionCacheTest(AuthTestCase):
