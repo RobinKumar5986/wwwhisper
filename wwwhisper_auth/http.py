@@ -160,16 +160,36 @@ class HttpResponseNotFound(HttpResponse):
         super(HttpResponseNotFound, self).__init__(
             message, content_type=TEXT_MIME_TYPE, status=404)
 
-def never_ever_cache(decorated_function):
+def disallow_cross_site_request(decorated_method):
+    """Drops a request if it has any indicators of a cross site request."""
+    @wraps(decorated_method)
+    def wrapper(self, request, *args, **kwargs):
+        # Cross-Origin Resource Sharing allows cross origin Ajax GET
+        # requests, each such request must have the 'Origin' header
+        # set. Drop such requests.
+        origin = request.META.get('HTTP_ORIGIN', None)
+        if origin is not None and origin != request.site_url:
+                return HttpResponseBadRequest(
+                    'Cross origin requests not allowed.')
+
+        # Validate CSRF token unless test environment disabled CSRF protection.
+        if (not getattr(request, '_dont_enforce_csrf_checks', False)
+            and not _csrf_token_valid(request)):
+            return HttpResponseBadRequest(
+                'CSRF token missing or incorrect.')
+        return decorated_method(self, request, *args, **kwargs)
+    return wrapper
+
+def never_ever_cache(decorated_method):
     """Like Django @never_cache but sets more valid cache disabling headers.
 
     @never_cache only sets Cache-Control:max-age=0 which is not
     enough. For example, with max-axe=0 Firefox returns cached results
     of GET calls when it is restarted.
     """
-    @wraps(decorated_function)
+    @wraps(decorated_method)
     def wrapper(*args, **kwargs):
-        response = decorated_function(*args, **kwargs)
+        response = decorated_method(*args, **kwargs)
         patch_cache_control(
             response, no_cache=True, no_store=True, must_revalidate=True,
             max_age=0)
@@ -187,6 +207,7 @@ class RestView(View):
     appropriate error is returned to the client.
     """
 
+    @disallow_cross_site_request
     @never_ever_cache
     def dispatch(self, request, *args, **kwargs):
         """Dispatches a method to a subclass.
@@ -195,21 +216,6 @@ class RestView(View):
         for PUT and POST arguments passed in a json request body are
         added to kwargs, conflicting names result in an error.
         """
-
-        # Cross-Origin Resource Sharing allows cross origin Ajax GET
-        # requests, each such request must have the 'Origin' header
-        # set. Drop such requests.
-        origin = request.META.get('HTTP_ORIGIN', None)
-        if origin is not None and origin != request.site_url:
-                return HttpResponseBadRequest(
-                    'Cross origin requests not allowed.')
-
-        # Validate CSRF token unless test environment disabled CSRF protection.
-        if (not getattr(request, '_dont_enforce_csrf_checks', False)
-            and not _csrf_token_valid(request)):
-            return HttpResponseBadRequest(
-                'CSRF token missing or incorrect.')
-
         method = request.method.lower()
         # Parse body as json object if it is not empty (empty body
         # contains '--BoUnDaRyStRiNg--')
