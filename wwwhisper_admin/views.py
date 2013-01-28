@@ -61,7 +61,8 @@ class CollectionView(http.RestView):
         try:
             created_item = self.collection.create_item(**kwargs)
         except ValidationError as ex:
-            return http.HttpResponseBadRequest(ex)
+            # ex.messages is a list of errors.
+            return http.HttpResponseBadRequest(", ".join(ex.messages))
         attributes_dict = created_item.attributes_dict(request.site_url)
         response = http.HttpResponseCreated(attributes_dict)
         response['Location'] = attributes_dict['self']
