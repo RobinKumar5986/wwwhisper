@@ -19,10 +19,7 @@
 from django.contrib import auth
 from django.core.cache import cache
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_control
-from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.vary import vary_on_headers
 from django.views.generic import View
 from wwwhisper_auth import http
 from wwwhisper_auth import url_path
@@ -275,13 +272,9 @@ class Logout(http.RestView):
         response = http.HttpResponseNoContent()
         return response
 
-class WhoAmI(View):
+class WhoAmI(http.RestView):
     """Allows to obtain an email of a currently logged in user."""
 
-    @http.disallow_cross_site_request
-    @method_decorator(cache_page(60 * 60 * 5))
-    @method_decorator(cache_control(private=True))
-    @vary_on_headers('Cookie')
     def get(self, request):
         """Returns an email or an authentication required error."""
         user = get_user(request)
