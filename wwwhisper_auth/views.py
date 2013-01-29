@@ -16,22 +16,19 @@
 
 """Views that handle user authentication and authorization."""
 
-from django.conf import settings
 from django.contrib import auth
-from django.core.context_processors import csrf
+from django.core.cache import cache
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.vary import vary_on_headers
 from django.views.generic import View
-from functools import wraps
 from wwwhisper_auth import http
 from wwwhisper_auth import url_path
 from wwwhisper_auth.backend import AssertionVerificationException
 
 import logging
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +55,11 @@ def get_user(request):
             return None
         if cached_user.mod_id == request.site.mod_id:
             return cached_user
+        # Site was modified, session must be removed from cache and
+        # reloaded
+        cache.delete(request.session.cache_key)
+        request.session.load()
+
     # Makes sure user is authenticated and belongs to the current
     # site (auth backend just ensures user exists).
     user = request.user
@@ -271,8 +273,6 @@ class Logout(http.RestView):
         # Modify site, so other Django processes reject cached user session.
         request.site.site_modified()
         response = http.HttpResponseNoContent()
-        response.delete_cookie(settings.SESSION_COOKIE_NAME)
-        response.delete_cookie(settings.CSRF_COOKIE_NAME)
         return response
 
 class WhoAmI(View):
