@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 class ProtectCookiesMiddleware(object):
     """Sets 'secure' flag for all cookies if request is over https.
 
@@ -22,6 +21,7 @@ class ProtectCookiesMiddleware(object):
     """
 
     def process_response(self, request, response):
+        # response.cookies is SimpleCookie (Python 'Cookie' module).
         for cookie in response.cookies.itervalues():
             if request.https:
                 cookie['secure'] = True

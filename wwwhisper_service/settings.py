@@ -66,12 +66,13 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 MIDDLEWARE_CLASSES = (
     #'wwwhisper_service.profile.ProfileMiddleware',
     'django.middleware.common.CommonMiddleware',
+    # Must be placed before session middleware to alter session cookies.
+    'wwwhisper_auth.protect_cookies.ProtectCookiesMiddleware',
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'wwwhisper_auth.site.SiteMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'wwwhisper_auth.protect_cookies.ProtectCookiesMiddleware',
 )
 
 # Don't use just sessionid, to avoid collision with apps protected by wwwhisper.
