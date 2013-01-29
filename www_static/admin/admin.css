@@ -38,11 +38,11 @@ body {
 }
 
 .accessible {
-  background-color: #dfffdf !important;
+  background-color: #dff0d8 !important;
 }
 
 .not-accessible {
-  background-color: #ffdfdf !important;
+  background-color: #f2dede !important;
 }
 
 .in-dialog {
