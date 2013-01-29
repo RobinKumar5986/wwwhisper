@@ -31,15 +31,21 @@
    * activates the 'sign-out' button.
    */
   function authenticated(result) {
-    var emailToDisplay = result.email;
+    var emailToDisplay = result.email, iframe;
     if (emailToDisplay.length > MAX_EMAIL_LENGTH) {
       // Trim very long emails so 'sign out' button fits in
       // the iframe.
       emailToDisplay = result.email.substr(0, MAX_EMAIL_LENGTH) + '[...]';
     }
     $('#email').text(emailToDisplay);
-    $('#wwwhisper-iframe', window.parent.document).attr('frameBorder', 0);
-    $('#wwwhisper-iframe', window.parent.document).attr('scrolling', 'no');
+    iframe = $('#wwwhisper-iframe', window.parent.document)[0];
+    // Hide iframe border.
+    iframe.frameBorder = '0';
+    iframe.scrolling = 'no';
+    if (typeof iframe.contentWindow !== 'undefined') {
+      // For IE.
+      iframe.contentWindow.document.body.style.border="none";
+    }
     $('#wwwhisper-overlay').removeClass('hide');
     $('#logout').click(function() {
       stub.ajax('POST', '/auth/api/logout/', {}, function() {
