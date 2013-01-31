@@ -1,8 +1,8 @@
 wwwhisper simplifies sharing of Web resources that are not intended
 for everyone. It is a generic access control layer for HTTP server
 that allows to specify which resources can be accessed by which
-visitors. At the moment wwwhisper works with nginx, there is also
-a [Heroku
+visitors. At the moment wwwhisper works with nginx, there is also a
+[Heroku
 add-on](https://github.com/wrr/rack-wwwhisper/blob/master/heroku-doc.md)
 that allows to easily use wwwhisper with any Ruby Rack based
 application.
@@ -106,15 +106,14 @@ wwwhisper responds to the sub-request in one of three possible ways:
    requested resource, sub-request returns HTTP status code 403, which
    is returned to the user.
 
-The login page, which is presented to not authenticated users, asks
-the user to sign-in with Persona. Sign-in process returns a
-cryptographically-secure assertion that is sent to the wwwhisper and
-that allows to determine a verified email address of the user. The
-assertion does not carry user's password and is valid only for the
-current domain, because of this, a malicious site can not use the
-assertion to authenticate with other sites. After extracting the email
-from the assertion, wwwhisper determines if any resources are shared
-with the user. If yes, a session cookie is set and the user is
+The login page asks the user to sign-in with Persona. Sign-in process
+returns a cryptographically-secure assertion that is sent to the
+wwwhisper and that allows to determine a verified email address of the
+user. The assertion does not carry user's password and is valid only
+for the current domain, because of this, a malicious site can not use
+the assertion to authenticate with other sites. After extracting the
+email from the assertion, wwwhisper determines if any resources are
+shared with the user. If yes, a session cookie is set and the user is
 successfully logged in. If no resources are shared, a 403 error is
 returned to the user and a session cookie is not set.
 
