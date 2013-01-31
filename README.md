@@ -2,8 +2,7 @@ wwwhisper simplifies sharing of Web resources that are not intended
 for everyone. It is a generic access control layer for HTTP server
 that allows to specify which resources can be accessed by which
 visitors. At the moment wwwhisper works with nginx, there is also a
-[Heroku
-add-on](https://github.com/wrr/rack-wwwhisper/blob/master/heroku-doc.md)
+[Heroku add-on](https://github.com/wrr/rack-wwwhisper/blob/master/heroku-doc.md)
 that allows to easily use wwwhisper with any Ruby Rack based
 application.
 
