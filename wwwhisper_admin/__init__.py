@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012 Jan Wrobel <wrr@mixedbit.org>
+# Copyright (C) 2012, 2013 Jan Wrobel <wrr@mixedbit.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -94,7 +94,5 @@ if SITE_URL:
         grant_initial_permission,
         sender=contrib_auth_models,
         dispatch_uid = "django.contrib.auth.management.create_superuser")
-
-#TODO:  A utility script to handle initialization for SITE_URL_FROM_FRONT_END.
 
 

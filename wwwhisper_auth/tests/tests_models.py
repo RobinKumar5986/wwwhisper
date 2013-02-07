@@ -128,14 +128,11 @@ class UsersCollectionTest(CollectionTestCase):
         user1 = self.users.create_item(TEST_USER_EMAIL)
         self.assertIsNone(self.site2.users.find_item(user1.uuid))
 
-    # This raises DoesNotExists.
-    # TODO: can it ever happen (users is accessed here after site
-    # was deleted which is very convoluted)?
-    #def test_find_user_non_existing_site(self):
-    #    user = self.users.create_item(TEST_USER_EMAIL)
-    #    uuid = user.uuid
-    #    self.assertTrue(models.delete_site(self.site.site_id))
-    #    self.assertIsNone(self.users.find_item(uuid))
+    def test_find_user_non_existing_site(self):
+        user = self.users.create_item(TEST_USER_EMAIL)
+        uuid = user.uuid
+        self.assertTrue(models.delete_site(self.site.site_id))
+        self.assertIsNone(self.users.find_item(uuid))
 
     def test_delete_site_deletes_user(self):
         user = self.users.create_item(TEST_USER_EMAIL)
