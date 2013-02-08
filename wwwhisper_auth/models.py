@@ -44,6 +44,8 @@ import random
 import re
 import uuid as uuidgen
 
+# Usernames are not really needed but are required by Django model, so
+# unique random strings are used.
 USERNAME_LEN=7
 assert USERNAME_LEN <= User._meta.get_field('username').max_length
 

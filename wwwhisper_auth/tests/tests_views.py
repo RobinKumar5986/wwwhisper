@@ -21,8 +21,8 @@ from wwwhisper_auth import backend
 from wwwhisper_auth import models
 from wwwhisper_auth.tests.utils import HttpTestCase
 
-import wwwhisper_auth.urls
 import json
+import wwwhisper_auth.urls
 
 INCORRECT_ASSERTION = "ThisAssertionIsFalse"
 TEST_SITE = settings.SITE_URL

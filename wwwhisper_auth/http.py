@@ -116,7 +116,7 @@ class HttpResponseCreated(HttpResponse):
 class HttpResponseNotAuthenticated(HttpResponse):
     """User is not authenticated.
 
-    Resource can be retried after successul authentication.
+    Request can be retried after successul authentication.
     """
 
     def __init__(self, html_response=None):
@@ -166,7 +166,7 @@ def disallow_cross_site_request(decorated_method):
     def wrapper(self, request, *args, **kwargs):
         # Cross-Origin Resource Sharing allows cross origin Ajax GET
         # requests, each such request must have the 'Origin' header
-        # set. Drop such requests.
+        # different than the site url. Drop such requests.
         origin = request.META.get('HTTP_ORIGIN', None)
         if origin is not None and origin != request.site_url:
                 return HttpResponseBadRequest(
