@@ -36,15 +36,13 @@ Makes sure entered emails and paths are valid.
 
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models import F # TODO: remove.
-from django.db.models import signals
 from django.forms import ValidationError
 from functools import wraps
 from wwwhisper_auth import  url_path
 
+import random
 import re
 import uuid as uuidgen
-import random
 
 USERNAME_LEN=7
 assert USERNAME_LEN <= User._meta.get_field('username').max_length
@@ -71,8 +69,11 @@ class Site(ValidatedModel):
 
     Attributes:
       site_id: Can be a domain or any other string.
-      #mod_id: Changed after any modification of the site data. Allows
-      #    to determine when caches need to be updated
+
+      mod_id: Changed after any modification of site-related data (not
+         only Site itself but also site's locations, permissions or
+         users). Allows to determine when Django processes need to
+         update cached data.
     """
     __MAX_MOD_ID = 2000000000
     site_id = models.TextField(primary_key=True, db_index=True, editable=False)
@@ -81,7 +82,13 @@ class Site(ValidatedModel):
     def __init__(self, *args, **kwargs):
         super(Site, self).__init__(*args, **kwargs)
 
-    def lazy_init(self):
+    def heavy_init(self):
+        """Creates collections of all site-related data.
+
+        This is a resource intensive operation that retrieves all site
+        related data from the database. It is only performed if the site
+        was modified since it was last retrieved.
+        """
         self.locations = LocationsCollection(self)
         self.users = UsersCollection(self)
         self.locations = LocationsCollection(self)
@@ -91,7 +98,14 @@ class Site(ValidatedModel):
         self.mod_id = (self.mod_id + 1) % self.__MAX_MOD_ID
         self.save()
 
-#TODO: document caching mechanism.
+# All site associated data is cached. On each request a single DB
+# query is run to get a site.  If the site was not modified since last
+# access, users, locations and permissions are not retrieved from a
+# database.
+#
+# Majority of wwwhisper request are performance critical and read-only
+# auth-requests. Because of this caching is very efficient (cached
+# data rarely needs to be updated).
 site_cache = {}
 
 def create_site(site_id):
@@ -103,20 +117,24 @@ def create_site(site_id):
        ValidationError if a site with such id already exists.
     """
     site =  Site.objects.create(site_id=site_id)
-    site.lazy_init()
+    site.heavy_init()
     site_cache[site_id] = site
     return site
 
 def find_site(site_id):
+    # Get site from the DB (withou associated data).
     site = _find(Site, site_id=site_id)
     if site is None:
         site_cache.pop(site_id, None)
         return None
     cached_site = site_cache.get(site_id, None)
+    # If site is also in the cache and it was not modified, use cached
+    # version, to avoid querying the DB for the site data.
     if (cached_site is not None and
         cached_site.mod_id == site.mod_id):
         return cached_site
-    site.lazy_init()
+    # Otherwise, query the DB and update cache.
+    site.heavy_init()
     site_cache[site_id] = site
     return site
 
@@ -133,6 +151,12 @@ def delete_site(site_id):
     return True
 
 def modify_site(decorated_method):
+    """Must decorate all methods that change data associated with the site.
+
+    Makes sure site is marked as modified and other Django processes
+    will retrieve new data from the DB instead of using cached data.
+    """
+
     @wraps(decorated_method)
     def wrapper(self, *args, **kwargs):
         result = decorated_method(self, *args, **kwargs)
@@ -142,6 +166,12 @@ def modify_site(decorated_method):
     return wrapper
 
 def check_cache(decorated_method):
+    """Must decorate all methods that return cached data.
+
+    Makes sure cache is updated if the site was modified since the
+    data was retrieved.
+    """
+
     @wraps(decorated_method)
     def wrapper(self, *args, **kwargs):
         if self.site.mod_id != self.cache_mod_id:

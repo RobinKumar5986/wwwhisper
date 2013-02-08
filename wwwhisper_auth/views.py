@@ -30,6 +30,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 class UserData:
+    """A copy of user data needed for authentication.
+
+    Kept in session key-value store (cached) to improve
+    performance. User table is queried only when the site was
+    modified.
+    """
     def __init__(self, user):
         self.id = user.id
         self.uuid = user.uuid
@@ -57,8 +63,8 @@ def get_user(request):
         cache.delete(request.session.cache_key)
         request.session.load()
 
-    # Makes sure user is authenticated and belongs to the current
-    # site (auth backend just ensures user exists).
+    # Makes sure a user is authenticated and belongs to the current
+    # site (auth backend just ensures the user exists).
     user = request.user
     if not user.is_authenticated() or user.site_id != request.site.site_id:
         return None

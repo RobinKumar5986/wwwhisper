@@ -10,10 +10,10 @@ TEMPLATE_DEBUG = DEBUG
 #
 # In addition, auth request returns html documents to be displayed to
 # the user along with 401 and 403 responses. This is also not always
-# needed. For example nginx_auth_request module can not pass returned
+# needed. For example, nginx_auth_request module can not pass returned
 # response body to the user, so needs to obtain this documents from a
 # separate location or with a separate request.
-WWWHISPER_STATIC = 'www_static'
+WWWHISPER_STATIC = None
 
 import sys
 
@@ -37,8 +37,6 @@ TIME_ZONE = 'America/Chicago'
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
 LANGUAGE_CODE = 'en-us'
-
-SITE_ID = 1
 
 # If you set this to False, Django will make some optimizations so as not
 # to load the internationalization machinery.

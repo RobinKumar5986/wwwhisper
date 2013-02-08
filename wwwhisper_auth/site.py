@@ -34,7 +34,7 @@ if SITE_URL and SITE_URL_FROM_FRONT_END:
         'SITE_URL and SITE_URL_FROM_FRONTEND can not be set together.')
 
 class SiteMiddleware(object):
-    #TODO: document.
+    """Determines to which site a request is related"""
 
     def _is_https(self, url):
         return (url[:8].lower() == 'https://')
@@ -43,19 +43,17 @@ class SiteMiddleware(object):
         self.site_url_from_front_end = (site_url is None)
         if not self.site_url_from_front_end:
             self.site_url = site_url
-            self.https = self._is_https(self.site_url)
 
-    """Sets site id and site url for a request."""
+    """Sets site_url and (optionally) site to which request is related."""
     def process_request(self, request):
         if self.site_url_from_front_end:
-            # TODO: Clean this case.
+            # Site needs to be set by a separate middleware.
             request.site = None
             request.site_url = request.META.get('HTTP_SITE_URL', None)
             if (request.site_url is None):
                 return http.HttpResponseBadRequest('Missing SITE_URL header')
-            request.https = self._is_https(request.site_url)
         else:
             request.site = models.find_site(self.site_url)
             request.site_url = self.site_url
-            request.https = self.https
+        request.https = self._is_https(request.site_url)
         return None
