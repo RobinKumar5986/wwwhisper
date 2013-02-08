@@ -42,7 +42,7 @@ DB_NAME = 'acl_db'
 
 WWWHISPER_USER = 'wwwhisper'
 WWWHISPER_GROUP = 'www-data'
-DEFAULT_INITIAL_LOCATION = '/admin/'
+DEFAULT_INITIAL_LOCATIONS = ['/', '/admin/']
 
 def err_quit(errmsg):
     """Prints an error message and quits."""
@@ -68,8 +68,8 @@ Usage:
             initial locations. Multiple emails can be given with multiple
             -a directives.
       -l, --location A location that admin users will be able to access
-            initially (defaults to /admin/). Multiple locations can be given
-            with mutliple -l directives.
+            initially (defaults to /admin/ and /). Multiple locations can
+            be given with mutliple -l directives.
       -o, --output-dir A directory to store configuration (defaults to
             '%(config-dir)s' in the wwwhisper directory).
       -n, --no-supervisor Do not generate config file for supervisord.
@@ -261,7 +261,7 @@ def main():
     if not emails:
         err_quit('--admin-email is missing.')
     if not locations:
-        locations.append(DEFAULT_INITIAL_LOCATION)
+        locations += DEFAULT_INITIAL_LOCATIONS
 
     (scheme, hostname, port) = parse_url(site_url)
     site_url = scheme + '://' + hostname
