@@ -41,7 +41,7 @@
     $('#wwwhisper-overlay').removeClass('hide');
     $('#logout').click(function() {
       stub.ajax('POST', '/auth/api/logout/', {}, function() {
-        window.top.location = '/auth/goodbye.html';
+        window.top.location.reload(true);
       });
     });
   }
