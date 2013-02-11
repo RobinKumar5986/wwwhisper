@@ -16,14 +16,16 @@
   function Stub() {
     var errorHandler = null, that = this;
 
-    function error(errorHandlerArg, message, status) {
+    function error(errorHandlerArg, jqXHR) {
+      var isTextPlain = /text\/plain/.test(
+        jqXHR.getResponseHeader('Content-Type'));
       if (typeof errorHandlerArg !== 'undefined') {
-        errorHandlerArg(message, status);
+        errorHandlerArg(jqXHR.responseText, jqXHR.status, isTextPlain);
       } else if (errorHandler !== null) {
-        errorHandler(message, status);
+        errorHandler(jqXHR.responseText, jqXHR.status, isTextPlain);
       } else {
         // No error handler. Fatal error:
-        $('html').html(message);
+        $('html').html(jqXHR.responseText);
       }
     }
 
@@ -40,7 +42,7 @@
         headers: headersDict,
         success: successCallback,
         error: function(jqXHR) {
-          error(errorHandlerArg, jqXHR.responseText, jqXHR.status);
+          error(errorHandlerArg, jqXHR);
         }
       };
       if (params !== null) {
@@ -101,10 +103,15 @@
       * done, invokes a successCallback.
       *
       * On failure, if an errorHandler is given as an argument or set
-      * with setErrorHandler, invokes the handler and passes to it an
-      * error message along with an HTTP error code. If the error
-      * handler is not defined, errors are considered fatal - current
-      * document message body is replaced with an error message.
+      * with setErrorHandler, invokes the handler and passes to it:
+      *    +error message
+      *    +HTTP error code
+      *    +boolean flag indicating if the error message is textual
+      *     (mime type text/plain).
+      *
+      * If an error handler is not defined, error is considered fatal:
+      * current document message body is replaced with an error
+      * message.
       */
     this.ajax = function(method, resource, params, successCallback,
                          errorHandlerArg) {

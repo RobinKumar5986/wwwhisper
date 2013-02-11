@@ -250,14 +250,14 @@
                   that.adminUserEmail = result.email;
                   successCallback();
                 },
-                function(errorMessage, errorStatus) {
+                function(errorMessage, errorStatus, isTextPlain) {
                   if (errorStatus === 401) {
                     that.errorHandler(
                       'wwwhisper likely misconfigured: Admin application can ' +
                         'be accessed without authentication!');
                     successCallback();
                   } else {
-                    that.errorHandler(errorMessage, errorStatus);
+                    that.errorHandler(errorMessage, errorStatus, isTextPlain);
                   }
                 });
     };
@@ -300,7 +300,7 @@
       if (that.handledByAdmin(locationPath)) {
         that.errorHandler(
           'Adding sublocations to admin is not supported '+
-            '(It could easily cut off access to the admin application.)');
+            '(It could easily cut off access to the admin application).');
         return;
       }
       stub.ajax('POST', 'api/locations/', {path: locationPath},
@@ -796,21 +796,21 @@
     }
 
     /**
-     * Handles errors. Not network related errors (status undefined) or
-     * client induced HTTP errors (HTTP status codes 400-499) are
-     * displayed and automatically hidden after some time.
+     * Handles errors. Not HTTP related errors (status undefined)
+     * or HTTP errors with plain text messages are displayed and
+     * automatically hidden after some time.
      *
      * Authentication needed error (401) indicates that the user
      * signed-out - admin page is reloaded to show a login prompt.
      *
-     * Other errors (server related status codes 5XX) are considered
-     * fatal - received error message replaces the current document.
+     * Errors without plain text messages are considered fatal -
+     * received error message replaces the current document.
      */
-    this.handleError = function(message, status) {
-      if (typeof status === 'undefined' || (status >= 400 && status < 500)) {
+    this.handleError = function(message, status, isTextPlain) {
+      if (typeof status === 'undefined' || status === 401 || isTextPlain) {
         var error = view.errorMessage.clone(true);
 
-        if (status == 401) {
+        if (status === 401) {
           message = 'User signed-out, reloading the admin page in 3 seconds...';
           window.setTimeout(function() {
             window.location.reload(true);
