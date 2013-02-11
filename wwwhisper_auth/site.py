@@ -24,7 +24,7 @@ SITE_URL_FROM_FRONT_END = getattr(
 
 SITE_URL = getattr(settings, 'SITE_URL', None)
 
-if not SITE_URL and not SITE_URL_FROM_FRONTEND:
+if not SITE_URL and not SITE_URL_FROM_FRONT_END:
     raise ImproperlyConfigured(
         'wwwhisper requires either SITE_URL or SITE_URL_FROM_FRONTEND ' +
         'to be set in Django settings.py file')
