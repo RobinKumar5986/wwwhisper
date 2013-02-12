@@ -16,7 +16,6 @@
    * the user's email and a 'sign-out' button.
    */
 
-
   /**
    * Removes the overlay. Keeping overlay hidden is not enough,
    * because all content below the iframe does not receive
@@ -24,6 +23,14 @@
    */
   function removeOverlay() {
     $('#wwwhisper-iframe', window.parent.document).remove();
+  }
+
+  function logoutSucceeded() {
+    window.top.location = '/auth/goodbye.html';
+  }
+
+  function logout() {
+    stub.ajax('POST', '/auth/api/logout/', {}, logoutSucceeded);
   }
 
   /**
@@ -39,11 +46,7 @@
     }
     $('#email').text(emailToDisplay);
     $('#wwwhisper-overlay').removeClass('hide');
-    $('#logout').click(function() {
-      stub.ajax('POST', '/auth/api/logout/', {}, function() {
-        window.top.location.reload(true);
-      });
-    });
+    $('#logout').click(logout);
   }
 
   if (window.parent.parent !== window.parent) {
