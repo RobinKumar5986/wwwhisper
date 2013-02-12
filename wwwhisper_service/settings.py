@@ -110,10 +110,8 @@ ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: "/admin/api/users/%s/" % u.username,
 }
 
-if TESTING:
-    WWWHISPER_STATIC = None
-
-if DEBUG:
+if not TESTING:
+    LEVEL = {True: 'DEBUG', False: 'INFO'}[DEBUG]
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
@@ -127,7 +125,7 @@ if DEBUG:
             },
         'handlers': {
             'console':{
-                'level':'DEBUG',
+                'level':LEVEL,
                 'class':'logging.StreamHandler',
                 'formatter': 'simple'
                 },
@@ -136,22 +134,30 @@ if DEBUG:
             'django_browserid': {
                 'handlers':['console'],
                 'propagate': True,
-                'level':'DEBUG',
+                'level':LEVEL,
                 },
             'wwwhisper_auth': {
                 'handlers':['console'],
                 'propagate': True,
-                'level':'DEBUG',
+                'level':LEVEL,
                 },
             'wwwhisper_admin': {
                 'handlers':['console'],
                 'propagate': True,
-                'level':'DEBUG',
+                'level':LEVEL,
+                },
+            'wwwhisper_heroku': {
+                'handlers':['console'],
+                'propagate': True,
+                'level':LEVEL,
                 },
             'django.request': {
                 'handlers': ['console'],
                 'propagate': True,
-                'level': 'DEBUG',
-            },
+                'level': LEVEL,
+                },
             }
         }
+
+if not SECRET_KEY:
+    raise ImproperlyConfigured('DJANGO_SECRET_KEY environment variable not set')
