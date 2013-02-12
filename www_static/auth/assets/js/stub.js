@@ -16,16 +16,14 @@
   function Stub() {
     var errorHandler = null, that = this;
 
-    function error(errorHandlerArg, jqXHR) {
-      var isTextPlain = /text\/plain/.test(
-        jqXHR.getResponseHeader('Content-Type'));
+    function error(errorHandlerArg, message, status, isTextPlain) {
       if (typeof errorHandlerArg !== 'undefined') {
-        errorHandlerArg(jqXHR.responseText, jqXHR.status, isTextPlain);
+        errorHandlerArg(message, status, isTextPlain);
       } else if (errorHandler !== null) {
-        errorHandler(jqXHR.responseText, jqXHR.status, isTextPlain);
+        errorHandler(message, status, isTextPlain);
       } else {
         // No error handler. Fatal error:
-        $('html').html(jqXHR.responseText);
+        $('html').html(message);
       }
     }
 
@@ -41,8 +39,17 @@
         type: method,
         headers: headersDict,
         success: successCallback,
+        // This is ugly (appends ?_=timestamp to all GET requests) and
+        // should not be needed because all ajax responses return
+        // correct cache disabling headers. Unfortunatelly, Chrome
+        // ignores the headers during back button navigation, and
+        // returns ajax responses from cache:
+        cache: false,
         error: function(jqXHR) {
-          error(errorHandlerArg, jqXHR);
+          error(errorHandlerArg,
+                jqXHR.responseText,
+                jqXHR.status,
+                /text\/plain/.test(jqXHR.getResponseHeader('Content-Type')));
         }
       };
       if (params !== null) {
