@@ -125,31 +125,26 @@ if not TESTING:
             },
         'handlers': {
             'console':{
-                'level':LEVEL,
-                'class':'logging.StreamHandler',
+                'level': LEVEL,
+                'class': 'logging.StreamHandler',
                 'formatter': 'simple'
                 },
             },
         'loggers': {
             'django_browserid': {
-                'handlers':['console'],
+                'handlers': ['console'],
                 'propagate': True,
-                'level':LEVEL,
+                'level': LEVEL,
                 },
             'wwwhisper_auth': {
-                'handlers':['console'],
+                'handlers': ['console'],
                 'propagate': True,
-                'level':LEVEL,
+                'level': LEVEL,
                 },
             'wwwhisper_admin': {
-                'handlers':['console'],
+                'handlers': ['console'],
                 'propagate': True,
-                'level':LEVEL,
-                },
-            'wwwhisper_heroku': {
-                'handlers':['console'],
-                'propagate': True,
-                'level':LEVEL,
+                'level': LEVEL,
                 },
             'django.request': {
                 'handlers': ['console'],
