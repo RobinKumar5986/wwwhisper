@@ -48,6 +48,7 @@ class BrowserIDBackend(ModelBackend):
         """
         result = verify(assertion=assertion, audience=site_url)
         if not result:
+            # TODO: different error if Persona is down.
             raise AssertionVerificationException(
                 'BrowserID assertion verification failed.')
         email = result['email']

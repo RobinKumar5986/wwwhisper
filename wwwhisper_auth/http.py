@@ -153,12 +153,25 @@ class HttpResponseBadRequest(HttpResponse):
             message, content_type=TEXT_MIME_TYPE, status=400)
 
 class HttpResponseNotFound(HttpResponse):
-    """Resource not found."""
 
     def __init__(self, message):
         logger.debug('Not found %s' % (message))
         super(HttpResponseNotFound, self).__init__(
             message, content_type=TEXT_MIME_TYPE, status=404)
+
+class HttpResponseServiceUnavailable(HttpResponse):
+
+    def __init__(self, message):
+        logger.warning('Service unavailable %s' % (message))
+        super(HttpResponseServiceUnavailable, self).__init__(
+            message, content_type=TEXT_MIME_TYPE, status=503)
+
+class HttpResponseInternalError(HttpResponse):
+
+    def __init__(self, message):
+        logger.warning('Internal error %s' % (message))
+        super(HttpResponseServiceUnavailable, self).__init__(
+            message, content_type=TEXT_MIME_TYPE, status=500)
 
 def disallow_cross_site_request(decorated_method):
     """Drops a request if it has any indicators of a cross site request."""
