@@ -110,49 +110,50 @@ ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: "/admin/api/users/%s/" % u.username,
 }
 
-if not TESTING:
-    LEVEL = {True: 'DEBUG', False: 'INFO'}[DEBUG]
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'verbose': {
-                'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
-                },
-            'simple': {
-                'format': '%(levelname)s %(name)s %(message)s'
-                },
+handler = 'logging.StreamHandler' if not TESTING \
+    else 'django.utils.log.NullHandler'
+level = 'INFO' if not DEBUG else 'DEBUG'
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
             },
-        'handlers': {
-            'console':{
-                'level': LEVEL,
-                'class': 'logging.StreamHandler',
-                'formatter': 'simple'
-                },
+        'simple': {
+            'format': '%(levelname)s %(name)s %(message)s'
             },
-        'loggers': {
-            'django_browserid': {
-                'handlers': ['console'],
-                'propagate': True,
-                'level': LEVEL,
-                },
-            'wwwhisper_auth': {
-                'handlers': ['console'],
-                'propagate': True,
-                'level': LEVEL,
-                },
-            'wwwhisper_admin': {
-                'handlers': ['console'],
-                'propagate': True,
-                'level': LEVEL,
-                },
-            'django.request': {
-                'handlers': ['console'],
-                'propagate': True,
-                'level': LEVEL,
-                },
-            }
+        },
+    'handlers': {
+        'console':{
+            'level': level,
+            'class': handler,
+            'formatter': 'simple'
+            },
+        },
+    'loggers': {
+        'django_browserid': {
+            'handlers': ['console'],
+            'propagate': True,
+            'level': level,
+            },
+        'wwwhisper_auth': {
+            'handlers': ['console'],
+            'propagate': True,
+            'level': level,
+            },
+        'wwwhisper_admin': {
+            'handlers': ['console'],
+            'propagate': True,
+            'level': level,
+            },
+        'django.request': {
+            'handlers': ['console'],
+            'propagate': True,
+            'level': level,
+            },
         }
+    }
 
 if not SECRET_KEY:
     raise ImproperlyConfigured('DJANGO_SECRET_KEY environment variable not set')
