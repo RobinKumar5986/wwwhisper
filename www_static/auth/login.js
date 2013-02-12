@@ -34,31 +34,31 @@
   }
 
   /**
-   * Executes callback if the user is not authenticated, otherwise
-   * takes the user to the logout page.
+   * Goes to the logout page if the user is already authenticated.
    */
-  function executeIfLoggedOut(callback) {
+  function gotoLogoutIfAuthenticated() {
     // Whoami succeeds only for authenticated users.
     stub.ajax('GET', '/auth/api/whoami/', null,
               function() {
-                // Logged in, go to the logout page.
                 window.location = '/auth/logout';
               },
-              function(errorMessage, errorStatus) {
+              function() {
                 // Logget out (errorStatus 401) or some other error.
                 // If error was caused by disabled cookies (CSRF token
                 // missing), Persona dialog will inform the user how
                 // to enable cookies.
-                callback();
               });
   }
 
-  executeIfLoggedOut(function() {
-    $('#nothing-shared').addClass('hide');
-    // Register a callback to process a BrowserID assertion.
-    $('#login').click(function() {
-      navigator.id.get(login);
-      return false;
-    });
+  $('#login-required').removeClass('hide');
+  $('#login').removeClass('hide');
+
+  // Register a callback to process a BrowserID assertion.
+  $('#login').click(function() {
+    navigator.id.get(login);
+    return false;
   });
+
+  gotoLogoutIfAuthenticated();
+
 }());

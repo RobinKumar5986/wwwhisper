@@ -13,7 +13,7 @@
 
   <body>
    <div class="container">
-     <div id="login-required">
+     <div class="hide" id="login-required">
        <h1>Protected site</h1>
        <p class="lead">Access to this site is restricted. Please sign in
          with your email:</p>
@@ -32,13 +32,13 @@
              <div class="alert-message">
                To sign in JavaScript needs to be enabled. See
                <a href="http://activatejavascript.org/en/instructions">
-                 instructions </a> to enable JavaScript in your browser.
+                 the instructions </a> to enable JavaScript in your browser.
              </div>
            </div>  <!-- /.alert -->
          </div>  <!-- /.error-box -->
-       </noscript>
+     </noscript>
 
-     <a href="#" id="login" title="Sign in with BrowserID">
+     <a class="hide" href="#" id="login" title="Sign in with BrowserID">
        <img src="/auth/assets/img/sign_in_green.png" alt="Sign in">
      </a>
    </div>
