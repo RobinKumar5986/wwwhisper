@@ -170,7 +170,7 @@ class HttpResponseInternalError(HttpResponse):
 
     def __init__(self, message):
         logger.warning('Internal error %s' % (message))
-        super(HttpResponseServiceUnavailable, self).__init__(
+        super(HttpResponseInternalError, self).__init__(
             message, content_type=TEXT_MIME_TYPE, status=500)
 
 def disallow_cross_site_request(decorated_method):
