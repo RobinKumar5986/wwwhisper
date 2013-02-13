@@ -15,6 +15,7 @@ TEMPLATE_DEBUG = DEBUG
 # separate location or with a separate request.
 WWWHISPER_STATIC = None
 
+import os
 import sys
 
 TESTING = sys.argv[1:2] == ['test']
@@ -97,6 +98,16 @@ INSTALLED_APPS = (
 
 if DEBUG:
     INSTALLED_APPS += ('debug_toolbar',)
+
+TEMPLATE_LOADERS = (
+    'django.template.loaders.filesystem.Loader',
+#    'django.template.loaders.app_directories.Loader',
+)
+
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+TEMPLATE_DIRS = (
+    os.path.join(PROJECT_DIR, 'templates'),
+)
 
 AUTH_PROFILE_MODULE = 'wwwhisper_auth.UserExtras'
 
