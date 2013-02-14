@@ -45,6 +45,7 @@ class SiteMiddlewareTest(TestCase):
         self.assertIsNone(r.site)
         self.assertEqual(site_url, r.site_url)
 
+    # This one will be deprecated:
     def test_site_from_frontend(self):
         site_url = 'http://foo.example.org'
         middleware = SiteMiddleware(None)
@@ -53,6 +54,28 @@ class SiteMiddlewareTest(TestCase):
         self.assertIsNone(middleware.process_request(r))
         self.assertEqual(None, r.site)
         self.assertEqual(site_url, r.site_url)
+
+    def test_site_from_frontend_with_x_headers(self):
+        proto = 'https'
+        host = 'foo.example.org'
+        middleware = SiteMiddleware(None)
+        r = self.create_request()
+        r.META['HTTP_X_FORWARDED_HOST'] = host
+        r.META['HTTP_X_FORWARDED_PROTO'] = proto
+        self.assertIsNone(middleware.process_request(r))
+        self.assertEqual(None, r.site)
+        self.assertEqual('%s://%s' % (proto, host) , r.site_url)
+        self.assertTrue(r.https)
+
+    def test_site_from_frontend_proto_missing(self):
+        host = 'foo.example.org'
+        middleware = SiteMiddleware(None)
+        r = self.create_request()
+        r.META['HTTP_X_FORWARDED_HOST'] = host
+        response = middleware.process_request(r)
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'Missing X-Forwarded-Proto')
 
     def test_missing_site_from_frontend(self):
         r = self.create_request()

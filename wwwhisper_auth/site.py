@@ -19,6 +19,10 @@ from django.conf import settings
 from wwwhisper_auth import http
 from wwwhisper_auth import models
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 SITE_URL_FROM_FRONT_END = getattr(
     settings, 'SITE_URL_FROM_FRONT_END', False)
 
@@ -37,7 +41,7 @@ class SiteMiddleware(object):
     """Determines to which site a request is related"""
 
     def _is_https(self, url):
-        return (url[:8].lower() == 'https://')
+        return (url[:5].lower() == 'https')
 
     def __init__(self, site_url=SITE_URL):
         self.site_url_from_front_end = (site_url is None)
@@ -49,11 +53,21 @@ class SiteMiddleware(object):
         if self.site_url_from_front_end:
             # Site needs to be set by a separate middleware.
             request.site = None
+            # TODO: remote support for SITE_URL.
             request.site_url = request.META.get('HTTP_SITE_URL', None)
             if (request.site_url is None):
-                return http.HttpResponseBadRequest('Missing SITE_URL header')
+                host = request.META.get('HTTP_X_FORWARDED_HOST', None)
+                if host is None:
+                    return http.HttpResponseBadRequest(
+                        'Missing Host header')
+                proto = request.META.get('HTTP_X_FORWARDED_PROTO', None)
+                if proto is None:
+                    return http.HttpResponseBadRequest(
+                        'Missing X-Forwarded-Proto header')
+                request.site_url = '%s://%s' % (proto, host)
         else:
             request.site = models.find_site(self.site_url)
             request.site_url = self.site_url
         request.https = self._is_https(request.site_url)
         return None
+
