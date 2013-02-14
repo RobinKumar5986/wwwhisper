@@ -62,13 +62,18 @@ if DEBUG:
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 MIDDLEWARE_CLASSES = (
     #'wwwhisper_service.profile.ProfileMiddleware',
+    # Must go before CommonMiddleware, to set a correct url to which
+    # CommonMiddleware redirects.
+    'wwwhisper_auth.site.SiteMiddleware',
     'django.middleware.common.CommonMiddleware',
     # Must be placed before session middleware to alter session cookies.
     'wwwhisper_auth.protect_cookies.ProtectCookiesMiddleware',
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
-    'wwwhisper_auth.site.SiteMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',

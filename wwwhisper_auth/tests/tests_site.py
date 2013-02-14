@@ -14,23 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from django.http import HttpRequest
 from django.test import TestCase
 from wwwhisper_auth.site import SiteMiddleware
 from wwwhisper_auth import models
-from mock import Mock
 
 class SiteMiddlewareTest(TestCase):
-
-    def create_request(self):
-        r = Mock()
-        r.META = {}
-        return r
 
     def test_site_from_settings(self):
         site_url = 'http://foo.example.org'
         models.create_site(site_url)
         middleware = SiteMiddleware(site_url)
-        r = self.create_request()
+        r = HttpRequest()
 
         self.assertIsNone(middleware.process_request(r))
         self.assertEqual(site_url, r.site.site_id)
@@ -39,53 +34,55 @@ class SiteMiddlewareTest(TestCase):
     def test_site_from_settings_if_no_such_site(self):
         site_url = 'http://foo.example.org'
         middleware = SiteMiddleware(site_url)
-        r = self.create_request()
+        r = HttpRequest()
 
         self.assertIsNone(middleware.process_request(r))
         self.assertIsNone(r.site)
         self.assertEqual(site_url, r.site_url)
 
-    # This one will be deprecated:
     def test_site_from_frontend(self):
         site_url = 'http://foo.example.org'
         middleware = SiteMiddleware(None)
-        r = self.create_request()
+        r = HttpRequest()
         r.META['HTTP_SITE_URL'] = site_url
         self.assertIsNone(middleware.process_request(r))
         self.assertEqual(None, r.site)
         self.assertEqual(site_url, r.site_url)
+        self.assertEqual('foo.example.org', r.get_host())
+        self.assertFalse(r.https)
+        self.assertFalse(r.is_secure())
 
-    def test_site_from_frontend_with_x_headers(self):
-        proto = 'https'
-        host = 'foo.example.org'
+    def test_https_site_from_frontend(self):
+        site_url = 'https://foo.example.org'
         middleware = SiteMiddleware(None)
-        r = self.create_request()
-        r.META['HTTP_X_FORWARDED_HOST'] = host
-        r.META['HTTP_X_FORWARDED_PROTO'] = proto
+        r = HttpRequest()
+        r.META['HTTP_SITE_URL'] = site_url
         self.assertIsNone(middleware.process_request(r))
         self.assertEqual(None, r.site)
-        self.assertEqual('%s://%s' % (proto, host) , r.site_url)
+        self.assertEqual(site_url, r.site_url)
+        self.assertEqual('foo.example.org', r.get_host())
         self.assertTrue(r.https)
+        self.assertTrue(r.is_secure())
 
-    def test_site_from_frontend_proto_missing(self):
-        host = 'foo.example.org'
+    def test_missing_site_from_frontend(self):
+        r = HttpRequest()
         middleware = SiteMiddleware(None)
-        r = self.create_request()
-        r.META['HTTP_X_FORWARDED_HOST'] = host
         response = middleware.process_request(r)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
-                                 'Missing X-Forwarded-Proto')
+                                 'Missing Site-Url header')
 
-    def test_missing_site_from_frontend(self):
-        r = self.create_request()
+    def test_invalid_site_from_frontend(self):
+        r = HttpRequest()
+        r.META['HTTP_SITE_URL'] = 'foo.example.org'
         middleware = SiteMiddleware(None)
         response = middleware.process_request(r)
         self.assertEqual(400, response.status_code)
-
+        self.assertRegexpMatches(response.content,
+                                 'Site-Url has incorrect format')
 
     def test_is_https(self):
-        r = self.create_request()
+        r = HttpRequest()
         middleware = SiteMiddleware('http://foo.com')
         self.assertIsNone(middleware.process_request(r))
         self.assertFalse(r.https)

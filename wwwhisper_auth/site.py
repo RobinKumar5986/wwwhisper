@@ -53,21 +53,20 @@ class SiteMiddleware(object):
         if self.site_url_from_front_end:
             # Site needs to be set by a separate middleware.
             request.site = None
-            # TODO: remote support for SITE_URL.
             request.site_url = request.META.get('HTTP_SITE_URL', None)
-            if (request.site_url is None):
-                host = request.META.get('HTTP_X_FORWARDED_HOST', None)
-                if host is None:
-                    return http.HttpResponseBadRequest(
-                        'Missing Host header')
-                proto = request.META.get('HTTP_X_FORWARDED_PROTO', None)
-                if proto is None:
-                    return http.HttpResponseBadRequest(
-                        'Missing X-Forwarded-Proto header')
-                request.site_url = '%s://%s' % (proto, host)
+            if request.site_url is None:
+                return http.HttpResponseBadRequest('Missing Site-Url header')
+            parts = request.site_url.split('://')
+            if len(parts) != 2:
+                return http.HttpResponseBadRequest(
+                    'Site-Url has incorrect format')
+            scheme, host = parts
+            request.META[settings.SECURE_PROXY_SSL_HEADER[0]] = scheme
+            request.META['HTTP_X_FORWARDED_HOST'] = host
         else:
             request.site = models.find_site(self.site_url)
             request.site_url = self.site_url
+
         request.https = self._is_https(request.site_url)
         return None
 
