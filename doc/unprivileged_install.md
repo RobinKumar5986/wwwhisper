@@ -5,7 +5,7 @@
 ### Get, compile and install nginx.
      # Download and unpack the latest stable nginx.
     mkdir -p ~/src; cd ~/src;
-    NGINX_VERSION='nginx-1.2.6';
+    NGINX_VERSION='nginx-1.2.7';
     wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;
     tar xvfz ${NGINX_VERSION}.tar.gz;
     cd ${NGINX_VERSION};
@@ -35,25 +35,17 @@
 ### Configure nginx.
 
 Edit ~/local/nginx/conf/nginx.conf and enable wwwhisper
-authorization. In all directive below /home/alice/local/wwwhisper must
-be replaced with a path where wwwhisper is installed. In the server
+authorization. In directives below /home/alice/local/wwwhisper must be
+replaced with a path where wwwhisper is installed. In the server
 section put:
 
     set $wwwhisper_root /home/alice/local/wwwhisper;
     set $wwwhisper_site_socket unix:$wwwhisper_root/sites/$scheme.$server_name.$server_port/uwsgi.sock;
-    include /home/alice/local/wwwhisper/nginx/auth.conf;
-
-In each location section that requires protection and that is not nested in already protected location put:
-
-    include /home/alice/local/wwwhisper/nginx/protected_location.conf;
-
-To enable the admin application, in the root location section put:
-
-    include /home/alice/local/wwwhisper/nginx/admin.conf;
+    include /home/alice/local/wwwhisper/nginx/wwwhisper.conf;
 
 See [a sample configuration
 file](https://github.com/wrr/wwwhisper/blob/master/nginx/sample_nginx.conf)
-for a more detailed explanation of all wwwhisper related configuration
+for a more detailed explanation of wwwhisper related configuration
 directives.
 
 ### Start nginx and wwwhisper.
