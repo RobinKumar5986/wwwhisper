@@ -1,6 +1,9 @@
 body {
  /* to make the container go all the way to the bottom of the topbar */
  padding-top: 60px;
+ /*  The pattern is downloaded from www.subtlepatterns.com
+     If you need more, that's where to get'em.*/
+ background: url(/auth/assets/img/random_grey_variations.png);
 }
 
 .light {
@@ -75,7 +78,20 @@ li,
   font-size: 13px;
 }
 
+.content {
+  background: #ffffff;
+  border-top: 30px solid transparent;
+  border-left: 30px solid transparent;
+  border-right: 30px solid transparent;
+  border-bottom: 30px solid transparent;
+}
+
 .logo {
   float: left;
   margin-right: 5px;
+  margin-left: -30px;
+}
+
+.help {
+  float: right;
 }
