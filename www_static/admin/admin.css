@@ -68,3 +68,13 @@ body {
 .input-wide {
   width: 450px !important;
 }
+
+.navbar-inverse .brand {
+  color: #ffffff;
+}
+
+li,
+.nav-tabs > li > a {
+  line-height: 18px;
+  font-size: 13px;
+}
