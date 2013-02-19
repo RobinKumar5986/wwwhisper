@@ -74,3 +74,8 @@ li,
   line-height: 18px;
   font-size: 13px;
 }
+
+.logo {
+  float: left;
+  margin-right: 5px;
+}
