@@ -46,27 +46,23 @@ body {
 }
 
 .in-dialog {
-  width: 50px !important;
+  width: 50px;
 }
 
 .in-dialog .controls {
-  margin-left: 60px !important;
+  margin-left: 60px;
 }
 
 .in-dialog .control-label {
-  width: 50px !important;
-}
-
-.in-dialog .controls {
-  margin-left: 60px !important;
+  width: 50px;
 }
 
 .in-dialog .form-actions {
-  padding-left: 60px !important;
+  padding-left: 60px;
 }
 
 .input-wide {
-  width: 450px !important;
+  width: 450px;
 }
 
 .navbar-inverse .brand {
