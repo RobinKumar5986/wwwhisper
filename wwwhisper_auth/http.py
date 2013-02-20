@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 TEXT_MIME_TYPE = 'text/plain; charset=utf-8'
 HTML_MIME_TYPE = 'text/html; charset=utf-8'
 JSON_MIME_TYPE = 'application/json; charset=utf-8'
+JS_MIME_TYPE = 'text/javascript; charset=UTF-8'
 
 _accepts_html_re = re.compile('text/(html|\*)|(\*/\*)')
 
@@ -63,28 +64,26 @@ class HttpResponseOK(HttpResponse):
             content_type=TEXT_MIME_TYPE,
             status=200)
 
-class HttpResponseHtmlOK(HttpResponse):
-    """"Request succeeded.
-
-    Response contains html.
-    """
-
-    def __init__(self, body):
-        super(HttpResponseHtmlOK, self).__init__(
-            body,
-            content_type=HTML_MIME_TYPE,
-            status=200)
 
 class HttpResponseOKJson(HttpResponse):
-    """"Request succeeded.
-
-    Response contains json representation of a resource.
-    """
-
     def __init__(self, attributes_dict):
         super(HttpResponseOKJson, self).__init__(
             json.dumps(attributes_dict),
             content_type=JSON_MIME_TYPE,
+            status=200)
+
+class HttpResponseOKHtml(HttpResponse):
+    def __init__(self, body):
+        super(HttpResponseOKHtml, self).__init__(
+            body,
+            content_type=HTML_MIME_TYPE,
+            status=200)
+
+class HttpResponseOKJs(HttpResponse):
+    def __init__(self, body):
+        super(HttpResponseOKJs, self).__init__(
+            body,
+            content_type=JS_MIME_TYPE,
             status=200)
 
 class HttpResponseNoContent(HttpResponse):

@@ -30,12 +30,23 @@ class Asset:
         assert prefix is not None
         self.body = file(os.path.join(prefix, *args)).read()
 
-class HtmlFileView(View):
-    """ A view to serve a single static HTML file."""
+
+class StaticFileView(View):
+    """ A view to serve a single static file."""
 
     asset = None
 
     @method_decorator(cache_page(60 * 60 * 5))
     @method_decorator(cache_control(private=True))
     def get(self, request):
-        return http.HttpResponseHtmlOK(self.asset.body)
+        return self.do_get(self.asset.body)
+
+class HtmlFileView(StaticFileView):
+
+    def do_get(self, body):
+        return http.HttpResponseOKHtml(body)
+
+class JsFileView(StaticFileView):
+
+    def do_get(self, body):
+        return http.HttpResponseOKJs(body)
