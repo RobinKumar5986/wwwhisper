@@ -5,16 +5,14 @@
  * Licensed under the GPL License version 3 or any later version:
  * https://www.gnu.org/licenses/gpl-3.0.html
  */
+
+/**
+ * If the user is authenticated, shows an overlay with the user's
+ * email and a 'sign-out' button.
+ */
 (function () {
   'use strict';
   var stub = new wwwhisper.Stub(), MAX_EMAIL_LENGTH = 30;
-
-  /**
-   * Checks if a user is authenticated and if a parent of a current
-   * frame is the top level frame (to avoid having several overlays on
-   * the screen). If both conditions are true, shows an overlay with
-   * the user's email and a 'sign-out' button.
-   */
 
   /**
    * Removes the overlay. Keeping overlay hidden is not enough,
@@ -33,10 +31,6 @@
     stub.ajax('POST', '/auth/api/logout/', {}, logoutSucceeded);
   }
 
-  /**
-   * Invoked when user is authenticated. Shows the overlay and
-   * activates the 'sign-out' button.
-   */
   function authenticated(result) {
     var emailToDisplay = result.email;
     if (emailToDisplay.length > MAX_EMAIL_LENGTH) {
@@ -49,14 +43,9 @@
     $('#logout').click(logout);
   }
 
-  if (window.parent.parent !== window.parent) {
-    // Parent is not the top level frame.
-    removeOverlay();
-  } else {
-    stub.ajax('GET', '/auth/api/whoami/', null,
-              // User is authenticated.
-              authenticated,
-              // User is not authenticated or some other error occurred.
-              removeOverlay);
-  }
+  stub.ajax('GET', '/auth/api/whoami/', null,
+            // User is authenticated.
+            authenticated,
+            // User is not authenticated or some other error occurred.
+            removeOverlay);
 }());
