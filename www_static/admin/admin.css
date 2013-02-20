@@ -6,15 +6,15 @@ body {
  background: url(/auth/assets/img/random_grey_variations.png);
 }
 
-.light {
-  opacity: 0.4;
-  filter: alpha(opacity=40);
+.icon-light,
+.menu-item {
+  background-image: url("/auth/assets/img/glyphicons-halflings-light.png");
 }
 
 .menu-item {
   float: right;
-  opacity: 0.2;
-  filter: alpha(opacity=20);
+  /* Without this some items are not clickable in IE 8: */
+  position: relative;
 }
 
 .menu-item:hover {
@@ -99,3 +99,8 @@ li,
 .help {
   float: right;
 }
+
+/* Enable for debugging
+div, span, p{
+    border: 1px solid red;
+} */
