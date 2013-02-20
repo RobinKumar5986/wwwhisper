@@ -3,7 +3,7 @@ body {
  padding-top: 60px;
  /*  The pattern is downloaded from www.subtlepatterns.com
      If you need more, that's where to get'em.*/
- background: url(/auth/assets/img/random_grey_variations.png);
+ background: url("/auth/assets/img/random_grey_variations.png");
 }
 
 .icon-light,
