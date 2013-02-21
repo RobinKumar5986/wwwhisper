@@ -23,6 +23,41 @@ body {
   cursor: pointer;
 }
 
+.tabs-left > .nav-tabs .active > a,
+.dark {
+  /*background: #F9F9F9;*/
+  background: #F9F9FC;
+  /*background: #EBEFF6;*/
+  /*background: #F2F4FF;*/
+}
+
+.tab-pane {
+  margin-top: 8px;
+  margin-left: 19px;
+  margin-right: 19px;
+  margin-bottom: 19px;
+}
+
+.tab-content {
+  border-top: 1px solid #ddd;
+}
+
+.stretch {
+  width: 100%;
+}
+
+#add-location-button {
+ margin-right: 10px;
+}
+.add-allowed-user-button {
+ margin-right: 25px;
+}
+
+.tabs-left > .nav-tabs {
+  float: left;
+  margin-right: 0px;
+}
+
 .path {
   /* Show all white spaces in paths */
   white-space: pre-wrap;
@@ -32,12 +67,9 @@ body {
   margin-left: 10px;
 }
 
-.spaced-top {
+.input-append {
+  margin-left: 5px;
   margin-top: 15px;
-}
-
-.spaced-right {
-  margin-right: 20px;
 }
 
 .accessible {
@@ -72,10 +104,16 @@ body {
   color: #ffffff;
 }
 
+
 li,
 .nav-tabs > li > a {
   line-height: 18px;
   font-size: 13px;
+}
+
+.user-list-item {
+ /* To align icons with locations' icons */
+ margin-right: 12px;
 }
 
 .content {

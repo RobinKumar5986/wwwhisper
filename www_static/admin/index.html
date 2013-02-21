@@ -75,7 +75,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
       <h4>Locations</h4>
       <div class="tabbable tabs-left">
 
-        <ul class="nav nav-tabs" id="location-list">
+        <ul class="nav nav-tabs span4" id="location-list">
           <li id="location-list-item">
             <a class="url" href="#location-info-list-item" data-toggle="tab">
               <span class="path"></span>
@@ -85,37 +85,47 @@ https://www.gnu.org/licenses/gpl-3.0.html
             </a>
           </li>
           <li>
-            <div class="well spaced-top spaced-right" id="add-location">
+
+            <div class="input-append" id="add-location">
               <input type="text" placeholder="Enter a path"
-                     id="add-location-input"/>
-            </div>
+                     id="add-location-input" class="stretch">
+              <button type="button" class="btn disabled"
+                      id="add-location-button">
+                <i class="icon-arrow-up icon-light"></i>
+              </button>
+            </div> <!-- /.input-append -->
+
           </li>
         </ul>
 
-        <div class="tab-content" id="location-info-list">
-
+        <div class="tab-content dark" id="location-info-list">
           <div class="tab-pane" id="location-info-list-item">
+
             <div class="row">
               <div class="span4">
                 <ul class="allowed-user-list">
                   <li id="allowed-user-list-item">
                     <span class="user-mail"></span>
-                    <i class="menu-item icon-remove unshare"></i>
+                    <i class="menu-item icon-remove unshare span1"></i>
                   </li>
                 </ul>
               </div> <!-- /.span4 -->
             </div> <!-- /.row -->
 
-            <div class="well spaced-top">
-              <input type="text"
-                     placeholder="Enter a person's email to grant her access"
-                     class="add-allowed-user input-wide"/>
-            </div>
+            <div class="input-append">
+              <input type="text" class="add-allowed-user stretch"
+                     placeholder="Enter an email to grant access">
+              <button type="button"
+                      class="btn disabled add-allowed-user-button">
+                <i class="icon-arrow-up icon-light"></i>
+              </button>
+            </div> <!-- /.input-append -->
+
+
           </div> <!-- /.tab-pane -->
-
         </div> <!-- /.tab-content -->
-      </div> <!-- /.tabbable -->
 
+      </div> <!-- /.tabbable -->
 
       <div class="alert alert-success help-message fade in hide">
         <p>
@@ -164,12 +174,12 @@ https://www.gnu.org/licenses/gpl-3.0.html
             <label class="control-label" for="notify-to">To</label>
             <div class="controls">
               <input type="text" class="input-xlarge input-wide" id="notify-to"
-                     value="jimi@example.com" />
+                     value="jimi@example.com">
             </div>
             <label class="control-label" for="notify-subject">Subject</label>
             <div class="controls">
               <input type="text" class="input-xlarge input-wide"
-                     id="notify-subject" value="Invitation" />
+                     id="notify-subject" value="Invitation">
             </div>
           </div>
           <div class="control-group">

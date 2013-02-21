@@ -458,12 +458,14 @@
       locationPath : $('#location-list-item').clone(true),
       // A list of users that can access a location (contains
       // view.allowedUser elements) + input box for adding a new user.
-      locationInfo : $('#location-info-list-item').clone(true),
+      locationInfo : $('#location-info-list-item').clone(true)
+        .find('.add-allowed-user').val('').end(), //Clears any stored input.
       // A single user that is allowed to access a location + control
       // to revoke access.
       allowedUser : $('#allowed-user-list-item').clone(true),
       // An input box for adding a new location.
-      addLocation : $('#add-location').clone(true),
+      addLocation : $('#add-location').clone(true)
+        .find('#add-location-input').val('').end(),
       // User that is on contact list (was granted access to some
       // location at some point) + controls to remove the user (along
       // with access to all locations), check which locations a user
@@ -572,6 +574,16 @@
         .modal('show');
     }
 
+    function grantAccess(userId, location) {
+      if (userId === '*') {
+        controller.grantOpenAccess(location, false);
+      } else if (userId === '*?') {
+        controller.grantOpenAccess(location, true);
+      } else if (userId !== '') {
+        controller.grantAccess(userId, location);
+      }
+    }
+
     /**
      * Creates a DOM subtree to handle a given location. The subtree
      * contains a list of emails of allowed users, an input box to
@@ -588,21 +600,28 @@
         .attr('location-urn', location.id)
         .find('.add-allowed-user')
         .attr('id', addAllowedUserInputId(location))
-        .keydown(function(event) {
-          var userId;
+        .keyup(function(event) {
+          var userId = $.trim($(this).val());
           if (event.which === ENTER_KEY) {
-            userId = $.trim($(this).val());
-            if (userId === '*') {
-              controller.grantOpenAccess(location, false);
-            } else if (userId === '*?') {
-              controller.grantOpenAccess(location, true);
-            } else if (userId !== '') {
-              controller.grantAccess(userId, location);
-            }
-            $(this).val('');
+            grantAccess(userId, location);
+            userId = '';
+            $(this).val(userId);
+          }
+          if (userId !== '') {
+            $(this).siblings('button').removeClass('disabled');
+          } else {
+            $(this).siblings('button').addClass('disabled');
           }
         })
+        .end()
+        .find('button').click(function() {
+          var input = $(this).siblings('input'), userId = $.trim(input.val());
+          grantAccess(userId, location);
+          input.val('');
+          $(this).addClass('disabled');
+        })
         .end();
+
       allowedUserList = locationInfo.find('.allowed-user-list');
       if (location.hasOwnProperty('openAccess')) {
         // Disable entering email addresses of allowed user: everyone
@@ -658,7 +677,7 @@
      * (created with the createLocationInfo function).
      */
     function showLocations() {
-      var isAdminLocation, sortedLocations;
+      var isAdminLocation, sortedLocations, addLocation;
       sortedLocations = utils.sortByProperty(controller.locations, 'path');
       utils.each(sortedLocations, function(location) {
         isAdminLocation = controller.handledByAdmin(location.path);
@@ -694,15 +713,30 @@
 
       view.addLocation.clone(true)
         .find('#add-location-input')
-        .keydown(function(event) {
-          var path;
+        .keyup(function(event) {
+          var path = $.trim($(this).val());
           if (event.which === ENTER_KEY) {
-            path = $.trim($(this).val());
             if (path !== '') {
-              controller.addLocation($(this).val());
+              controller.addLocation(path);
             }
-            $(this).val('');
+            path = '';
+            $(this).val(path);
           }
+          if (path === '') {
+            $('#add-location-button').addClass('disabled');
+          } else {
+            $('#add-location-button').removeClass('disabled');
+          }
+        })
+        .end()
+        .find('#add-location-button')
+        .click(function() {
+          var input = $('#add-location-input'), path = $.trim(input.val());
+          if (path !== '') {
+            controller.addLocation(path);
+          }
+          input.val('');
+          $(this).addClass('disabled');
         })
         .end()
         .appendTo('#location-list');
