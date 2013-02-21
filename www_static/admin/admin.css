@@ -24,11 +24,8 @@ body {
 }
 
 .tabs-left > .nav-tabs .active > a,
-.dark {
-  /*background: #F9F9F9;*/
+.tab-content {
   background: #F9F9FC;
-  /*background: #EBEFF6;*/
-  /*background: #F2F4FF;*/
 }
 
 .tab-pane {
@@ -103,7 +100,6 @@ body {
 .navbar-inverse .brand {
   color: #ffffff;
 }
-
 
 li,
 .nav-tabs > li > a {
