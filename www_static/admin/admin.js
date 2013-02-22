@@ -762,9 +762,9 @@
       utils.each(controller.locations, function(location) {
         var id = '#' + locationPathId(location);
         if (controller.canAccess(user, location)) {
-          $(id + ' a').addClass('accessible');
+          $(id + ' .can-access').removeClass('invisible');
         } else {
-          $(id + ' a').addClass('not-accessible');
+          $(id + ' .can-access').addClass('visible');
         }
       });
     }
@@ -773,8 +773,7 @@
      * Turns off location highlighting.
      */
     function highlighLocationsOff() {
-      $('#location-list a').removeClass('accessible');
-      $('#location-list a').removeClass('not-accessible');
+      $('#location-list .can-access').addClass('invisible');
     }
 
     /**

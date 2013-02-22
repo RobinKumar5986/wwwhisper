@@ -69,12 +69,9 @@ body {
   margin-top: 15px;
 }
 
-.accessible {
-  background-color: #dff0d8 !important;
-}
-
-.not-accessible {
-  background-color: #f2dede !important;
+.can-access {
+ margin-left: -27px;
+ float: left;
 }
 
 .in-dialog {
