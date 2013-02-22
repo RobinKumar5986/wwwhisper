@@ -43,6 +43,14 @@ body {
   width: 100%;
 }
 
+.tooltip {
+ overflow: visible;
+}
+
+.tooltip-inner {
+  max-width: 950px;
+}
+
 #add-location-button {
  margin-right: 10px;
 }
@@ -56,8 +64,12 @@ body {
 }
 
 .path {
-  /* Show all white spaces in paths */
-  white-space: pre-wrap;
+  /* Show all white spaces in paths and keep paths in a single line */
+  white-space: pre;
+}
+
+.spaced-right {
+  margin-right: 5px;
 }
 
 .spaced-left {

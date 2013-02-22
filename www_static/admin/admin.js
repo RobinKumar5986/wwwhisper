@@ -477,7 +477,11 @@
     },
     that = this,
     controller = null,
-    ENTER_KEY = 13;
+    ENTER_KEY = 13,
+    // These would preferably be obtained dynamically, but css floats
+    // make it hard to get elements' max-width.
+    MAX_PATH_WIDTH_PX = 275,
+    MAX_EMAIL_WIDTH_PX = MAX_PATH_WIDTH_PX - 5;
 
     /**
      * Annotates currently signed in user to make it clearer that this
@@ -574,6 +578,35 @@
         .modal('show');
     }
 
+
+    /**
+     * Shortens a text of a child specified by the selector so it has
+     * at most maxWidthPx pixels.
+     *
+     * If the text was shortened, appends '...' to the shortened text
+     * and sets a tooltip on the parent with the original text value.
+     *
+     * Must be called on elements that are on the screen, because
+     * width of other elements is 0.
+     */
+    function trimText(parent, selector, maxWidthPx, placement) {
+      var inner = parent.find(selector), origText = inner.text(),
+      text = origText;
+      // Remove trailing characters one by one until length is acceptable.
+      while (inner.width() > maxWidthPx) {
+        text = text.slice(0, -1);
+        inner.text(text);
+      }
+      if (text !== origText) {
+        inner.text(text + '...');
+        parent.attr('title', origText).tooltip({
+          'placement': placement
+        });
+      }
+      return parent;
+    }
+
+
     function grantAccess(userId, location) {
       if (userId === '*') {
         controller.grantOpenAccess(location, false);
@@ -591,11 +624,13 @@
      * particular user.
      */
     function createLocationInfo(location) {
-      var locationInfo, allowedUserList, isAdminLocation, isAdminUser;
+      var locationView, allowedUserList, isAdminLocation, isAdminUser;
+      // TODO: can it be done only for an active location (refresh is
+      // called anyway when new location is activated)?
 
       isAdminLocation = controller.handledByAdmin(location.path);
 
-      locationInfo = view.locationInfo.clone(true)
+      locationView = view.locationInfo.clone(true)
         .attr('id', locationInfoId(location))
         .attr('location-urn', location.id)
         .find('.add-allowed-user')
@@ -622,11 +657,11 @@
         })
         .end();
 
-      allowedUserList = locationInfo.find('.allowed-user-list');
+      allowedUserList = locationView.find('.allowed-user-list');
       if (location.hasOwnProperty('openAccess')) {
         // Disable entering email addresses of allowed user: everyone
         // is allowed.
-        locationInfo.find('.add-allowed-user')
+        locationView.find('.add-allowed-user')
           .attr('placeholder', 'Everyone is allowed to access the location')
           .attr('disabled', true);
 
@@ -644,7 +679,7 @@
         // disabled and the page is refreshed, all locations become
         // disabled. Placeholder text is valid for them so it doesn't
         // seem like the first location is cloned.
-        locationInfo.find('.add-allowed-user').attr('disabled', false);
+        locationView.find('.add-allowed-user').attr('disabled', false);
 
         utils.each(
           utils.sortByProperty(location.allowedUsers, 'email'), function(user) {
@@ -663,9 +698,9 @@
               .appendTo(allowedUserList);
           });
       }
-      locationInfo.appendTo('#location-info-list');
+      locationView.appendTo('#location-info-list');
       // Break circular references.
-      locationInfo = null;
+      locationView = null;
     }
 
     /**
@@ -677,11 +712,12 @@
      * (created with the createLocationInfo function).
      */
     function showLocations() {
-      var isAdminLocation, sortedLocations, addLocation;
-      sortedLocations = utils.sortByProperty(controller.locations, 'path');
+      var sortedLocations = utils.sortByProperty(controller.locations, 'path');
+      // TODO: extract function.
       utils.each(sortedLocations, function(location) {
+        var pathView, isAdminLocation;
         isAdminLocation = controller.handledByAdmin(location.path);
-        view.locationPath.clone(true)
+        pathView = view.locationPath.clone(true)
           .attr('id', locationPathId(location))
           .attr('location-urn', location.id)
           .find('.url').attr(
@@ -708,6 +744,9 @@
           })
           .end()
           .appendTo('#location-list');
+        trimText(pathView, '.path', MAX_PATH_WIDTH_PX, 'right');
+        pathView = null;
+        isAdminLocation = null;
         createLocationInfo(location);
       });
 
@@ -753,6 +792,16 @@
 
       $('#' + locationPathId(location)).addClass('active');
       $('#' + locationInfoId(location)).addClass('active');
+    }
+
+    function trimEmailsInActiveLocation() {
+      // This can not be done only when active location is already on
+      // the screen.
+      $('#location-info-list .active')
+        .find('li')
+        .each(function() {
+          trimText($(this), '.user-mail', MAX_EMAIL_WIDTH_PX, 'left');
+        });
     }
 
     /**
@@ -823,6 +872,8 @@
           })
           .end()
           .appendTo('#user-list');
+
+        trimText(userView, '.user-mail', MAX_EMAIL_WIDTH_PX, 'right');
       });
       // Break circular reference.
       userView = null;
@@ -898,7 +949,9 @@
 
       if (activeLocation !== null) {
         activateLocation(activeLocation);
+        trimEmailsInActiveLocation();
       }
+
       if (focusedElementId) {
         $('#' + focusedElementId).focus();
       }
