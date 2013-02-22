@@ -112,6 +112,10 @@ li,
  margin-right: 12px;
 }
 
+li:hover {
+  background: #eeeeee;
+}
+
 .content {
   background: #ffffff;
   border-top: 30px solid transparent;
