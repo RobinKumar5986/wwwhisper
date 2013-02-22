@@ -800,7 +800,11 @@
             });
         }
         isAdminUser = (user.email === controller.adminUserEmail);
-        userView.find('.user-mail')
+        userView
+          .hover(function() {
+            highlightAccessibleLocations(user);
+          }, highlighLocationsOff)
+          .find('.user-mail')
           .text(user.email + userAnnotation(user))
           .end()
           .find('.remove-user').click(function() {
@@ -810,10 +814,6 @@
           // (this is only UI enforced, from a server perspective such
           // operation is OK).
           .css('visibility', isAdminUser ? 'hidden' : 'visible')
-          .end()
-          .find('.highlight').hover(function() {
-            highlightAccessibleLocations(user);
-          }, highlighLocationsOff)
           .end()
           .find('.notify').click(function() {
             showNotifyDialog(
