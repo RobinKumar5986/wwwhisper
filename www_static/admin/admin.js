@@ -794,7 +794,7 @@
         if (activeLocation !== null &&
             !controller.canAccess(user, activeLocation)) {
           userView.find('.share')
-            .removeClass('hide')
+            .removeClass('invisible')
             .click(function() {
               controller.grantAccess(user.email, activeLocation);
             });
