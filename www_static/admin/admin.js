@@ -401,8 +401,13 @@
           location.self + 'allowed-users/' + utils.urn2uuid(userArg.id) + '/',
           null,
           function() {
-            location.allowedUsers.push(userArg);
-            ui.refresh();
+            // Do nothing if the user was granted access in a mean
+            // time (this can happen for instance when grant access if
+            // clicked twice).
+            if (!that.canAccess(userArg, location)) {
+              location.allowedUsers.push(userArg);
+              ui.refresh();
+            }
           });
       };
 
