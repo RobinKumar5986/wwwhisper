@@ -620,6 +620,11 @@ class LocationsCollectionTest(CollectionTestCase):
                                     'should contain only ascii',
                                     self.locations.create_item,
                                     u'/żbik')
+            long_path = '/a' * (self.locations.path_len_limit / 2) + 'a'
+            self.assertRaisesRegexp(ValidationError,
+                                    'too long',
+                                    self.locations.create_item,
+                                    long_path)
 
     """Path passed to create_location is expected to be saved verbatim."""
     def test_location_path_not_encoded(self):

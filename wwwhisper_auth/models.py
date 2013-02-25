@@ -551,6 +551,8 @@ class LocationsCollection(Collection):
     model_class = Location
     uuid_column_name = 'uuid'
     site_id_column_name = 'site_id'
+    # Can be safely risen to whatever value is needed.
+    path_len_limit = 300
 
     def __init__(self, site):
         super(LocationsCollection, self).__init__(site)
@@ -572,6 +574,8 @@ class LocationsCollection(Collection):
             raise ValidationError(
                 'Path should be absolute and normalized (starting with / '\
                     'without /../ or /./ or //).')
+        if len(path) > self.path_len_limit:
+            raise ValidationError('Path too long')
         if url_path.contains_fragment(path):
             raise ValidationError(
                 "Path should not contain fragment ('#' part).")
