@@ -39,23 +39,12 @@ body {
   border-top: 1px solid #ddd;
 }
 
-.stretch {
-  width: 100%;
-}
-
 .tooltip {
  overflow: visible;
 }
 
 .tooltip-inner {
   max-width: 950px;
-}
-
-#add-location-button {
- margin-right: 10px;
-}
-.add-allowed-user-button {
- margin-right: 25px;
 }
 
 .tabs-left > .nav-tabs {
@@ -76,8 +65,17 @@ body {
   margin-left: 10px;
 }
 
-.input-append {
+.input-append input {
+  width: 310px;
+}
+
+.tabs-left .input-append {
   margin-left: 5px;
+  margin-top: 15px;
+}
+
+.tab-pane .input-append {
+  margin-left: 15px;
   margin-top: 15px;
 }
 

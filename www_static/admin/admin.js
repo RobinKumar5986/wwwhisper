@@ -401,9 +401,9 @@
           location.self + 'allowed-users/' + utils.urn2uuid(userArg.id) + '/',
           null,
           function() {
-            // Do nothing if the user was granted access in a mean
-            // time (this can happen for instance when grant access if
-            // clicked twice).
+            // Do nothing if the user was granted access in the
+            // meantime (this can happen for instance when grant
+            // access is clicked twice).
             if (!that.canAccess(userArg, location)) {
               location.allowedUsers.push(userArg);
               ui.refresh();
