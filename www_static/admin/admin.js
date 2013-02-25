@@ -611,6 +611,28 @@
       return parent;
     }
 
+    function trimEmailsInActiveLocation() {
+      // This can be done only when the active location is already on
+      // the screen.
+      $('#location-info-list .active')
+        .find('li')
+        .each(function() {
+          trimText($(this), '.user-mail', MAX_EMAIL_WIDTH_PX, 'left');
+        });
+    }
+
+    /**
+     * Active location is the one for which detailed information and
+     * controls are displayed.
+     */
+    function activateLocation(location) {
+      // If any location is already active, deactivate it:
+      $('#location-list').find('.active').removeClass('active');
+      $('#location-info-list').find('.active').removeClass('active');
+
+      $('#' + locationPathId(location)).addClass('active');
+      $('#' + locationInfoId(location)).addClass('active');
+    }
 
     function grantAccess(userId, location) {
       if (userId === '*') {
@@ -623,15 +645,13 @@
     }
 
     /**
-     * Creates a DOM subtree to handle a given location. The subtree
-     * contains a list of emails of allowed users, an input box to
-     * grant access to a new user, controls to revoke access from a
-     * particular user.
+     * Creates a DOM subtree to handle an active location. The subtree
+     * contains emails of allowed users, an input box to grant access
+     * to a new user, controls to revoke access from a particular
+     * user.
      */
-    function createLocationInfo(location) {
+    function showLocationInfo(location) {
       var locationView, allowedUserList, isAdminLocation, isAdminUser;
-      // TODO: can it be done only for an active location (refresh is
-      // called anyway when new location is activated)?
 
       isAdminLocation = controller.handledByAdmin(location.path);
 
@@ -680,8 +700,8 @@
           .end()
           .appendTo(allowedUserList);
       } else {
-        // Don't know why, but when the first location on the list is
-        // disabled and the page is refreshed, all locations become
+        // When the first location on the list is disabled and the
+        // page is refreshed, all locations become
         // disabled. Placeholder text is valid for them so it doesn't
         // seem like the first location is cloned.
         locationView.find('.add-allowed-user').attr('disabled', false);
@@ -706,20 +726,10 @@
       locationView.appendTo('#location-info-list');
       // Break circular references.
       locationView = null;
+      allowedUserList = null;
     }
 
-    /**
-     * Creates a DOM subtree to handle a list of all defined
-     * locations. The subtree contains locations paths, controls to
-     * add/remove a location and to compose notification about a
-     * shared location, a link to visit a location with a
-     * browser. When location is clicked, more details become visible
-     * (created with the createLocationInfo function).
-     */
-    function showLocations() {
-      var sortedLocations = utils.sortByProperty(controller.locations, 'path');
-      // TODO: extract function.
-      utils.each(sortedLocations, function(location) {
+    function showLocation(location) {
         var pathView, isAdminLocation;
         isAdminLocation = controller.handledByAdmin(location.path);
         pathView = view.locationPath.clone(true)
@@ -752,8 +762,19 @@
         trimText(pathView, '.path', MAX_PATH_WIDTH_PX, 'right');
         pathView = null;
         isAdminLocation = null;
-        createLocationInfo(location);
-      });
+    }
+
+    /**
+     * Creates a DOM subtree to handle a list of locations. The
+     * subtree contains locations' paths, controls to add/remove a
+     * location and to compose notifications, a link to visit a
+     * location with a browser. For a currently active location more
+     * details are visible (created with the showLocationInfo
+     * function).
+     */
+    function showLocationsList(activeLocation) {
+      utils.each(utils.sortByProperty(controller.locations, 'path'),
+                 showLocation);
 
       view.addLocation.clone(true)
         .find('#add-location-input')
@@ -784,29 +805,13 @@
         })
         .end()
         .appendTo('#location-list');
-    }
 
-    /**
-     * Activates a location. Active location is the one for which
-     * detailed information and controls are displayed.
-     */
-    function activateLocation(location) {
-      // If any location is already active, deactivate it:
-      $('#location-list').find('.active').removeClass('active');
-      $('#location-info-list').find('.active').removeClass('active');
-
-      $('#' + locationPathId(location)).addClass('active');
-      $('#' + locationInfoId(location)).addClass('active');
-    }
-
-    function trimEmailsInActiveLocation() {
-      // This can not be done only when active location is already on
-      // the screen.
-      $('#location-info-list .active')
-        .find('li')
-        .each(function() {
-          trimText($(this), '.user-mail', MAX_EMAIL_WIDTH_PX, 'left');
-        });
+      if (activeLocation !== null) {
+        showLocationInfo(activeLocation);
+        activateLocation(activeLocation);
+        // Must be called after activateLocation().
+        trimEmailsInActiveLocation();
+      }
     }
 
     /**
@@ -830,6 +835,47 @@
       $('#location-list .can-access').addClass('invisible');
     }
 
+    function showUser(user, activeLocation) {
+      var userView = view.user.clone(true), isAdminUser;
+
+      if (activeLocation !== null &&
+          !controller.canAccess(user, activeLocation)) {
+        userView.find('.share')
+          .removeClass('invisible')
+          .click(function() {
+            controller.grantAccess(user.email, activeLocation);
+          });
+      }
+
+      isAdminUser = (user.email === controller.adminUserEmail);
+      userView
+        .hover(function() {
+          highlightAccessibleLocations(user);
+        }, highlighLocationsOff)
+        .find('.user-mail')
+        .text(user.email + userAnnotation(user))
+        .end()
+        .find('.remove-user').click(function() {
+          controller.removeUser(user);
+        })
+      // Do not allow currently signed-in user to delete herself
+      // (this is only UI enforced, from a server perspective such
+      // operation is OK).
+        .css('visibility', isAdminUser ? 'hidden' : 'visible')
+        .end()
+        .find('.notify').click(function() {
+          showNotifyDialog(
+            [user.email],
+            utils.extractProperty(
+              controller.accessibleLocations(user), 'path')
+          );
+        })
+        .end()
+        .appendTo('#user-list');
+      trimText(userView, '.user-mail', MAX_EMAIL_WIDTH_PX, 'right');
+      userView = null;
+    }
+
     /**
      * Creates a DOM subtree to handle a list of known users. The
      * subtree contains an email of each user and controls to remove a
@@ -839,49 +885,11 @@
      * control is visible only if the user can not already access the
      * location).
      */
-    function showUsers(activeLocation) {
-      var userView, isAdminUser, sortedUsers;
-      sortedUsers = utils.sortByProperty(controller.users, 'email');
-      utils.each(sortedUsers, function(user) {
-        userView = view.user.clone(true);
-        if (activeLocation !== null &&
-            !controller.canAccess(user, activeLocation)) {
-          userView.find('.share')
-            .removeClass('invisible')
-            .click(function() {
-              controller.grantAccess(user.email, activeLocation);
-            });
-        }
-        isAdminUser = (user.email === controller.adminUserEmail);
-        userView
-          .hover(function() {
-            highlightAccessibleLocations(user);
-          }, highlighLocationsOff)
-          .find('.user-mail')
-          .text(user.email + userAnnotation(user))
-          .end()
-          .find('.remove-user').click(function() {
-            controller.removeUser(user);
-          })
-          // Do not allow currently signed-in user to delete herself
-          // (this is only UI enforced, from a server perspective such
-          // operation is OK).
-          .css('visibility', isAdminUser ? 'hidden' : 'visible')
-          .end()
-          .find('.notify').click(function() {
-            showNotifyDialog(
-              [user.email],
-              utils.extractProperty(
-                controller.accessibleLocations(user), 'path')
-            );
-          })
-          .end()
-          .appendTo('#user-list');
-
-        trimText(userView, '.user-mail', MAX_EMAIL_WIDTH_PX, 'right');
-      });
-      // Break circular reference.
-      userView = null;
+    function showUsersList(activeLocation) {
+      utils.each(utils.sortByProperty(controller.users, 'email'),
+                 function(user) {
+                   showUser(user, activeLocation);
+                 });
     }
 
     /**
@@ -949,13 +957,8 @@
       $('#location-info-list').empty();
       $('#user-list').empty();
 
-      showLocations();
-      showUsers(activeLocation);
-
-      if (activeLocation !== null) {
-        activateLocation(activeLocation);
-        trimEmailsInActiveLocation();
-      }
+      showLocationsList(activeLocation);
+      showUsersList(activeLocation);
 
       if (focusedElementId) {
         $('#' + focusedElementId).focus();
