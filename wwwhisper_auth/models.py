@@ -39,6 +39,7 @@ from django.db import models
 from django.forms import ValidationError
 from functools import wraps
 from wwwhisper_auth import  url_path
+from wwwhisper_auth import  email_re
 
 import random
 import re
@@ -675,12 +676,7 @@ def _encode_email(email):
     return encoded_email
 
 def _is_email_valid(email):
-    """Validates email with a regexp defined by BrowserId:
-    browserid/browserid/static/dialog/resources/validation.js
-    """
-    return re.match(
-        "^[\w.!#$%&'*+\-/=?\^`{|}~]+@[a-z0-9-]+(\.[a-z0-9-]+)+$",
-        email) != None
+    return re.match(email_re.EMAIL_VALIDATION_RE, email)
 
 def _gen_random_str(length):
     secure_generator = random.SystemRandom()

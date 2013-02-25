@@ -222,6 +222,9 @@ class UsersCollectionTest(CollectionTestCase):
         self.assertIsNotNone(self.users.create_item('x@y.z.w'))
         self.assertIsNotNone(self.users.create_item('x.v@y.z.w'))
         self.assertIsNotNone(self.users.create_item('x_v@y.z.w'))
+        # Valid tricky characters.
+        self.assertIsNotNone(self.users.create_item(
+                r'x#!v$we*df+.|{}@y132.wp.a-s.012'))
 
         with self.assert_site_not_modified(self.site):
             self.assertRaisesRegexp(ValidationError,
@@ -244,6 +247,16 @@ class UsersCollectionTest(CollectionTestCase):
                                     'Invalid email format',
                                     self.users.create_item,
                                     '')
+            # Invalid tricky character.
+            self.assertRaisesRegexp(ValidationError,
+                                    'Invalid email format',
+                                    self.users.create_item,
+                                    r'a\b@b.c.d')
+            # Too long.
+            self.assertRaisesRegexp(ValidationError,
+                                    'Invalid email format',
+                                    self.users.create_item,
+                                    'foo@bar.com.' + ('z' * 100) )
 
     def test_email_normalization(self):
         email = self.users.create_item('x@y.z').email
