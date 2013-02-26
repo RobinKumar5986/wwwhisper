@@ -16,9 +16,10 @@
 
 """Authentication backend used by wwwhisper_auth."""
 
-from django.forms import ValidationError
 from django.contrib.auth.backends import ModelBackend
+from django.forms import ValidationError
 from django_browserid.base import verify
+from models import LimitExceeded
 
 class AssertionVerificationException(Exception):
     """Raised when BrowserId assertion was not verified successfully."""
@@ -67,4 +68,6 @@ class BrowserIDBackend(ModelBackend):
             else:
                 return None
         except ValidationError as ex:
+            raise AssertionVerificationException(str(ex))
+        except LimitExceeded as ex:
             raise AssertionVerificationException(str(ex))
