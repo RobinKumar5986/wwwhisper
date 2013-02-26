@@ -23,6 +23,7 @@ granting/revoking access to locations.
 from django.forms import ValidationError
 from functools import wraps
 from wwwhisper_auth import http
+from wwwhisper_auth.models import LimitExceeded
 
 import logging
 
@@ -63,6 +64,9 @@ class CollectionView(http.RestView):
         except ValidationError as ex:
             # ex.messages is a list of errors.
             return http.HttpResponseBadRequest(", ".join(ex.messages))
+        except LimitExceeded as ex:
+            return http.HttpResponseLimitExceeded(ex.message)
+
         attributes_dict = created_item.attributes_dict(request.site_url)
         response = http.HttpResponseCreated(attributes_dict)
         response['Location'] = attributes_dict['self']

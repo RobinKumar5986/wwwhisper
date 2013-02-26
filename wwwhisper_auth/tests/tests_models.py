@@ -204,6 +204,8 @@ class UsersCollectionTest(CollectionTestCase):
         user1 = self.users.create_item('foo@example.com')
         user2 = self.users.create_item('bar@example.com')
         user3 = self.site2.users.create_item('baz@example.com')
+        self.assertEqual(2, self.users.count())
+        self.assertEqual(1, self.site2.users.count())
         with self.assert_site_not_modified(self.site):
             self.assertItemsEqual(
                 ['foo@example.com', 'bar@example.com'],
@@ -212,8 +214,10 @@ class UsersCollectionTest(CollectionTestCase):
         self.assertItemsEqual(
             ['bar@example.com'],
             [u.email for u in self.users.all()])
+        self.assertEqual(1, self.users.count())
 
     def test_get_all_users_when_empty(self):
+        self.assertEqual(0, self.users.count())
         self.assertListEqual([], list(self.users.all()))
 
     def test_email_validation(self):
@@ -264,6 +268,16 @@ class UsersCollectionTest(CollectionTestCase):
 
         email = self.users.create_item('aBc@y.z').email
         self.assertEqual('abc@y.z', email)
+
+    def test_users_limit(self):
+        limit = 10
+        self.site.users_limit = limit
+        for i in range(0, limit):
+            self.users.create_item('foo%d@bar.com' % (i))
+        self.assertRaisesRegexp(models.LimitExceeded,
+                                'Users limit exceeded',
+                                self.users.create_item,
+                                'foo10@bar.com')
 
 class LocationsCollectionTest(CollectionTestCase):
     def setUp(self):
@@ -329,6 +343,8 @@ class LocationsCollectionTest(CollectionTestCase):
         location1 = self.locations.create_item('/foo')
         location2 = self.locations.create_item('/foo/bar')
         self.site2.locations.create_item('/foo/baz')
+        self.assertEqual(2, self.locations.count())
+        self.assertEqual(1, self.site2.locations.count())
         with self.assert_site_not_modified(self.site):
             self.assertItemsEqual(['/foo/bar', '/foo'],
                                   [l.path for l
@@ -337,8 +353,10 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertItemsEqual(['/foo/bar'],
                               [l.path for l
                                in self.locations.all()])
+        self.assertEqual(1, self.locations.count())
 
     def test_get_all_locations_when_empty(self):
+        self.assertEqual(0, self.locations.count())
         self.assertListEqual([], list(self.locations.all()))
 
     def test_grant_access(self):
@@ -620,7 +638,7 @@ class LocationsCollectionTest(CollectionTestCase):
                                     'should contain only ascii',
                                     self.locations.create_item,
                                     u'/żbik')
-            long_path = '/a' * (self.locations.path_len_limit / 2) + 'a'
+            long_path = '/a' * (self.locations.PATH_LEN_LIMIT / 2) + 'a'
             self.assertRaisesRegexp(ValidationError,
                                     'too long',
                                     self.locations.create_item,
@@ -635,3 +653,12 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertEqual(
             '/foo/bar!@7*', self.locations.create_item('/foo/bar!@7*').path)
 
+    def test_locations_limit(self):
+        limit = 10
+        self.site.locations_limit = limit
+        for i in range(0, limit):
+            self.locations.create_item('/foo%d' % (i))
+        self.assertRaisesRegexp(models.LimitExceeded,
+                                'Locations limit exceeded',
+                                self.locations.create_item,
+                                '/foo10')

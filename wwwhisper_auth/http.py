@@ -151,6 +151,14 @@ class HttpResponseBadRequest(HttpResponse):
         super(HttpResponseBadRequest, self).__init__(
             message, content_type=TEXT_MIME_TYPE, status=400)
 
+class HttpResponseLimitExceeded(HttpResponse):
+    """Too many resource are already created, a new one can not be added."""
+
+    def __init__(self, message):
+        logger.debug('Limit exceeded %s' % (message))
+        super(HttpResponseLimitExceeded, self).__init__(
+            message, content_type=TEXT_MIME_TYPE, status=400)
+
 class HttpResponseNotFound(HttpResponse):
 
     def __init__(self, message):

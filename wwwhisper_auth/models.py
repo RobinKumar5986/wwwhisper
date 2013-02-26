@@ -50,6 +50,10 @@ import uuid as uuidgen
 USERNAME_LEN=7
 assert USERNAME_LEN <= User._meta.get_field('username').max_length
 
+class LimitExceeded(Exception):
+    def __init__(self, message):
+        super(LimitExceeded, self).__init__(message)
+
 class ValidatedModel(models.Model):
     """Base class for all model classes.
 
@@ -84,6 +88,8 @@ class Site(ValidatedModel):
 
     def __init__(self, *args, **kwargs):
         super(Site, self).__init__(*args, **kwargs)
+        self.users_limit = None
+        self.locations_limit = None
 
     def heavy_init(self):
         """Creates collections of all site-related data.
@@ -464,6 +470,9 @@ class Collection(object):
     def all(self):
         return self._cached_items
 
+    def count(self):
+        return len(self.all())
+
     def get_unique(self, filter_fun):
         """Finds a unique item that satisfies a given filter.
 
@@ -518,7 +527,13 @@ class UsersCollection(Collection):
         Raises:
             ValidationError if the email is invalid or if a site
             already has a user with such email.
+            LimitExceeded if the site defines a maximum number of
+            users and adding a new one would exceed this number.
         """
+        users_limit = self.site.users_limit
+        if (users_limit is not None and self.count() >= users_limit):
+            raise LimitExceeded('Users limit exceeded')
+
         encoded_email = _encode_email(email)
         if encoded_email is None:
             raise ValidationError('Invalid email format.')
@@ -547,12 +562,14 @@ class UsersCollection(Collection):
 class LocationsCollection(Collection):
     """Collection of locations resources."""
 
+    # Can be safely risen to whatever value is needed.
+    PATH_LEN_LIMIT = 300
+
+    # TODO: These should rather also be all caps.
     item_name = 'location'
     model_class = Location
     uuid_column_name = 'uuid'
     site_id_column_name = 'site_id'
-    # Can be safely risen to whatever value is needed.
-    path_len_limit = 300
 
     def __init__(self, site):
         super(LocationsCollection, self).__init__(site)
@@ -568,13 +585,19 @@ class LocationsCollection(Collection):
         Raises:
             ValidationError if the path is invalid or if a site
             already has a location with such path.
+            LimitExceeded if the site defines a maximum number of
+            locations and adding a new one would exceed this number.
         """
+
+        locations_limit = self.site.locations_limit
+        if (locations_limit is not None and self.count() >= locations_limit):
+            raise LimitExceeded('Locations limit exceeded')
 
         if not url_path.is_canonical(path):
             raise ValidationError(
                 'Path should be absolute and normalized (starting with / '\
                     'without /../ or /./ or //).')
-        if len(path) > self.path_len_limit:
+        if len(path) > self.PATH_LEN_LIMIT:
             raise ValidationError('Path too long')
         if url_path.contains_fragment(path):
             raise ValidationError(

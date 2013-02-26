@@ -34,7 +34,7 @@ def extract_uuid(urn):
 class AdminViewTestCase(HttpTestCase):
 
     def setUp(self):
-        wwwhisper_auth.models.create_site(TEST_SITE)
+        self.site = wwwhisper_auth.models.create_site(TEST_SITE)
 
     def add_user(self, user_name=TEST_USER_EMAIL):
         response = self.post('/admin/api/users/', {'email' : user_name})
@@ -120,6 +120,18 @@ class UserTest(AdminViewTestCase):
         self.assertEqual(404, response.status_code)
         self.assertRegexpMatches(response.content, 'User not found')
 
+    def test_users_limit(self):
+        limit = 8
+        self.site.users_limit = limit
+        for i in range(0, limit):
+            email = '%s%d' % (TEST_USER_EMAIL, i)
+            response = self.post('/admin/api/users/', {'email' : email})
+            self.assertEqual(201, response.status_code)
+
+        email = '%s%d' % (TEST_USER_EMAIL, limit)
+        response = self.post('/admin/api/users/', {'email' : email})
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content, 'Users limit exceeded')
 
 class LocationTest(AdminViewTestCase):
 
@@ -276,6 +288,17 @@ class LocationTest(AdminViewTestCase):
         self.assertEqual(404, response.status_code)
         self.assertRegexpMatches(response.content, 'Location not found')
 
+    def test_locations_limit(self):
+        limit = 7
+        self.site.locations_limit = limit
+        for i in range(0, limit):
+            path = '%s%d' % (TEST_LOCATION, i)
+            response = self.post('/admin/api/locations/', {'path' : path})
+            self.assertEqual(201, response.status_code)
+        path = '%s%d' % (TEST_LOCATION, limit)
+        response = self.post('/admin/api/locations/', {'path' : path})
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content, 'Locations limit exceeded')
 
 class AccessControlTest(AdminViewTestCase):
 
