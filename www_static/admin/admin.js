@@ -904,6 +904,10 @@
      * received error message replaces the current document.
      */
     this.handleError = function(message, status, isTextPlain) {
+      // Scroll to make sure error is visible.
+      $(document).scrollTop(0),
+      $(document).scrollLeft(0);
+
       if (typeof status === 'undefined' || status === 401 || isTextPlain) {
         var error = view.errorMessage.clone(true);
 
@@ -937,7 +941,9 @@
      * active or if none, the first location in alphabetical order.
      */
     this.refresh = function(locationToActivate) {
-      var focusedElementId, activeLocation = locationToActivate;
+      var focusedElementId, activeLocation = locationToActivate,
+      scrollTop = $(document).scrollTop(),
+      scrollLeft = $(document).scrollLeft();
 
       if (typeof locationToActivate === 'undefined') {
         // DOM subtrees representing a currently focused input box and
@@ -963,6 +969,9 @@
       if (focusedElementId) {
         $('#' + focusedElementId).focus();
       }
+      // Rewind a document to where it was.
+      $(document).scrollTop(scrollTop),
+      $(document).scrollLeft(scrollLeft);
     };
 
     /**
