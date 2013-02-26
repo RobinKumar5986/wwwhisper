@@ -905,7 +905,7 @@
      */
     this.handleError = function(message, status, isTextPlain) {
       // Scroll to make sure error is visible.
-      $(document).scrollTop(0),
+      $(document).scrollTop(0);
       $(document).scrollLeft(0);
 
       if (typeof status === 'undefined' || status === 401 || isTextPlain) {
@@ -970,7 +970,7 @@
         $('#' + focusedElementId).focus();
       }
       // Rewind a document to where it was.
-      $(document).scrollTop(scrollTop),
+      $(document).scrollTop(scrollTop);
       $(document).scrollLeft(scrollLeft);
     };
 
