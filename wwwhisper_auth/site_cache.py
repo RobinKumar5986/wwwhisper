@@ -40,9 +40,10 @@ class CacheUpdater(object):
 
     def is_obsolete(self, site):
         cursor = connection.cursor()
-        row = cursor.execute(
+        cursor.execute(
             "SELECT mod_id FROM wwwhisper_auth_site WHERE site_id = %s",
-            [site.site_id]).fetchone()
+            [site.site_id])
+        row = cursor.fetchone()
         if row is None:
             return True
         return row[0] != site.mod_id
