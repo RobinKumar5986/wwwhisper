@@ -44,6 +44,7 @@ from wwwhisper_auth import  email_re
 import random
 import re
 import uuid as uuidgen
+import wwwhisper_auth.site_cache
 
 # Usernames are not really needed but are required by Django model, so
 # unique random strings are used.
@@ -107,15 +108,7 @@ class Site(ValidatedModel):
         self.mod_id = (self.mod_id + 1) % self.__MAX_MOD_ID
         self.save()
 
-# All site associated data is cached. On each request a single DB
-# query is run to get a site.  If the site was not modified since last
-# access, users, locations and permissions are not retrieved from a
-# database.
-#
-# Majority of wwwhisper request are performance critical and read-only
-# auth-requests. Because of this caching is very efficient (cached
-# data rarely needs to be updated).
-site_cache = {}
+site_cache = wwwhisper_auth.site_cache.SiteCache()
 
 def create_site(site_id):
     """Creates a new Site object.
@@ -127,28 +120,20 @@ def create_site(site_id):
     """
     site =  Site.objects.create(site_id=site_id)
     site.heavy_init()
-    site_cache[site_id] = site
+    site_cache.insert(site)
     return site
 
 def find_site(site_id):
-    # Get site from the DB (withou associated data).
+    site = site_cache.get(site_id)
+    if site is not None:
+        return site
     site = _find(Site, site_id=site_id)
-    if site is None:
-        site_cache.pop(site_id, None)
-        return None
-    cached_site = site_cache.get(site_id, None)
-    # If site is also in the cache and it was not modified, use cached
-    # version, to avoid querying the DB for the site data.
-    if (cached_site is not None and
-        cached_site.mod_id == site.mod_id):
-        return cached_site
-    # Otherwise, query the DB and update cache.
-    site.heavy_init()
-    site_cache[site_id] = site
+    if site is not None:
+        site.heavy_init()
+        site_cache.insert(site)
     return site
 
 def delete_site(site_id):
-    site_cache.pop(site_id, None)
     site = find_site(site_id)
     if site is None:
         return False
@@ -156,7 +141,12 @@ def delete_site(site_id):
     # have a foreign key to the Site (unlike UserExtras and
     # Locations).
     map(lambda user: user.delete(), site.users.all())
+    site_cache.delete(site_id)
     site.delete()
+    # Makes sure error is raised if collections are accidentally
+    # accessed after the site is deleted.
+    site.locations.__dict__.clear()
+    site.users.__dict__.clear()
     return True
 
 def modify_site(decorated_method):

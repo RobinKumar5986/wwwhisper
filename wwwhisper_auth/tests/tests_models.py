@@ -48,8 +48,24 @@ class SitesTest(TestCase):
 
     def test_delete_site(self):
         site1 = models.create_site(TEST_SITE)
+
+        self.assertIsNotNone(site1.locations.site)
+        self.assertIsNotNone(site1.users.site)
+
         self.assertTrue(models.delete_site(TEST_SITE))
         self.assertIsNone(models.find_site(TEST_SITE))
+
+        # Make sure locations can not be accidentally accessed.
+        self.assertRaisesRegexp(AttributeError,
+                                "no attribute 'site'",
+                                getattr,
+                                site1.locations,
+                                'site')
+        self.assertRaisesRegexp(AttributeError,
+                                "no attribute 'site'",
+                                getattr,
+                                site1.users,
+                                'site')
 
 class CollectionTestCase(TestCase):
     def setUp(self):
@@ -110,13 +126,6 @@ class UsersCollectionTest(CollectionTestCase):
         self.assertEqual(TEST_USER_EMAIL, user.email)
         self.assertEqual(TEST_SITE, user.get_profile().site_id)
 
-    def test_create_user_non_existing_site(self):
-        self.assertTrue(models.delete_site(self.site.site_id))
-        self.assertRaisesRegexp(ValidationError,
-                                'site no longer exists.',
-                                self.users.create_item,
-                                TEST_USER_EMAIL)
-
     def test_find_user(self):
         user1 = self.users.create_item(TEST_USER_EMAIL)
         with self.assert_site_not_modified(self.site):
@@ -127,12 +136,6 @@ class UsersCollectionTest(CollectionTestCase):
     def test_find_user_different_site(self):
         user1 = self.users.create_item(TEST_USER_EMAIL)
         self.assertIsNone(self.site2.users.find_item(user1.uuid))
-
-    def test_find_user_non_existing_site(self):
-        user = self.users.create_item(TEST_USER_EMAIL)
-        uuid = user.uuid
-        self.assertTrue(models.delete_site(self.site.site_id))
-        self.assertIsNone(self.users.find_item(uuid))
 
     def test_delete_site_deletes_user(self):
         user = self.users.create_item(TEST_USER_EMAIL)
@@ -151,11 +154,6 @@ class UsersCollectionTest(CollectionTestCase):
     def test_find_user_by_email_different_site(self):
         self.users.create_item(TEST_USER_EMAIL)
         self.assertIsNone(self.site2.users.find_item_by_email(TEST_USER_EMAIL))
-
-    def test_find_user_by_email_non_existing_site(self):
-        self.users.create_item(TEST_USER_EMAIL)
-        self.assertTrue(models.delete_site(self.site.site_id))
-        self.assertIsNone(self.users.find_item_by_email(TEST_USER_EMAIL))
 
     def test_find_user_by_email_is_case_insensitive(self):
         user1 = self.users.create_item('foo@bar.com')
@@ -289,13 +287,6 @@ class LocationsCollectionTest(CollectionTestCase):
             location = self.locations.create_item(TEST_LOCATION)
             self.assertEqual(TEST_LOCATION, location.path)
             self.assertEqual(TEST_SITE, location.site_id)
-
-    def test_create_location_non_existing_site(self):
-        self.assertTrue(models.delete_site(self.site.site_id))
-        self.assertRaisesRegexp(ValidationError,
-                                'site.*does not exist',
-                                self.locations.create_item,
-                                TEST_LOCATION)
 
     def test_delete_site_deletes_location(self):
         location = self.locations.create_item(TEST_LOCATION)
