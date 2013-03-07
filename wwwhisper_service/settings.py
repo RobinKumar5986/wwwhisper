@@ -153,6 +153,11 @@ LOGGING = {
             'propagate': True,
             'level': level,
             },
+        'wwwhisper_service': {
+            'handlers': ['console'],
+            'propagate': True,
+            'level': level,
+            },
         'wwwhisper_auth': {
             'handlers': ['console'],
             'propagate': True,
