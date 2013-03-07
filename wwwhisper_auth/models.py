@@ -278,8 +278,9 @@ class Location(ValidatedModel):
         self.update_cache()
 
     def update_cache(self):
-        self._cached_permissions = [p for p in
-                            Permission.objects.filter(http_location=self)]
+        self._cached_permissions = {}
+        for p in Permission.objects.filter(http_location=self):
+            self._cached_permissions[p.user_id] = p
         self.cache_mod_id = self.site.mod_id
 
     @check_cache
@@ -331,8 +332,7 @@ class Location(ValidatedModel):
         if user.site_id != self.site_id:
             return False
         return (self.open_access_granted()
-                or filter(lambda perm: perm.user_id == user.id,
-                          self.permissions()) != [])
+                or self.permissions().get(user.id) != None)
 
     @modify_site
     def grant_access(self, user_uuid):
@@ -400,7 +400,7 @@ class Location(ValidatedModel):
 
     def allowed_users(self):
         """"Returns a list of users that can access the location."""
-        return [permission.user for permission in self.permissions()]
+        return [perm.user for perm in self.permissions().itervalues()]
 
     def attributes_dict(self, site_url):
         """Returns externally visible attributes of the location resource."""
