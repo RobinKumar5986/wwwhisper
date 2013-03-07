@@ -35,16 +35,21 @@ Makes sure entered emails and paths are valid.
 """
 
 from django.contrib.auth.models import User
+from django.db import connection
 from django.db import models
+from django.db import transaction
 from django.forms import ValidationError
 from functools import wraps
 from wwwhisper_auth import  url_path
 from wwwhisper_auth import  email_re
 
+import logging
 import random
 import re
 import uuid as uuidgen
 import wwwhisper_auth.site_cache
+
+logger = logging.getLogger(__name__)
 
 # Usernames are not really needed but are required by Django model, so
 # unique random strings are used.
@@ -104,10 +109,19 @@ class Site(ValidatedModel):
         self.locations = LocationsCollection(self)
 
     def site_modified(self):
-        # TODO: do all updates within a transaction.
-        self.mod_id = (self.mod_id + 1) % self.__MAX_MOD_ID
-        self.save()
+        """Increases site modification id.
 
+        This causes the site to be refreshed in web processes caches.
+        """
+        cursor = connection.cursor()
+        cursor.execute(
+            'UPDATE wwwhisper_auth_site '
+            'SET mod_id = mod_id + 1 WHERE site_id = %s', [self.site_id])
+        self.mod_id = wwwhisper_auth.site_cache.get_mod_id(self, connection)
+        transaction.commit_unless_managed()
+        assert self.mod_id is not None
+
+# TODO: Rename to avoid confusion with module name.
 site_cache = wwwhisper_auth.site_cache.SiteCache()
 
 def create_site(site_id):

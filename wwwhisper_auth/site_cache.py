@@ -30,6 +30,17 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+def get_mod_id(site, connection):
+    """Runs a query to obtain a modification identifier for a site."""
+    cursor = connection.cursor()
+    cursor.execute(
+        'SELECT mod_id FROM wwwhisper_auth_site WHERE site_id = %s',
+        [site.site_id])
+    row = cursor.fetchone()
+    if row is None:
+        return None
+    return row[0]
+
 class CacheUpdater(object):
     """Checks if the cached site needs to be updated.
 
@@ -39,14 +50,8 @@ class CacheUpdater(object):
     """
 
     def is_obsolete(self, site):
-        cursor = connection.cursor()
-        cursor.execute(
-            "SELECT mod_id FROM wwwhisper_auth_site WHERE site_id = %s",
-            [site.site_id])
-        row = cursor.fetchone()
-        if row is None:
-            return True
-        return row[0] != site.mod_id
+        mod_id = get_mod_id(site, connection)
+        return mod_id is None or mod_id != site.mod_id
 
 class SiteCache(object):
     def __init__(self, updater=CacheUpdater()):
