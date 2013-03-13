@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from django.conf import settings
 from django.http import HttpRequest
 from django.test import TestCase
 from wwwhisper_auth.site import SiteMiddleware
 from wwwhisper_auth import models
 
-class SiteMiddlewareTest(TestCase):
+class SiteMiddlewareFromSettingsTest(TestCase):
 
     def test_site_from_settings(self):
         site_url = 'http://foo.example.org'
@@ -39,6 +40,27 @@ class SiteMiddlewareTest(TestCase):
         self.assertIsNone(middleware.process_request(r))
         self.assertIsNone(r.site)
         self.assertEqual(site_url, r.site_url)
+
+    def test_is_https(self):
+        r = HttpRequest()
+        middleware = SiteMiddleware('http://foo.com')
+        self.assertIsNone(middleware.process_request(r))
+        self.assertFalse(r.https)
+
+        middleware = SiteMiddleware('https://foo.com')
+        self.assertIsNone(middleware.process_request(r))
+        self.assertTrue(r.https)
+
+
+class SiteMiddlewareFromFrontendTest(TestCase):
+
+    def setUp(self):
+        settings.USE_X_FORWARDED_HOST = True
+        settings.SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    def tearDown(self):
+        settings.USE_X_FORWARDED_HOST = False
+        settings.SECURE_PROXY_SSL_HEADER = None
 
     def test_site_from_frontend(self):
         site_url = 'http://foo.example.org'
@@ -83,19 +105,10 @@ class SiteMiddlewareTest(TestCase):
 
     def test_is_https(self):
         r = HttpRequest()
-        middleware = SiteMiddleware('http://foo.com')
-        self.assertIsNone(middleware.process_request(r))
-        self.assertFalse(r.https)
-
-        middleware = SiteMiddleware('https://foo.com')
-        self.assertIsNone(middleware.process_request(r))
-        self.assertTrue(r.https)
-
         middleware = SiteMiddleware(None)
         r.META['HTTP_SITE_URL'] = 'http://bar.example.org'
         self.assertIsNone(middleware.process_request(r))
         self.assertFalse(r.https)
-
 
         middleware = SiteMiddleware(None)
         r.META['HTTP_SITE_URL'] = 'https://bar.example.org'

@@ -62,6 +62,7 @@ if DEBUG:
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
+
 if 'SITE_URL_FROM_FRONT_END' in globals():
     USE_X_FORWARDED_HOST = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -120,7 +121,7 @@ TEMPLATE_DIRS = (
     os.path.join(PROJECT_DIR, 'templates'),
 )
 
-AUTH_PROFILE_MODULE = 'wwwhisper_auth.UserExtras'
+AUTH_USER_MODEL = 'wwwhisper_auth.User'
 
 AUTHENTICATION_BACKENDS = (
     'wwwhisper_auth.backend.BrowserIDBackend',

@@ -34,7 +34,7 @@ because those ids can be reused after object is deleted.
 Makes sure entered emails and paths are valid.
 """
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractBaseUser
 from django.db import connection
 from django.db import models
 from django.db import transaction
@@ -50,11 +50,6 @@ import uuid as uuidgen
 import wwwhisper_auth.site_cache
 
 logger = logging.getLogger(__name__)
-
-# Usernames are not really needed but are required by Django model, so
-# unique random strings are used.
-USERNAME_LEN=7
-assert USERNAME_LEN <= User._meta.get_field('username').max_length
 
 class LimitExceeded(Exception):
     pass
@@ -87,7 +82,6 @@ class Site(ValidatedModel):
          users). Allows to determine when Django processes need to
          update cached data.
     """
-    __MAX_MOD_ID = 2000000000
     site_id = models.TextField(primary_key=True, db_index=True, editable=False)
     mod_id = models.IntegerField(default=0)
 
@@ -150,9 +144,8 @@ def delete_site(site_id):
     site = find_site(site_id)
     if site is None:
         return False
-    # Users need to be deleted manually, because User object does not
-    # have a foreign key to the Site (unlike UserExtras and
-    # Locations).
+    # Users, Locations and Permissions have foreign key to the Site
+    # and are deleted automatically.
     map(lambda user: user.delete(), site.users.all())
     site_cache.delete(site_id)
     site.delete()
@@ -192,46 +185,26 @@ def check_cache(decorated_method):
     return wrapper
 
 
-# Because Django authentication mechanism is used, users need to be
-# represented by a standard Django User class. But some additions are
-# needed:
-
-class UserExtras(models.Model):
-    """Extends User model to store site to which user object belongs."""
-
-    user = models.OneToOneField(User)
+class User(AbstractBaseUser):
+    # Site to which the user belongs.
     site = models.ForeignKey(Site, related_name='+')
-    # Preferably uuid would be stored in username, but Django limits
-    # the length of the username field to 30 chars.
+
+    # Externally visible UUID of the user. Allows to identify a REST
+    # resource representing the user.
     uuid = models.CharField(max_length=36, db_index=True,
                             editable=False, unique=True)
+    email = models.EmailField(db_index=True)
 
-def user_uuid(self):
-    if hasattr(self, '_cached_uuid'):
-        return self._cached_uuid
-    self._cached_uuid = self.get_profile().uuid
-    return self._cached_uuid
+    USERNAME_FIELD = 'uuid'
+    REQUIRED_FIELDS = ['email', 'site']
 
-User.uuid = property(fget=user_uuid, doc=\
-"""Externally visible UUID of a user.
+    def attributes_dict(self, site_url):
+        """Returns externally visible attributes of the user resource."""
+        return _add_common_attributes(self, site_url, {'email': self.email})
 
-Allows to identify a REST resource representing a user.
-""")
-
-User.attributes_dict = lambda self, site_url: \
-    _add_common_attributes(self, site_url, {'email': self.email})
-User.attributes_dict.__func__.__doc__ = \
-    """Returns externally visible attributes of the user resource."""
-
-User.get_absolute_url = models.permalink( \
-    lambda self: \
-        ('wwwhisper_user', (), {'uuid' : self.uuid}))
-
-User.site = property(fget=lambda(self): self.get_profile().site, doc=\
-"""Site to which the user belongs.""")
-
-User.site_id = property(fget=lambda(self): self.get_profile().site_id, doc=\
-"""Id of a site to which the user belongs.""")
+    @models.permalink
+    def get_absolute_url(self):
+        return ('wwwhisper_user', (), {'uuid' : self.uuid})
 
 class Location(ValidatedModel):
     """A location for which access control rules are defined.
@@ -350,8 +323,7 @@ class Location(ValidatedModel):
             LookupError: A site to which location belongs has no user
                 with a given UUID.
         """
-        user = _find(
-            User, userextras__uuid=user_uuid, userextras__site_id=self.site_id)
+        user = _find(User, uuid=user_uuid, site_id=self.site_id)
         if user is None:
             raise LookupError('User not found')
         permission = _find(
@@ -387,8 +359,7 @@ class Location(ValidatedModel):
             LookupError: No user with a given UUID or the user can not
                 access the location.
         """
-        user = _find(
-            User, userextras__uuid=user_uuid, userextras__site_id=self.site_id)
+        user = _find(User, uuid=user_uuid, site_id=self.site_id)
         if user is None:
             raise LookupError('User not found.')
         permission = _find(
@@ -514,8 +485,8 @@ class UsersCollection(Collection):
 
     item_name = 'user'
     model_class = User
-    uuid_column_name = 'userextras__uuid'
-    site_id_column_name = 'userextras__site_id'
+    uuid_column_name = 'uuid'
+    site_id_column_name = 'site_id'
 
     def __init__(self, site):
         super(UsersCollection, self).__init__(site)
@@ -541,20 +512,13 @@ class UsersCollection(Collection):
         if encoded_email is None:
             raise ValidationError('Invalid email format.')
         if _find(User, email=encoded_email,
-                 userextras__site_id=self.site.site_id) is not None:
+                 site_id=self.site.site_id) is not None:
             raise ValidationError('User already exists.')
         site = _find(Site, site_id=self.site.site_id)
         if site is None:
             raise ValidationError('site no longer exists.')
-        while True:
-            username = _gen_random_str(USERNAME_LEN)
-            if _find(User, username=username) is None:
-                break
-        user = User.objects.create(
-            username=username, email=encoded_email, is_active=True)
-        extras = UserExtras.objects.create(
-            user=user, site=site, uuid=str(uuidgen.uuid4()))
-        return user
+        return User.objects.create(
+            uuid=str(uuidgen.uuid4()), email=encoded_email, site=site)
 
     def find_item_by_email(self, email):
         encoded_email = _encode_email(email)

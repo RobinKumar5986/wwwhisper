@@ -74,7 +74,7 @@ def grant_initial_permission(app, created_models, *args, **kwargs):
     manages access to itself, so it can be used to add and remove
     users that can perform administrative operations.
     """
-    if (contrib_auth_models.User in created_models and
+    if (auth_models.User in created_models and
         kwargs.get('interactive', True)):
         site = _create_site()
         _create_initial_locations(site)

@@ -124,7 +124,7 @@ class UsersCollectionTest(CollectionTestCase):
         with self.assert_site_modified(self.site):
             user = self.users.create_item(TEST_USER_EMAIL)
         self.assertEqual(TEST_USER_EMAIL, user.email)
-        self.assertEqual(TEST_SITE, user.get_profile().site_id)
+        self.assertEqual(TEST_SITE, user.site_id)
 
     def test_find_user(self):
         user1 = self.users.create_item(TEST_USER_EMAIL)
