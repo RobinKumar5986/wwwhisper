@@ -57,8 +57,7 @@ USERNAME_LEN=7
 assert USERNAME_LEN <= User._meta.get_field('username').max_length
 
 class LimitExceeded(Exception):
-    def __init__(self, message):
-        super(LimitExceeded, self).__init__(message)
+    pass
 
 class ValidatedModel(models.Model):
     """Base class for all model classes.

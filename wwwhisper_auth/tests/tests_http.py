@@ -78,7 +78,7 @@ class RestViewTest(HttpTestCase):
         self.assertEqual(405, response.status_code)
         # 'The response MUST include an Allow header containing a list
         # of valid methods for the requested resource.' (rfc2616)
-        self.assertItemsEqual(['get', 'post', 'head'],
+        self.assertItemsEqual(['GET', 'POST', 'HEAD', 'OPTIONS'],
                               response['Allow'].split(', '))
 
     def test_method_with_argument_in_url_dispatched(self):

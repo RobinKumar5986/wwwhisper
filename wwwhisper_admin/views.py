@@ -65,7 +65,7 @@ class CollectionView(http.RestView):
             # ex.messages is a list of errors.
             return http.HttpResponseBadRequest(", ".join(ex.messages))
         except LimitExceeded as ex:
-            return http.HttpResponseLimitExceeded(ex.message)
+            return http.HttpResponseLimitExceeded(ex)
 
         attributes_dict = created_item.attributes_dict(request.site_url)
         response = http.HttpResponseCreated(attributes_dict)

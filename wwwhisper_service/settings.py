@@ -62,8 +62,14 @@ if DEBUG:
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+if 'SITE_URL_FROM_FRONT_END' in globals():
+    USE_X_FORWARDED_HOST = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    # Frontened ensures SITE_URL is valid, Host header is not used.
+    ALLOWED_HOSTS = ['*']
+else:
+    # Django ALLOWED_HOSTS mechanism does not accept port numbers.
+    ALLOWED_HOSTS = [ SITE_URL.split('://', 1)[1].rsplit(':', 1)[0] ]
 
 MIDDLEWARE_CLASSES = (
     #'wwwhisper_service.profile.ProfileMiddleware',
