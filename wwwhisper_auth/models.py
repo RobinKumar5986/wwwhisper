@@ -99,7 +99,6 @@ class Site(ValidatedModel):
         """
         self.locations = LocationsCollection(self)
         self.users = UsersCollection(self)
-        self.locations = LocationsCollection(self)
 
     def site_modified(self):
         """Increases site modification id.
