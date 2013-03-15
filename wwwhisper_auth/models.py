@@ -169,21 +169,6 @@ def modify_site(decorated_method):
         return result
     return wrapper
 
-def check_cache(decorated_method):
-    """Must decorate all methods that return cached data.
-
-    Makes sure cache is updated if the site was modified since the
-    data was retrieved.
-    """
-
-    @wraps(decorated_method)
-    def wrapper(self, *args, **kwargs):
-        if self.site.mod_id != self.cache_mod_id:
-            self.update_cache()
-        return decorated_method(self, *args, **kwargs)
-    return wrapper
-
-
 class User(AbstractBaseUser):
     # Site to which the user belongs.
     site = models.ForeignKey(Site, related_name='+')
@@ -246,17 +231,10 @@ class Location(ValidatedModel):
 
     def __init__(self, *args, **kwargs):
         super(Location, self).__init__(*args, **kwargs)
-        self.update_cache()
 
-    def update_cache(self):
-        self._cached_permissions = {}
-        for p in Permission.objects.filter(http_location=self):
-            self._cached_permissions[p.user_id] = p
-        self.cache_mod_id = self.site.mod_id
-
-    @check_cache
     def permissions(self):
-        return self._cached_permissions
+        # Does not run a query to get permissions if not needed.
+        return self.permissions_cache.get_permissions(self.id)
 
     def __unicode__(self):
         return "%s" % (self.path)
@@ -325,13 +303,12 @@ class Location(ValidatedModel):
         user = _find(User, uuid=user_uuid, site_id=self.site_id)
         if user is None:
             raise LookupError('User not found')
-        permission = _find(
-            Permission, http_location_id=self.id, user_id=user.id)
+        permission = self.permissions().get(user.id)
         created = False
         if permission is None:
             created = True
             permission = Permission.objects.create(
-                http_location_id=self.id, user_id=user.id)
+                http_location_id=self.id, user_id=user.id, site_id=self.site_id)
         return (permission, created)
 
     @modify_site
@@ -394,6 +371,7 @@ class Permission(ValidatedModel):
     """
 
     http_location = models.ForeignKey(Location, related_name='+')
+    site = models.ForeignKey(Site, related_name='+')
     user = models.ForeignKey(User, related_name='+')
 
     def __unicode__(self):
@@ -435,12 +413,19 @@ class Collection(object):
 
     def update_cache(self):
         filter_args = {self.site_id_column_name: self.site.site_id}
-        self._cached_items = [item for item in
-                      self.model_class.objects.filter(**filter_args)]
+        self._cached_items = []
+        for item in self.model_class.objects.filter(**filter_args):
+            self._cached_items.append(item)
+            # Use already retrieved site, do not retrieve it again.
+            item.site = self.site
         self.cache_mod_id = self.site.mod_id
 
-    @check_cache
+    def is_cache_obsolete(self):
+        return self.site.mod_id != self.cache_mod_id
+
     def all(self):
+        if self.is_cache_obsolete():
+            self.update_cache()
         return self._cached_items
 
     def count(self):
@@ -540,6 +525,22 @@ class LocationsCollection(Collection):
     def __init__(self, site):
         super(LocationsCollection, self).__init__(site)
 
+    def update_cache(self):
+        super(LocationsCollection, self).update_cache()
+        # Retrieves permissions for all locations of the site with a
+        # single query.
+        self._cached_permissions = {}
+        for location in self.all():
+            location.permissions_cache = self
+            self._cached_permissions[location.id] = {}
+        for p in Permission.objects.filter(site=self.site):
+            self._cached_permissions[p.http_location_id][p.user_id] = p
+
+    def get_permissions(self, site_id):
+        if self.is_cache_obsolete():
+            self.update_cache()
+        return self._cached_permissions.get(site_id, {})
+
     @modify_site
     def create_item(self, path):
         """Creates a new Location object for the site.
@@ -584,10 +585,11 @@ class LocationsCollection(Collection):
             raise ValidationError('Location already exists.')
 
         location = Location.objects.create(path=path, site=self.site)
+        location.site = self.site
+        location.permissions_cache = self
         return location
 
 
-    @check_cache
     def find_location(self, canonical_path):
         """Finds a location that defines access to a given path on the site.
 
