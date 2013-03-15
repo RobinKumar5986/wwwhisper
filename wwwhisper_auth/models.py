@@ -234,7 +234,7 @@ class Location(ValidatedModel):
 
     def permissions(self):
         # Does not run a query to get permissions if not needed.
-        return self.permissions_cache.get_permissions(self.id)
+        return self.site.locations.get_permissions(self.id)
 
     def __unicode__(self):
         return "%s" % (self.path)
@@ -300,7 +300,7 @@ class Location(ValidatedModel):
             LookupError: A site to which location belongs has no user
                 with a given UUID.
         """
-        user = _find(User, uuid=user_uuid, site_id=self.site_id)
+        user = self.site.users.find_item(uuid=user_uuid)
         if user is None:
             raise LookupError('User not found')
         permission = self.permissions().get(user.id)
@@ -335,11 +335,10 @@ class Location(ValidatedModel):
             LookupError: No user with a given UUID or the user can not
                 access the location.
         """
-        user = _find(User, uuid=user_uuid, site_id=self.site_id)
+        user = self.site.users.find_item(uuid=user_uuid)
         if user is None:
             raise LookupError('User not found.')
-        permission = _find(
-            Permission, http_location_id=self.id, user_id=user.id)
+        permission = self.permissions().get(user.id)
         if permission is None:
             raise LookupError('User can not access location.')
         return permission
@@ -464,6 +463,12 @@ class Collection(object):
     def collection_name(self):
         return self.item_name + 's'
 
+    def do_create_item(self, *args, **kwargs):
+        """Only to be called by subclasses."""
+        item = self.model_class.objects.create(site=self.site, **kwargs)
+        item.site = self.site
+        return item
+
 class UsersCollection(Collection):
     """Collection of users resources."""
 
@@ -495,14 +500,10 @@ class UsersCollection(Collection):
         encoded_email = _encode_email(email)
         if encoded_email is None:
             raise ValidationError('Invalid email format.')
-        if _find(User, email=encoded_email,
-                 site_id=self.site.site_id) is not None:
+        if self.find_item_by_email(encoded_email) is not None:
             raise ValidationError('User already exists.')
-        site = _find(Site, site_id=self.site.site_id)
-        if site is None:
-            raise ValidationError('site no longer exists.')
-        return User.objects.create(
-            uuid=str(uuidgen.uuid4()), email=encoded_email, site=site)
+        return self.do_create_item(
+            uuid=str(uuidgen.uuid4()), email=encoded_email)
 
     def find_item_by_email(self, email):
         encoded_email = _encode_email(email)
@@ -531,15 +532,15 @@ class LocationsCollection(Collection):
         # single query.
         self._cached_permissions = {}
         for location in self.all():
-            location.permissions_cache = self
             self._cached_permissions[location.id] = {}
         for p in Permission.objects.filter(site=self.site):
             self._cached_permissions[p.http_location_id][p.user_id] = p
 
-    def get_permissions(self, site_id):
+    def get_permissions(self, location_id):
+        """Returns permissions for a given location of the site."""
         if self.is_cache_obsolete():
             self.update_cache()
-        return self._cached_permissions.get(site_id, {})
+        return self._cached_permissions.get(location_id, {})
 
     @modify_site
     def create_item(self, path):
@@ -581,13 +582,10 @@ class LocationsCollection(Collection):
             raise ValidationError(
                 'Path should contain only ascii characters.')
 
-        if _find(Location, path=path, site=self.site) is not None:
+        if self.get_unique(lambda item: item.path == path) is not None:
             raise ValidationError('Location already exists.')
 
-        location = Location.objects.create(path=path, site=self.site)
-        location.site = self.site
-        location.permissions_cache = self
-        return location
+        return self.do_create_item(path=path)
 
 
     def find_location(self, canonical_path):
@@ -622,7 +620,7 @@ class LocationsCollection(Collection):
         return longest_matched_location
 
     def has_open_location_with_login(self):
-        for location in Location.objects.filter(site=self.site):
+        for location in self.all():
             if (location.open_access_granted() and
                 location.open_access_requires_login()):
                 return True
