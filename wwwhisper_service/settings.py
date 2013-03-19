@@ -180,6 +180,11 @@ LOGGING = {
             'propagate': True,
             'level': level,
             },
+        'django.db': {
+            'handlers': ['console'],
+            'propagate': True,
+            'level': level,
+            },
         }
     }
 
