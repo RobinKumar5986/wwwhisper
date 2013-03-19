@@ -36,8 +36,7 @@ class StaticFileView(View):
 
     asset = None
 
-    @method_decorator(cache_page(60 * 60 * 5))
-    @method_decorator(cache_control(private=True))
+    @method_decorator(cache_control(private=True, max_age=60 * 60 * 5))
     def get(self, request):
         return self.do_get(self.asset.body)
 
