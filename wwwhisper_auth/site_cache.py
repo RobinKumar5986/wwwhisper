@@ -37,6 +37,7 @@ def get_mod_id(site, connection):
         'SELECT mod_id FROM wwwhisper_auth_site WHERE site_id = %s',
         [site.site_id])
     row = cursor.fetchone()
+    cursor.close()
     if row is None:
         return None
     return row[0]

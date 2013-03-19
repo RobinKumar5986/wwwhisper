@@ -109,6 +109,7 @@ class Site(ValidatedModel):
         cursor.execute(
             'UPDATE wwwhisper_auth_site '
             'SET mod_id = mod_id + 1 WHERE site_id = %s', [self.site_id])
+        cursor.close()
         self.mod_id = wwwhisper_auth.site_cache.get_mod_id(self, connection)
         transaction.commit_unless_managed()
         assert self.mod_id is not None
@@ -463,7 +464,7 @@ class Collection(object):
     def collection_name(self):
         return self.item_name + 's'
 
-    def do_create_item(self, *args, **kwargs):
+    def _do_create_item(self, *args, **kwargs):
         """Only to be called by subclasses."""
         item = self.model_class.objects.create(site=self.site, **kwargs)
         item.site = self.site
@@ -502,7 +503,7 @@ class UsersCollection(Collection):
             raise ValidationError('Invalid email format.')
         if self.find_item_by_email(encoded_email) is not None:
             raise ValidationError('User already exists.')
-        return self.do_create_item(
+        return self._do_create_item(
             uuid=str(uuidgen.uuid4()), email=encoded_email)
 
     def find_item_by_email(self, email):
@@ -585,7 +586,7 @@ class LocationsCollection(Collection):
         if self.get_unique(lambda item: item.path == path) is not None:
             raise ValidationError('Location already exists.')
 
-        return self.do_create_item(path=path)
+        return self._do_create_item(path=path)
 
 
     def find_location(self, canonical_path):
