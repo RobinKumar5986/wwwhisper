@@ -532,10 +532,9 @@ class LocationsCollection(Collection):
         # Retrieves permissions for all locations of the site with a
         # single query.
         self._cached_permissions = {}
-        for location in self.all():
-            self._cached_permissions[location.id] = {}
         for p in Permission.objects.filter(site=self.site):
-            self._cached_permissions[p.http_location_id][p.user_id] = p
+            self._cached_permissions.setdefault(
+                p.http_location_id, {})[p.user_id] = p
 
     def get_permissions(self, location_id):
         """Returns permissions for a given location of the site."""
