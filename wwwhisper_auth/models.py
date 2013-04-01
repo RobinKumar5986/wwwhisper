@@ -14,13 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Data model for the access control mechanism.
+"""Data model for the site access control rules.
 
-Stores information about sites, locations, users and permissions. A
-site has users, locations (paths) and permissions - rules that define
-which user can access which locations. Sites are isolated. Users and
-locations are associated with a single site and are used only for this
-site.
+Each site has users, locations (paths) and permissions - rules that
+define which user can access which locations. Sites are
+isolated. Users and locations are associated with a single site and
+are used only for this site.
 
 Provides methods that map to REST operations that can be performed on
 users, locations and permissions resources. Allows to retrieve
@@ -43,11 +42,11 @@ from functools import wraps
 from wwwhisper_auth import  url_path
 from wwwhisper_auth import  email_re
 
+import wwwhisper_auth.site_cache
 import logging
 import random
 import re
 import uuid as uuidgen
-import wwwhisper_auth.site_cache
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +100,7 @@ class Site(ValidatedModel):
         self.users = UsersCollection(self)
 
     def site_modified(self):
-        """Increases site modification id.
+        """Increases the site modification id.
 
         This causes the site to be refreshed in web processes caches.
         """
@@ -110,11 +109,40 @@ class Site(ValidatedModel):
             'UPDATE wwwhisper_auth_site '
             'SET mod_id = mod_id + 1 WHERE site_id = %s', [self.site_id])
         cursor.close()
-        self.mod_id = wwwhisper_auth.site_cache.get_mod_id(self, connection)
+        self.mod_id = self.mod_id_from_db(connection)
         transaction.commit_unless_managed()
         assert self.mod_id is not None
 
-# TODO: Rename to avoid confusion with module name.
+    def mod_id_from_db(self, connection):
+        """Retrieves from the DB a current modification identifier for the site.
+
+        Returns None if the site no longer exists in the DB.
+        """
+        cursor = connection.cursor()
+        cursor.execute(
+            'SELECT mod_id FROM wwwhisper_auth_site WHERE site_id = %s',
+            [self.site_id])
+        row = cursor.fetchone()
+        cursor.close()
+        if row is None:
+            return None
+        return row[0]
+
+def modify_site(decorated_method):
+    """Must decorate all methods that change data associated with the site.
+
+    Makes sure site is marked as modified and other Django processes
+    will retrieve new data from the DB instead of using cached data.
+    """
+
+    @wraps(decorated_method)
+    def wrapper(self, *args, **kwargs):
+        result = decorated_method(self, *args, **kwargs)
+        # If no exception.
+        self.site.site_modified()
+        return result
+    return wrapper
+
 site_cache = wwwhisper_auth.site_cache.SiteCache()
 
 def create_site(site_id):
@@ -153,21 +181,6 @@ def delete_site(site_id):
     site.locations.__dict__.clear()
     site.users.__dict__.clear()
     return True
-
-def modify_site(decorated_method):
-    """Must decorate all methods that change data associated with the site.
-
-    Makes sure site is marked as modified and other Django processes
-    will retrieve new data from the DB instead of using cached data.
-    """
-
-    @wraps(decorated_method)
-    def wrapper(self, *args, **kwargs):
-        result = decorated_method(self, *args, **kwargs)
-        # If no exception.
-        self.site.site_modified()
-        return result
-    return wrapper
 
 class User(AbstractBaseUser):
     # Site to which the user belongs.
