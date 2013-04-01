@@ -17,7 +17,10 @@
 from django.conf import settings
 from django.http import HttpRequest
 from django.test import TestCase
-from wwwhisper_auth.site import SiteMiddleware
+from mock import Mock
+from wwwhisper_auth.middleware import ProtectCookiesMiddleware
+from wwwhisper_auth.middleware import SiteMiddleware
+from wwwhisper_auth import http
 from wwwhisper_auth import models
 
 class SiteMiddlewareFromSettingsTest(TestCase):
@@ -114,3 +117,34 @@ class SiteMiddlewareFromFrontendTest(TestCase):
         r.META['HTTP_SITE_URL'] = 'https://bar.example.org'
         self.assertIsNone(middleware.process_request(r))
         self.assertTrue(r.https)
+
+
+class ProtectCookiesMiddlewareTest(TestCase):
+
+    def create_request(self):
+        r = Mock()
+        r.META = {}
+        return r
+
+    def test_secure_flag_set_for_https_request(self):
+        middleware = ProtectCookiesMiddleware()
+        request = self.create_request()
+        request.https = True
+        response = http.HttpResponseNoContent()
+        response.set_cookie('session', value='foo', secure=None)
+
+        self.assertFalse(response.cookies['session']['secure'])
+        response = middleware.process_response(request, response)
+        self.assertTrue(response.cookies['session']['secure'])
+
+    def test_secure_flag_not_set_for_http_request(self):
+        middleware = ProtectCookiesMiddleware()
+        request = self.create_request()
+        request.https = False
+        response = http.HttpResponseNoContent()
+        response.set_cookie('session', value='foo', secure=None)
+
+        self.assertFalse(response.cookies['session']['secure'])
+        response = middleware.process_response(request, response)
+        self.assertFalse(response.cookies['session']['secure'])
+

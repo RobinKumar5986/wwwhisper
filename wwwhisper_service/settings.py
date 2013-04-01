@@ -76,10 +76,10 @@ MIDDLEWARE_CLASSES = (
     #'wwwhisper_service.profile.ProfileMiddleware',
     # Must go before CommonMiddleware, to set a correct url to which
     # CommonMiddleware redirects.
-    'wwwhisper_auth.site.SiteMiddleware',
+    'wwwhisper_auth.middleware.SiteMiddleware',
     'django.middleware.common.CommonMiddleware',
     # Must be placed before session middleware to alter session cookies.
-    'wwwhisper_auth.protect_cookies.ProtectCookiesMiddleware',
+    'wwwhisper_auth.middleware.ProtectCookiesMiddleware',
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

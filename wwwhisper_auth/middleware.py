@@ -37,6 +37,7 @@ if SITE_URL and SITE_URL_FROM_FRONT_END:
     raise ImproperlyConfigured(
         'SITE_URL and SITE_URL_FROM_FRONTEND can not be set together.')
 
+
 class SiteMiddleware(object):
     """Determines to which site a request is related"""
 
@@ -70,3 +71,16 @@ class SiteMiddleware(object):
         request.https = self._is_https(request.site_url)
         return None
 
+
+class ProtectCookiesMiddleware(object):
+    """Sets 'secure' flag for all cookies if request is over https.
+
+    The flag prevents cookies from being sent with HTTP requests.
+    """
+
+    def process_response(self, request, response):
+        # response.cookies is SimpleCookie (Python 'Cookie' module).
+        for cookie in response.cookies.itervalues():
+            if request.https:
+                cookie['secure'] = True
+        return response
