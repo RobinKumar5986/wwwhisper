@@ -15,10 +15,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf import settings
+from wwwhisper_auth.models import SitesCollection
 from wwwhisper_auth.tests.utils import HttpTestCase
 
 import json
-import wwwhisper_auth.models
 
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
 TEST_USER_EMAIL = 'foo@bar.org'
@@ -34,7 +34,7 @@ def extract_uuid(urn):
 class AdminViewTestCase(HttpTestCase):
 
     def setUp(self):
-        self.site = wwwhisper_auth.models.create_site(TEST_SITE)
+        self.site = SitesCollection().create_item(TEST_SITE)
 
     def add_user(self, user_name=TEST_USER_EMAIL):
         response = self.post('/admin/api/users/', {'email' : user_name})

@@ -45,6 +45,7 @@ class SiteMiddleware(object):
         return (url[:5].lower() == 'https')
 
     def __init__(self, site_url=SITE_URL):
+        self.sites = models.SitesCollection()
         self.site_url_from_front_end = (site_url is None)
         if not self.site_url_from_front_end:
             self.site_url = site_url
@@ -65,7 +66,7 @@ class SiteMiddleware(object):
             request.META[settings.SECURE_PROXY_SSL_HEADER[0]] = scheme
             request.META['HTTP_X_FORWARDED_HOST'] = host
         else:
-            request.site = models.find_site(self.site_url)
+            request.site = self.sites.find_item(self.site_url)
             request.site_url = self.site_url
 
         request.https = self._is_https(request.site_url)

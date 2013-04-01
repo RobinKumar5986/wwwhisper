@@ -18,20 +18,21 @@ from django.conf import settings
 from django.http import HttpRequest
 from django.test import TestCase
 from mock import Mock
+from wwwhisper_auth import http
 from wwwhisper_auth.middleware import ProtectCookiesMiddleware
 from wwwhisper_auth.middleware import SiteMiddleware
-from wwwhisper_auth import http
-from wwwhisper_auth import models
+from wwwhisper_auth.models import SitesCollection
 
 class SiteMiddlewareFromSettingsTest(TestCase):
 
     def test_site_from_settings(self):
         site_url = 'http://foo.example.org'
-        models.create_site(site_url)
+        site = SitesCollection().create_item(site_url)
         middleware = SiteMiddleware(site_url)
         r = HttpRequest()
 
         self.assertIsNone(middleware.process_request(r))
+        self.assertTrue(site is r.site)
         self.assertEqual(site_url, r.site.site_id)
         self.assertEqual(site_url, r.site_url)
 

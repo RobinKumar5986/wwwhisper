@@ -33,7 +33,7 @@ SITE_URL = getattr(settings, 'SITE_URL', None)
 def _create_site():
     """Creates a site configured in settings.py."""
     try:
-        return auth_models.create_site(SITE_URL)
+        return auth_models.SitesCollection().create_item(SITE_URL)
     except ValidationError as ex:
         raise ImproperlyConfigured('Failed to create site %s: %s'
                                    % (SITE_URL, ex))

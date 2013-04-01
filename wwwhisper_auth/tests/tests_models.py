@@ -20,7 +20,8 @@ from django.forms import ValidationError
 from django.test import TestCase
 from contextlib import contextmanager
 from functools import wraps
-from wwwhisper_auth import models
+from wwwhisper_auth.models import LimitExceeded
+from wwwhisper_auth.models import SitesCollection
 
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
 TEST_SITE = 'https://example.com'
@@ -30,30 +31,33 @@ TEST_LOCATION = '/pub/kika'
 
 class SitesTest(TestCase):
     def test_create_site(self):
-        site = models.create_site(TEST_SITE)
+        site = SitesCollection().create_item(TEST_SITE)
         self.assertEqual(TEST_SITE, site.site_id)
 
     def test_create_site_twice(self):
-        site = models.create_site(TEST_SITE)
+        sites = SitesCollection()
+        site = sites.create_item(TEST_SITE)
         self.assertRaisesRegexp(ValidationError,
                                 'Site .* already exists.',
-                                models.create_site,
+                                sites.create_item,
                                 TEST_SITE)
 
     def test_find_site(self):
-        site1 = models.create_site(TEST_SITE)
-        site2 = models.find_site(TEST_SITE)
+        sites = SitesCollection()
+        site1 = sites.create_item(TEST_SITE)
+        site2 = sites.find_item(TEST_SITE)
         self.assertIsNotNone(site2)
         self.assertEqual(site1, site2)
 
     def test_delete_site(self):
-        site1 = models.create_site(TEST_SITE)
+        sites = SitesCollection()
+        site1 = sites.create_item(TEST_SITE)
 
         self.assertIsNotNone(site1.locations.site)
         self.assertIsNotNone(site1.users.site)
 
-        self.assertTrue(models.delete_site(TEST_SITE))
-        self.assertIsNone(models.find_site(TEST_SITE))
+        self.assertTrue(sites.delete_item(TEST_SITE))
+        self.assertIsNone(sites.find_item(TEST_SITE))
 
         # Make sure locations can not be accidentally accessed.
         self.assertRaisesRegexp(AttributeError,
@@ -69,7 +73,8 @@ class SitesTest(TestCase):
 
 class CollectionTestCase(TestCase):
     def setUp(self):
-        self.site = models.create_site(TEST_SITE)
+        self.sites = SitesCollection()
+        self.site = self.sites.create_item(TEST_SITE)
         self.locations = self.site.locations
         self.users = self.site.users
 
@@ -118,7 +123,7 @@ class SiteModifiedTest(CollectionTestCase):
 class UsersCollectionTest(CollectionTestCase):
     def setUp(self):
         super(UsersCollectionTest, self).setUp()
-        self.site2 = models.create_site(TEST_SITE2)
+        self.site2 = self.sites.create_item(TEST_SITE2)
 
     def test_create_user(self):
         with self.assert_site_modified(self.site):
@@ -140,7 +145,7 @@ class UsersCollectionTest(CollectionTestCase):
     def test_delete_site_deletes_user(self):
         user = self.users.create_item(TEST_USER_EMAIL)
         self.assertEqual(1, user.__class__.objects.filter(id=user.id).count())
-        self.assertTrue(models.delete_site(self.site.site_id))
+        self.assertTrue(self.sites.delete_item(self.site.site_id))
         self.assertEqual(0, user.__class__.objects.filter(id=user.id).count())
 
     def test_find_user_by_email(self):
@@ -272,7 +277,7 @@ class UsersCollectionTest(CollectionTestCase):
         self.site.users_limit = limit
         for i in range(0, limit):
             self.users.create_item('foo%d@bar.com' % (i))
-        self.assertRaisesRegexp(models.LimitExceeded,
+        self.assertRaisesRegexp(LimitExceeded,
                                 'Users limit exceeded',
                                 self.users.create_item,
                                 'foo10@bar.com')
@@ -280,7 +285,7 @@ class UsersCollectionTest(CollectionTestCase):
 class LocationsCollectionTest(CollectionTestCase):
     def setUp(self):
         super(LocationsCollectionTest, self).setUp()
-        self.site2 = models.create_site(TEST_SITE2)
+        self.site2 = self.sites.create_item(TEST_SITE2)
 
     def test_create_location(self):
         with self.assert_site_modified(self.site):
@@ -292,7 +297,7 @@ class LocationsCollectionTest(CollectionTestCase):
         location = self.locations.create_item(TEST_LOCATION)
         self.assertEqual(
             1, location.__class__.objects.filter(id=location.id).count())
-        self.assertTrue(models.delete_site(self.site.site_id))
+        self.assertTrue(self.sites.delete_item(self.site.site_id))
         self.assertEqual(
             0, location.__class__.objects.filter(id=location.id).count())
 
@@ -649,7 +654,7 @@ class LocationsCollectionTest(CollectionTestCase):
         self.site.locations_limit = limit
         for i in range(0, limit):
             self.locations.create_item('/foo%d' % (i))
-        self.assertRaisesRegexp(models.LimitExceeded,
+        self.assertRaisesRegexp(LimitExceeded,
                                 'Locations limit exceeded',
                                 self.locations.create_item,
                                 '/foo10')

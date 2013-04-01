@@ -145,42 +145,44 @@ def modify_site(decorated_method):
 
 site_cache = wwwhisper_auth.site_cache.SiteCache()
 
-def create_site(site_id):
-    """Creates a new Site object.
+class SitesCollection:
 
-    Args:
-       site_id: A domain or other id of the created site.
-    Raises:
-       ValidationError if a site with such id already exists.
-    """
-    site =  Site.objects.create(site_id=site_id)
-    site.heavy_init()
-    site_cache.insert(site)
-    return site
+    def create_item(self, site_id):
+        """Creates a new Site object.
 
-def find_site(site_id):
-    site = site_cache.get(site_id)
-    if site is not None:
-        return site
-    site = _find(Site, site_id=site_id)
-    if site is not None:
+        Args:
+           site_id: A domain or other id of the created site.
+        Raises:
+           ValidationError if a site with a given id already exists.
+        """
+        site =  Site.objects.create(site_id=site_id)
         site.heavy_init()
         site_cache.insert(site)
-    return site
+        return site
 
-def delete_site(site_id):
-    site = find_site(site_id)
-    if site is None:
-        return False
-    # Users, Locations and Permissions have foreign key to the Site
-    # and are deleted automatically.
-    site_cache.delete(site_id)
-    site.delete()
-    # Makes sure error is raised if collections are accessed after the
-    # site is deleted.
-    site.locations.__dict__.clear()
-    site.users.__dict__.clear()
-    return True
+    def find_item(self, site_id):
+        site = site_cache.get(site_id)
+        if site is not None:
+            return site
+        site = _find(Site, site_id=site_id)
+        if site is not None:
+            site.heavy_init()
+            site_cache.insert(site)
+        return site
+
+    def delete_item(self, site_id):
+        site = self.find_item(site_id)
+        if site is None:
+            return False
+        # Users, Locations and Permissions have foreign key to the Site
+        # and are deleted automatically.
+        site_cache.delete(site_id)
+        site.delete()
+        # Makes sure error is raised if collections are accessed after the
+        # site is deleted.
+        site.locations.__dict__.clear()
+        site.users.__dict__.clear()
+        return True
 
 class User(AbstractBaseUser):
     # Site to which the user belongs.

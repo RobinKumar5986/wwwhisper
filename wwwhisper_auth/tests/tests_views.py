@@ -18,7 +18,7 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from wwwhisper_auth import backend
-from wwwhisper_auth import models
+from wwwhisper_auth.models import SitesCollection
 from wwwhisper_auth.tests.utils import HttpTestCase
 
 import json
@@ -36,7 +36,8 @@ class FakeAssertionVeryfingBackend(ModelBackend):
 
 class AuthTestCase(HttpTestCase):
     def setUp(self):
-        self.site = models.create_site(TEST_SITE)
+        self.sites = SitesCollection()
+        self.site = self.sites.create_item(TEST_SITE)
         settings.AUTHENTICATION_BACKENDS = (
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
         super(AuthTestCase, self).setUp()
@@ -108,7 +109,7 @@ class AuthTest(AuthTestCase):
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_for_user_of_other_site(self):
-        site2 = models.create_site('somesite')
+        site2 = self.sites.create_item('somesite')
         user = site2.users.create_item('foo@example.com')
         location = self.site.locations.create_item('/foo/')
         self.login('foo@example.com', site2)
@@ -250,7 +251,7 @@ class WhoAmITest(AuthTestCase):
         self.assertEqual('foo@example.com', parsed_response_body['email'])
 
     def test_whoami_for_user_of_differen_site(self):
-        site2 = models.create_site('somesite')
+        site2 = self.sites.create_item('somesite')
         site2.users.create_item('foo@example.com')
         self.login('foo@example.com', site2)
         # Not authorized.
