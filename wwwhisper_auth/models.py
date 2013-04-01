@@ -146,11 +146,10 @@ def delete_site(site_id):
         return False
     # Users, Locations and Permissions have foreign key to the Site
     # and are deleted automatically.
-    map(lambda user: user.delete(), site.users.all())
     site_cache.delete(site_id)
     site.delete()
-    # Makes sure error is raised if collections are accidentally
-    # accessed after the site is deleted.
+    # Makes sure error is raised if collections are accessed after the
+    # site is deleted.
     site.locations.__dict__.clear()
     site.users.__dict__.clear()
     return True
