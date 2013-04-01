@@ -296,6 +296,6 @@ class SessionCacheTest(AuthTestCase):
         mod_id = self.site.mod_id
         response = self.post('/auth/api/logout/', {})
         self.assertEqual(204, response.status_code)
+        self.assertNotEqual(mod_id, self.site.mod_id_from_db())
         s = self.client.session
         self.assertFalse(s.has_key('user-data'))
-        self.assertNotEqual(mod_id, self.site.mod_id)

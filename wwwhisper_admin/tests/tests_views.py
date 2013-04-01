@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf import settings
-from wwwhisper_auth.models import SitesCollection
+from wwwhisper_auth.models import Site, SitesCollection
 from wwwhisper_auth.tests.utils import HttpTestCase
 
 import json
@@ -122,7 +122,7 @@ class UserTest(AdminViewTestCase):
 
     def test_users_limit(self):
         limit = 8
-        self.site.users_limit = limit
+        Site.users_limit = limit
         for i in range(0, limit):
             email = '%s%d' % (TEST_USER_EMAIL, i)
             response = self.post('/admin/api/users/', {'email' : email})
@@ -290,7 +290,7 @@ class LocationTest(AdminViewTestCase):
 
     def test_locations_limit(self):
         limit = 7
-        self.site.locations_limit = limit
+        Site.locations_limit = limit
         for i in range(0, limit):
             path = '%s%d' % (TEST_LOCATION, i)
             response = self.post('/admin/api/locations/', {'path' : path})

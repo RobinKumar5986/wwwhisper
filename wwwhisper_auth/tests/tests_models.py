@@ -59,18 +59,6 @@ class SitesTest(TestCase):
         self.assertTrue(sites.delete_item(TEST_SITE))
         self.assertIsNone(sites.find_item(TEST_SITE))
 
-        # Make sure locations can not be accidentally accessed.
-        self.assertRaisesRegexp(AttributeError,
-                                "no attribute 'site'",
-                                getattr,
-                                site1.locations,
-                                'site')
-        self.assertRaisesRegexp(AttributeError,
-                                "no attribute 'site'",
-                                getattr,
-                                site1.users,
-                                'site')
-
 class CollectionTestCase(TestCase):
     def setUp(self):
         self.sites = SitesCollection()

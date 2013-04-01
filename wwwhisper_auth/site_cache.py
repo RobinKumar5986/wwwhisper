@@ -24,9 +24,8 @@ auth-requests. Because these requests are read only, caching is very
 efficient (cached data rarely needs to be updated).
 """
 
-from django.db import connection
-
 import logging
+from wwwhisper_auth.models import SitesCollection
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ class CacheUpdater(object):
     """
 
     def is_obsolete(self, site):
-        mod_id = site.mod_id_from_db(connection)
+        mod_id = site.mod_id_from_db()
         return mod_id is None or mod_id != site.mod_id
 
 class SiteCache(object):
@@ -61,3 +60,28 @@ class SiteCache(object):
 
     def delete(self, site_id):
         self._items.pop(site_id, None)
+
+class CachingSitesCollection(SitesCollection):
+    """Like models.SitesCollection but returns cached results when possible."""
+
+    def __init__(self):
+        self.site_cache = SiteCache()
+
+    def create_item(self, site_id):
+        site = super(CachingSitesCollection, self).create_item(site_id=site_id)
+        self.site_cache.insert(site)
+        return site
+
+    def find_item(self, site_id):
+        site = self.site_cache.get(site_id)
+        if site is not None:
+            return site
+        site = super(CachingSitesCollection, self).find_item(site_id=site_id)
+        if site is not None:
+            self.site_cache.insert(site)
+        return site
+
+    def delete_item(self, site_id):
+        rv = super(CachingSitesCollection, self).delete_item(site_id=site_id)
+        self.site_cache.delete(site_id)
+        return rv

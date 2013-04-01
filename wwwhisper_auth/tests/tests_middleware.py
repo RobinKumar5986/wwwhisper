@@ -32,7 +32,6 @@ class SiteMiddlewareFromSettingsTest(TestCase):
         r = HttpRequest()
 
         self.assertIsNone(middleware.process_request(r))
-        self.assertTrue(site is r.site)
         self.assertEqual(site_url, r.site.site_id)
         self.assertEqual(site_url, r.site_url)
 

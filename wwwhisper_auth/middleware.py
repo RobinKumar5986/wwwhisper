@@ -17,7 +17,7 @@
 from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
 from wwwhisper_auth import http
-from wwwhisper_auth import models
+from wwwhisper_auth.site_cache import CachingSitesCollection
 
 import logging
 
@@ -45,7 +45,7 @@ class SiteMiddleware(object):
         return (url[:5].lower() == 'https')
 
     def __init__(self, site_url=SITE_URL):
-        self.sites = models.SitesCollection()
+        self.sites = CachingSitesCollection()
         self.site_url_from_front_end = (site_url is None)
         if not self.site_url_from_front_end:
             self.site_url = site_url

@@ -42,7 +42,6 @@ from functools import wraps
 from wwwhisper_auth import  url_path
 from wwwhisper_auth import  email_re
 
-import wwwhisper_auth.site_cache
 import logging
 import random
 import re
@@ -83,11 +82,11 @@ class Site(ValidatedModel):
     """
     site_id = models.TextField(primary_key=True, db_index=True, editable=False)
     mod_id = models.IntegerField(default=0)
+    users_limit = None
+    locations_limit = None
 
     def __init__(self, *args, **kwargs):
         super(Site, self).__init__(*args, **kwargs)
-        self.users_limit = None
-        self.locations_limit = None
 
     def heavy_init(self):
         """Creates collections of all site-related data.
@@ -109,11 +108,11 @@ class Site(ValidatedModel):
             'UPDATE wwwhisper_auth_site '
             'SET mod_id = mod_id + 1 WHERE site_id = %s', [self.site_id])
         cursor.close()
-        self.mod_id = self.mod_id_from_db(connection)
+        self.mod_id = self.mod_id_from_db()
         transaction.commit_unless_managed()
         assert self.mod_id is not None
 
-    def mod_id_from_db(self, connection):
+    def mod_id_from_db(self):
         """Retrieves from the DB a current modification identifier for the site.
 
         Returns None if the site no longer exists in the DB.
@@ -143,9 +142,8 @@ def modify_site(decorated_method):
         return result
     return wrapper
 
-site_cache = wwwhisper_auth.site_cache.SiteCache()
 
-class SitesCollection:
+class SitesCollection(object):
 
     def create_item(self, site_id):
         """Creates a new Site object.
@@ -157,17 +155,12 @@ class SitesCollection:
         """
         site =  Site.objects.create(site_id=site_id)
         site.heavy_init()
-        site_cache.insert(site)
         return site
 
     def find_item(self, site_id):
-        site = site_cache.get(site_id)
-        if site is not None:
-            return site
         site = _find(Site, site_id=site_id)
         if site is not None:
             site.heavy_init()
-            site_cache.insert(site)
         return site
 
     def delete_item(self, site_id):
@@ -176,12 +169,7 @@ class SitesCollection:
             return False
         # Users, Locations and Permissions have foreign key to the Site
         # and are deleted automatically.
-        site_cache.delete(site_id)
         site.delete()
-        # Makes sure error is raised if collections are accessed after the
-        # site is deleted.
-        site.locations.__dict__.clear()
-        site.users.__dict__.clear()
         return True
 
 class User(AbstractBaseUser):
