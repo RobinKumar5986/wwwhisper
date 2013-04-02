@@ -85,3 +85,5 @@ class CachingSitesCollection(SitesCollection):
         rv = super(CachingSitesCollection, self).delete_item(site_id=site_id)
         self.site_cache.delete(site_id)
         return rv
+
+sites = CachingSitesCollection()
