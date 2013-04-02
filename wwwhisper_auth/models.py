@@ -45,6 +45,7 @@ from wwwhisper_auth import  email_re
 import logging
 import random
 import re
+import threading
 import uuid as uuidgen
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,9 @@ class Site(ValidatedModel):
 
     def __init__(self, *args, **kwargs):
         super(Site, self).__init__(*args, **kwargs)
+        # Synchronizes mod id that can be read by a cache updating
+        # thread.
+        self.mod_id_lock = threading.Lock()
 
     def heavy_init(self):
         """Creates collections of all site-related data.
@@ -108,9 +112,16 @@ class Site(ValidatedModel):
             'UPDATE wwwhisper_auth_site '
             'SET mod_id = mod_id + 1 WHERE site_id = %s', [self.site_id])
         cursor.close()
-        self.mod_id = self.mod_id_from_db()
+        mod_id = self.mod_id_from_db()
         transaction.commit_unless_managed()
-        assert self.mod_id is not None
+        with self.mod_id_lock:
+            self.mod_id = mod_id
+
+    def get_mod_id_ts():
+        """This method can be safely invoked by a non main thread"""
+
+        with self.mod_id_lock:
+            return self.mod_id
 
     def mod_id_from_db(self):
         """Retrieves from the DB a current modification identifier for the site.
