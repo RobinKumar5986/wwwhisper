@@ -117,9 +117,8 @@ class Site(ValidatedModel):
         with self.mod_id_lock:
             self.mod_id = mod_id
 
-    def get_mod_id_ts():
+    def get_mod_id_ts(self):
         """This method can be safely invoked by a non main thread"""
-
         with self.mod_id_lock:
             return self.mod_id
 

@@ -71,6 +71,7 @@ class CollectionTestCase(TestCase):
         mod_id = site.mod_id
         yield
         self.assertNotEqual(mod_id, site.mod_id)
+        self.assertEqual(site.mod_id, site.get_mod_id_ts())
 
     @contextmanager
     def assert_site_not_modified(self, site):
