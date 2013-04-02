@@ -145,7 +145,7 @@ def modify_site(decorated_method):
 
 class SitesCollection(object):
 
-    def create_item(self, site_id):
+    def create_item(self, site_id, **kwargs):
         """Creates a new Site object.
 
         Args:
@@ -153,7 +153,7 @@ class SitesCollection(object):
         Raises:
            ValidationError if a site with a given id already exists.
         """
-        site =  Site.objects.create(site_id=site_id)
+        site =  Site.objects.create(site_id=site_id, **kwargs)
         site.heavy_init()
         return site
 

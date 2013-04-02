@@ -67,8 +67,9 @@ class CachingSitesCollection(SitesCollection):
     def __init__(self):
         self.site_cache = SiteCache()
 
-    def create_item(self, site_id):
-        site = super(CachingSitesCollection, self).create_item(site_id=site_id)
+    def create_item(self, site_id, **kwargs):
+        site = super(CachingSitesCollection, self).create_item(
+            site_id=site_id, **kwargs)
         self.site_cache.insert(site)
         return site
 
