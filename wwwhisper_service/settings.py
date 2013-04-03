@@ -143,6 +143,7 @@ LOGGING = {
         'verbose': {
             'format': '%(levelname)s %(asctime)s %(name)s %(message)s'
             },
+        # See http://docs.python.org/2/library/logging.html#logrecord-attributes
         'simple': {
             'format': '%(levelname)s %(name)s %(message)s'
             },

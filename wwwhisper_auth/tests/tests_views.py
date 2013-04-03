@@ -46,10 +46,14 @@ class AuthTestCase(HttpTestCase):
         if site is None:
             site = self.site
         self.assertTrue(self.client.login(assertion=email, site=site))
-        # Real login not only sets user object but also site_id in session.
-        #s = self.client.session
-        #s['site_id'] = site.site_id
-        #s.save()
+        # Login needs to set user_id in session.
+        user = site.users.find_item_by_email(email)
+        self.assertIsNotNone(user)
+        # Session must be stored in a temporary variable, otherwise
+        # updating does not work.
+        s = self.client.session
+        s['user_id'] = user.id
+        s.save()
 
 class LoginTest(AuthTestCase):
     def test_login_requires_assertion(self):
@@ -275,27 +279,11 @@ class CsrfTokenTest(AuthTestCase):
 
 class SessionCacheTest(AuthTestCase):
     def test_user_cached_in_session(self):
-        self.site.users.create_item('foo@example.com')
+        user = self.site.users.create_item('foo@example.com')
         response = self.post('/auth/api/login/',
                              {'assertion' : 'foo@example.com'})
         self.assertEqual(204, response.status_code)
         s = self.client.session
-        user = s['user-data']
-        self.assertIsNotNone(user)
-        self.assertIsNotNone(user.uuid)
-        self.assertEqual('foo@example.com', user.email)
-        self.assertEqual(self.site.site_id, user.site_id)
-        self.assertEqual(self.site.mod_id, user.mod_id)
-
-
-    def test_logout_invalidates_user_cache_and_updates_site(self):
-        self.site.users.create_item('foo@example.com')
-        response = self.post('/auth/api/login/',
-                             {'assertion' : 'foo@example.com'})
-        self.assertEqual(204, response.status_code)
-        mod_id = self.site.mod_id
-        response = self.post('/auth/api/logout/', {})
-        self.assertEqual(204, response.status_code)
-        self.assertNotEqual(mod_id, self.site.mod_id_from_db())
-        s = self.client.session
-        self.assertFalse(s.has_key('user-data'))
+        user_id = s['user_id']
+        self.assertIsNotNone(user_id)
+        self.assertEqual(user_id, user.id)

@@ -45,7 +45,7 @@ class SiteMiddleware(object):
         return (url[:5].lower() == 'https')
 
     def __init__(self, site_url=SITE_URL):
-        self.sites = wwwhisper_auth.site_cache.sites
+        self.sites = wwwhisper_auth.site_cache.CachingSitesCollection()
         self.site_url_from_front_end = (site_url is None)
         if not self.site_url_from_front_end:
             self.site_url = site_url

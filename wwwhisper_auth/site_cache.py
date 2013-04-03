@@ -87,4 +87,6 @@ class CachingSitesCollection(SitesCollection):
         self.site_cache.delete(site_id)
         return rv
 
+# TODO: using this leads to problems in unit tests (a single test
+# creates sites that are visible to other tests).
 sites = CachingSitesCollection()

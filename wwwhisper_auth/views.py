@@ -29,48 +29,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-class UserData:
-    """A copy of user data needed for authentication.
-
-    Kept in session key-value store (cached) to improve
-    performance. User table is queried only when the site was
-    modified.
-    """
-    def __init__(self, user):
-        self.id = user.id
-        self.uuid = user.uuid
-        self.email = user.email
-        self.site_id = user.site_id
-        self.mod_id = user.site.mod_id
-
 def get_user(request):
-    """Retrieves up-to-date user object associated with a given request.
+    """Retrieves a user object associated with a given request.
 
-    The user object is retrieved from the session key-value store if
-    the site was not modified since the object was put there. If the
-    site was modified, the user is retrieved from the DB and the
-    session is updated.
+    The user id of a logged in user is stored in the session key-value store.
     """
-
-    cached_user = request.session.get('user-data', None)
-    if cached_user is not None:
-        if cached_user.site_id != request.site.site_id:
-            return None
-        if cached_user.mod_id == request.site.mod_id:
-            return cached_user
-        # Site was modified, session must be removed from cache and
-        # reloaded
-        cache.delete(request.session.cache_key)
-        request.session.load()
-
-    # Makes sure a user is authenticated and belongs to the current
-    # site (auth backend just ensures the user exists).
-    user = request.user
-    if not user.is_authenticated() or user.site_id != request.site.site_id:
-        return None
-    cached_user = UserData(user)
-    request.session['user-data'] = cached_user
-    return cached_user
+    user_id = request.session.get('user_id', None)
+    if user_id is not None:
+        return request.site.users.get_unique(lambda user: user.id == user_id)
+    return None
 
 class Auth(View):
     """Handles auth request from the HTTP server.
@@ -258,7 +225,7 @@ class Login(http.RestView):
             # Store all user data needed by Auth view in session, this
             # way, user table does not need to be queried during the
             # performance critical request (sessions are cached).
-            request.session['user-data'] = UserData(user)
+            request.session['user_id'] = user.id
             logger.debug('%s successfully logged.' % (user.email))
             return http.HttpResponseNoContent()
         else:
@@ -273,8 +240,7 @@ class Logout(http.RestView):
     def post(self, request):
         """Logs a user out (invalidates a session cookie)."""
         auth.logout(request)
-        # Modify site, so other Django processes reject cached user session.
-        request.site.site_modified()
+        # TODO: send a message to all processes to discard cached user session.
         response = http.HttpResponseNoContent()
         return response
 
