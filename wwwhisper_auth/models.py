@@ -362,7 +362,7 @@ class Location(ValidatedModel):
         # [perm.user for perm in self.permissions().itervalues()]
         # but this involves a single DB query per allowed user, going
         # through cached site.users involves no queries.
-        return [self.site.users.get_unique(lambda user: user.id == user_id)
+        return [self.site.users.find_item_by_pk(user_id)
                 for user_id in self.permissions().iterkeys()]
 
     def attributes_dict(self, site_url):
@@ -430,9 +430,11 @@ class Collection(object):
 
     def update_cache(self):
         filter_args = {self.site_id_column_name: self.site.site_id}
-        self._cached_items = []
+        self._cached_items_dict = {}
+        self._cached_items_list = []
         for item in self.model_class.objects.filter(**filter_args):
-            self._cached_items.append(item)
+            self._cached_items_dict[item.id] = item
+            self._cached_items_list.append(item)
             # Use already retrieved site, do not retrieve it again.
             item.site = self.site
         self.cache_mod_id = self.site.mod_id
@@ -443,7 +445,12 @@ class Collection(object):
     def all(self):
         if self.is_cache_obsolete():
             self.update_cache()
-        return self._cached_items
+        return self._cached_items_list
+
+    def all_dict(self):
+        if self.is_cache_obsolete():
+            self.update_cache()
+        return self._cached_items_dict
 
     def count(self):
         return len(self.all())
@@ -463,6 +470,9 @@ class Collection(object):
 
     def find_item(self, uuid):
         return self.get_unique(lambda item: item.uuid == uuid)
+
+    def find_item_by_pk(self, pk):
+        return self.all_dict().get(pk, None)
 
     @modify_site
     def delete_item(self, uuid):

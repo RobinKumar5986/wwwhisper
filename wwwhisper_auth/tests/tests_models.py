@@ -120,10 +120,17 @@ class UsersCollectionTest(CollectionTestCase):
         self.assertEqual(TEST_USER_EMAIL, user.email)
         self.assertEqual(TEST_SITE, user.site_id)
 
-    def test_find_user(self):
+    def test_find_user_by_uuid(self):
         user1 = self.users.create_item(TEST_USER_EMAIL)
         with self.assert_site_not_modified(self.site):
             user2 = self.users.find_item(user1.uuid)
+        self.assertIsNotNone(user2)
+        self.assertEqual(user1, user2)
+
+    def test_find_user_by_pk(self):
+        user1 = self.users.create_item(TEST_USER_EMAIL)
+        with self.assert_site_not_modified(self.site):
+            user2 = self.users.find_item_by_pk(user1.id)
         self.assertIsNotNone(user2)
         self.assertEqual(user1, user2)
 
@@ -290,10 +297,18 @@ class LocationsCollectionTest(CollectionTestCase):
         self.assertEqual(
             0, location.__class__.objects.filter(id=location.id).count())
 
-    def test_find_location_by_id(self):
+    def test_find_location_by_uuid(self):
         location1 = self.locations.create_item(TEST_LOCATION)
         with self.assert_site_not_modified(self.site):
             location2 = self.locations.find_item(location1.uuid)
+        self.assertIsNotNone(location2)
+        self.assertEqual(location1.path, location2.path)
+        self.assertEqual(location1.uuid, location2.uuid)
+
+    def test_find_location_by_pk(self):
+        location1 = self.locations.create_item(TEST_LOCATION)
+        with self.assert_site_not_modified(self.site):
+            location2 = self.locations.find_item_by_pk(location1.id)
         self.assertIsNotNone(location2)
         self.assertEqual(location1.path, location2.path)
         self.assertEqual(location1.uuid, location2.uuid)
