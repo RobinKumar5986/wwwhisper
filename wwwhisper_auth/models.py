@@ -358,7 +358,12 @@ class Location(ValidatedModel):
 
     def allowed_users(self):
         """"Returns a list of users that can access the location."""
-        return [perm.user for perm in self.permissions().itervalues()]
+        # The code could access permission.user like this:
+        # [perm.user for perm in self.permissions().itervalues()]
+        # but this involves a single DB query per allowed user, going
+        # through cached site.users involves no queries.
+        return [self.site.users.get_unique(lambda user: user.id == user_id)
+                for user_id in self.permissions().iterkeys()]
 
     def attributes_dict(self, site_url):
         """Returns externally visible attributes of the location resource."""
