@@ -16,7 +16,7 @@
 
 """Urls exposed by the wwwhisper_admin application."""
 
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 from views import CollectionView, ItemView
 from views import OpenAccessView, AllowedUsersView
 

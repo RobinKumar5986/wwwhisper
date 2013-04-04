@@ -21,7 +21,7 @@ the outside world, other views need to be externally accessible.
 """
 
 from django.conf import settings
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 from wwwhisper_auth.assets import Asset
 from wwwhisper_auth.http import HttpResponseNotAuthenticated
 from wwwhisper_auth.http import HttpResponseNotAuthorized
