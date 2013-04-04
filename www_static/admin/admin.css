@@ -123,6 +123,10 @@ li:hover {
   background: #eeeeee;
 }
 
+.removing {
+ text-decoration: line-through;
+}
+
 .content {
   background: #ffffff;
   border-top: 30px solid transparent;

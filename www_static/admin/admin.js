@@ -5,6 +5,9 @@
  * Licensed under the GPL License version 3 or any later version:
  * https://www.gnu.org/licenses/gpl-3.0.html
  */
+/*jslint browser: true, white: true, indent: 2 */
+/*global  $ */
+/*global wwwhisper */
 (function () {
   'use strict';
 
@@ -310,12 +313,13 @@
                 });
     };
 
-    this.removeLocation = function(location) {
+    this.removeLocation = function(location, failureHandler) {
       stub.ajax('DELETE', location.self, null,
-        function() {
-          utils.removeFromArray(location, that.locations);
-          ui.refresh();
-        });
+                function() {
+                  utils.removeFromArray(location, that.locations);
+                  ui.refresh();
+                },
+                failureHandler);
     };
 
     /**
@@ -329,7 +333,7 @@
                 });
     };
 
-    this.removeUser = function(user) {
+    this.removeUser = function(user, failureHandler) {
       stub.ajax('DELETE', user.self, null,
                 function() {
                   utils.each(that.locations, function(location) {
@@ -339,7 +343,8 @@
                   });
                   utils.removeFromArray(user, that.users);
                   ui.refresh();
-                });
+                },
+               failureHandler);
     };
 
     /**
@@ -421,7 +426,7 @@
     /**
      * Revokes access to a given location by a given user.
      */
-    this.revokeAccess = function(user, location) {
+    this.revokeAccess = function(user, location, failureHandler) {
       stub.ajax(
         'DELETE',
         location.self + 'allowed-users/' + utils.urn2uuid(user.id) + '/',
@@ -429,7 +434,8 @@
         function() {
           that.removeAllowedUser(user, location);
           ui.refresh();
-        });
+        },
+        failureHandler);
     };
 
     /**
@@ -644,6 +650,19 @@
       }
     }
 
+    function removeInProgress(element) {
+      element.css('visibility', 'hidden');
+      element.parent().addClass('removing');
+    }
+
+    function removeFailedHandler(element) {
+      return function(message, status, isTextPlain) {
+        element.parent().removeClass('removing');
+        element.css('visibility', 'visible');
+        that.handleError(message, status, isTextPlain);
+      };
+    }
+
     /**
      * Creates a DOM subtree to handle an active location. The subtree
      * contains emails of allowed users, an input box to grant access
@@ -651,7 +670,7 @@
      * user.
      */
     function showLocationInfo(location) {
-      var locationView, allowedUserList, isAdminLocation, isAdminUser;
+      var locationView, allowedUserList, isAdminLocation;
 
       isAdminLocation = controller.handledByAdmin(location.path);
 
@@ -708,12 +727,14 @@
 
         utils.each(
           utils.sortByProperty(location.allowedUsers, 'email'), function(user) {
-            isAdminUser = (user.email === controller.adminUserEmail);
+            var isAdminUser = (user.email === controller.adminUserEmail);
             view.allowedUser.clone(true)
               .find('.user-mail').text(user.email + userAnnotation(user))
               .end()
               .find('.unshare').click(function() {
-                controller.revokeAccess(user, location);
+                removeInProgress($(this));
+                controller.revokeAccess(
+                  user, location, removeFailedHandler($(this)));
               })
               // Protect the currently signed-in user from disallowing
               // herself access to the admin application.
@@ -741,9 +762,10 @@
           .find('.path').text(location.path)
           .end()
           .find('.remove-location').click(function(event) {
-            // Do not show removed location info.
-            event.preventDefault();
-            controller.removeLocation(location);
+            removeInProgress($(this));
+            controller.removeLocation(location, removeFailedHandler($(this)));
+            // Do not propagete the event (not to show removed location info):
+            return false;
           })
           // Do not allow admin location to be removed.
           .css('visibility', isAdminLocation ? 'hidden' : 'visible')
@@ -856,7 +878,8 @@
         .text(user.email + userAnnotation(user))
         .end()
         .find('.remove-user').click(function() {
-          controller.removeUser(user);
+          removeInProgress($(this));
+          controller.removeUser(user, removeFailedHandler($(this)));
         })
       // Do not allow currently signed-in user to delete herself
       // (this is only UI enforced, from a server perspective such
