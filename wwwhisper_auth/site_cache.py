@@ -42,7 +42,7 @@ class CacheUpdater(object):
         return mod_id is None or mod_id != site.mod_id
 
 class SiteCache(object):
-    def __init__(self, updater=CacheUpdater()):
+    def __init__(self, updater):
         self._updater = updater
         self._items = {}
 
@@ -64,8 +64,10 @@ class SiteCache(object):
 class CachingSitesCollection(SitesCollection):
     """Like models.SitesCollection but returns cached results when possible."""
 
-    def __init__(self):
-        self.site_cache = SiteCache()
+    def __init__(self, site_cache=None):
+        if site_cache is None:
+            site_cache = SiteCache(CacheUpdater())
+        self.site_cache = site_cache
 
     def create_item(self, site_id, **kwargs):
         site = super(CachingSitesCollection, self).create_item(
