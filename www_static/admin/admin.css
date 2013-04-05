@@ -40,7 +40,7 @@ body {
 }
 
 .tooltip {
- overflow: visible;
+  overflow: visible;
 }
 
 .tooltip-inner {
@@ -80,8 +80,8 @@ body {
 }
 
 .can-access {
- margin-left: -27px;
- float: left;
+  margin-left: -27px;
+  float: left;
 }
 
 .in-dialog {
@@ -115,8 +115,8 @@ li,
 }
 
 .user-list-item {
- /* To align icons with locations' icons */
- margin-right: 12px;
+  /* To align icons with locations' icons */
+  margin-right: 12px;
 }
 
 li:hover {
@@ -124,7 +124,12 @@ li:hover {
 }
 
 .removing {
- text-decoration: line-through;
+  text-decoration: line-through;
+}
+
+.granting {
+  border-style: dashed;
+  border-width: 1px;
 }
 
 .content {

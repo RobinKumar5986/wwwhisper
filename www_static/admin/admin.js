@@ -387,7 +387,7 @@
      *
      * Is user with such email does not exist, adds the user first.
      */
-    this.grantAccess = function(email, location) {
+    this.grantAccess = function(email, location, failureHandler) {
       var cleanedEmail, user, grantPermissionCallback;
       cleanedEmail = $.trim(email);
       if (cleanedEmail.length === 0) {
@@ -413,7 +413,9 @@
               location.allowedUsers.push(userArg);
               ui.refresh();
             }
-          });
+          },
+          failureHandler
+        );
       };
 
       if (user !== null) {
@@ -650,17 +652,33 @@
       }
     }
 
-    function removeInProgress(element) {
+    function inProgress(element, cssClass) {
       element.css('visibility', 'hidden');
-      element.parent().addClass('removing');
+      element.parent().addClass(cssClass);
     }
 
-    function removeFailedHandler(element) {
+    function failedHandler(element, cssClass) {
       return function(message, status, isTextPlain) {
-        element.parent().removeClass('removing');
+        element.parent().removeClass(cssClass);
         element.css('visibility', 'visible');
         that.handleError(message, status, isTextPlain);
       };
+    }
+
+    function removeInProgress(element) {
+      inProgress(element, 'removing');
+    }
+
+    function removeFailedHandler(element) {
+      return failedHandler(element, 'removing');
+    }
+
+    function grantingInProgress(element) {
+      inProgress(element, 'granting');
+    }
+
+    function grantFailedHandler(element) {
+      return failedHandler(element, 'granting');
     }
 
     /**
@@ -865,7 +883,9 @@
         userView.find('.share')
           .removeClass('invisible')
           .click(function() {
-            controller.grantAccess(user.email, activeLocation);
+            grantingInProgress($(this));
+            controller.grantAccess(
+              user.email, activeLocation, grantFailedHandler($(this)));
           });
       }
 
