@@ -19,6 +19,7 @@ from django.http import HttpRequest
 from django.test import TestCase
 from mock import Mock
 from wwwhisper_auth import http
+from wwwhisper_auth.middleware import SecuringHeadersMiddleware
 from wwwhisper_auth.middleware import ProtectCookiesMiddleware
 from wwwhisper_auth.middleware import SiteMiddleware
 from wwwhisper_auth.models import SitesCollection
@@ -119,16 +120,16 @@ class SiteMiddlewareFromFrontendTest(TestCase):
         self.assertTrue(r.https)
 
 
-class ProtectCookiesMiddlewareTest(TestCase):
+def create_request():
+    r = Mock()
+    r.META = {}
+    return r
 
-    def create_request(self):
-        r = Mock()
-        r.META = {}
-        return r
+class ProtectCookiesMiddlewareTest(TestCase):
 
     def test_secure_flag_set_for_https_request(self):
         middleware = ProtectCookiesMiddleware()
-        request = self.create_request()
+        request = create_request()
         request.https = True
         response = http.HttpResponseNoContent()
         response.set_cookie('session', value='foo', secure=None)
@@ -139,7 +140,7 @@ class ProtectCookiesMiddlewareTest(TestCase):
 
     def test_secure_flag_not_set_for_http_request(self):
         middleware = ProtectCookiesMiddleware()
-        request = self.create_request()
+        request = create_request()
         request.https = False
         response = http.HttpResponseNoContent()
         response.set_cookie('session', value='foo', secure=None)
@@ -148,3 +149,15 @@ class ProtectCookiesMiddlewareTest(TestCase):
         response = middleware.process_response(request, response)
         self.assertFalse(response.cookies['session']['secure'])
 
+
+class ProtectionHeadersMiddlewareTest(TestCase):
+
+    def test_different_origin_framing_not_allowed(self):
+        middleware = SecuringHeadersMiddleware()
+        request = create_request()
+        response = http.HttpResponseNoContent()
+        self.assertFalse('X-Frame-Options' in response)
+        self.assertFalse('X-Content-Type-Options' in response)
+        response = middleware.process_response(request, response)
+        self.assertEqual('SAMEORIGIN', response['X-Frame-Options'])
+        self.assertEqual('nosniff', response['X-Content-Type-Options'])

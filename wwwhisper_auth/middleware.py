@@ -85,3 +85,13 @@ class ProtectCookiesMiddleware(object):
             if request.https:
                 cookie['secure'] = True
         return response
+
+
+class SecuringHeadersMiddleware(object):
+    """Sets headers that impede clickjacking + content sniffing related attacks.
+    """
+
+    def process_response(self, request, response):
+        response['X-Frame-Options'] = 'SAMEORIGIN'
+        response['X-Content-Type-Options'] = 'nosniff'
+        return response
