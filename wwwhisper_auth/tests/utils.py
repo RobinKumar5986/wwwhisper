@@ -29,6 +29,10 @@ class HttpTestCase(TestCase):
         return self.client.post(
             url, json.dumps(args), 'application/json; charset=UTF-8')
 
+    """ To be used for views that are not contacted via Ajax. """
+    def post_form(self, url, args):
+        return self.client.post(url, args)
+
     def get(self, url):
         return self.client.get(url)
 

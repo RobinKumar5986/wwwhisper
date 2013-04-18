@@ -150,7 +150,7 @@ class ProtectCookiesMiddlewareTest(TestCase):
         self.assertFalse(response.cookies['session']['secure'])
 
 
-class ProtectionHeadersMiddlewareTest(TestCase):
+class SecuringHeadersMiddlewareTest(TestCase):
 
     def test_different_origin_framing_not_allowed(self):
         middleware = SecuringHeadersMiddleware()
