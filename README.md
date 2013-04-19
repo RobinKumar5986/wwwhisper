@@ -86,7 +86,7 @@ request is made to a protected location of the server, the server
 sends a sub-request to wwwhisper to determine if the original request
 should be allowed. For Nginx, an [auth-request
 module](https://github.com/perusio/nginx-auth-request-module) is used
-to sent the sub-request. For Rack, a [wwwhisper
+to send the sub-request. For Rack, a [wwwhisper
 middleware](https://github.com/wrr/rack-wwwhisper) is used.
 
 The sub-request carries a path and headers of the original request.
