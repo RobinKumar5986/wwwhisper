@@ -29,37 +29,7 @@ TEST_SITE2 = 'https://example.org'
 TEST_USER_EMAIL = 'foo@bar.com'
 TEST_LOCATION = '/pub/kika'
 
-class SitesTest(TestCase):
-    def test_create_site(self):
-        site = SitesCollection().create_item(TEST_SITE)
-        self.assertEqual(TEST_SITE, site.site_id)
-
-    def test_create_site_twice(self):
-        sites = SitesCollection()
-        site = sites.create_item(TEST_SITE)
-        self.assertRaisesRegexp(ValidationError,
-                                'Site .* already exists.',
-                                sites.create_item,
-                                TEST_SITE)
-
-    def test_find_site(self):
-        sites = SitesCollection()
-        site1 = sites.create_item(TEST_SITE)
-        site2 = sites.find_item(TEST_SITE)
-        self.assertIsNotNone(site2)
-        self.assertEqual(site1, site2)
-
-    def test_delete_site(self):
-        sites = SitesCollection()
-        site1 = sites.create_item(TEST_SITE)
-
-        self.assertIsNotNone(site1.locations.site)
-        self.assertIsNotNone(site1.users.site)
-
-        self.assertTrue(sites.delete_item(TEST_SITE))
-        self.assertIsNone(sites.find_item(TEST_SITE))
-
-class CollectionTestCase(TestCase):
+class ModelTestCase(TestCase):
     def setUp(self):
         self.sites = SitesCollection()
         self.site = self.sites.create_item(TEST_SITE)
@@ -80,7 +50,7 @@ class CollectionTestCase(TestCase):
         self.assertEqual(mod_id,  site.mod_id)
 
 # Test testing infrastructure.
-class SiteModifiedTest(CollectionTestCase):
+class SiteModifiedTest(ModelTestCase):
     def test_assert_site_modified(self):
         with self.assert_site_modified(self.site):
             self.site.site_modified()
@@ -109,7 +79,28 @@ class SiteModifiedTest(CollectionTestCase):
         else:
             self.fail('Assertion not raised')
 
-class UsersCollectionTest(CollectionTestCase):
+class SitesTest(ModelTestCase):
+    def test_create_site(self):
+        self.assertEqual(TEST_SITE, self.site.site_id)
+        self.assertIsNotNone(self.site.locations.site)
+        self.assertIsNotNone(self.site.users.site)
+
+    def test_create_site_twice(self):
+        self.assertRaisesRegexp(ValidationError,
+                                'Site .* already exists.',
+                                self.sites.create_item,
+                                TEST_SITE)
+
+    def test_find_site(self):
+        site2 = self.sites.find_item(TEST_SITE)
+        self.assertIsNotNone(site2)
+        self.assertEqual(self.site, site2)
+
+    def test_delete_site(self):
+        self.assertTrue(self.sites.delete_item(TEST_SITE))
+        self.assertIsNone(self.sites.find_item(TEST_SITE))
+
+class UsersCollectionTest(ModelTestCase):
     def setUp(self):
         super(UsersCollectionTest, self).setUp()
         self.site2 = self.sites.create_item(TEST_SITE2)
@@ -278,7 +269,7 @@ class UsersCollectionTest(CollectionTestCase):
                                 self.users.create_item,
                                 'foo10@bar.com')
 
-class LocationsCollectionTest(CollectionTestCase):
+class LocationsCollectionTest(ModelTestCase):
     def setUp(self):
         super(LocationsCollectionTest, self).setUp()
         self.site2 = self.sites.create_item(TEST_SITE2)
