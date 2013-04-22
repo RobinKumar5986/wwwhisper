@@ -570,6 +570,19 @@ class LocationsCollectionTest(ModelTestCase):
         self.assertFalse(location.open_access_granted())
         self.assertFalse(location.can_access(user))
 
+    def test_has_open_location(self):
+        self.assertFalse(self.locations.has_open_location())
+        self.locations.create_item('/bar')
+        self.assertFalse(self.locations.has_open_location())
+        location = self.locations.create_item('/foo')
+        location.grant_open_access(False)
+        self.assertTrue(self.locations.has_open_location())
+        location.grant_open_access(True)
+        self.assertTrue(self.locations.has_open_location())
+        self.assertFalse(self.site2.locations.has_open_location())
+        location.revoke_open_access()
+        self.assertFalse(self.locations.has_open_location())
+
     def test_has_open_location_with_login(self):
         self.assertFalse(self.locations.has_open_location_with_login())
         self.locations.create_item('/bar')

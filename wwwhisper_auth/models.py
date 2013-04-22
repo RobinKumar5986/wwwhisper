@@ -653,6 +653,12 @@ class LocationsCollection(Collection):
                 return True
         return False
 
+    def has_open_location(self):
+        for location in self.all():
+            if location.open_access_granted():
+                return True
+        return False
+
 def _uuid2urn(uuid):
     return 'urn:uuid:' + uuid
 
