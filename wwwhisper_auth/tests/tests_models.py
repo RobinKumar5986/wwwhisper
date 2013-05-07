@@ -33,6 +33,7 @@ class ModelTestCase(TestCase):
     def setUp(self):
         self.sites = SitesCollection()
         self.site = self.sites.create_item(TEST_SITE)
+        self.site2 = self.sites.create_item(TEST_SITE2)
         self.locations = self.site.locations
         self.users = self.site.users
 
@@ -101,10 +102,6 @@ class SitesTest(ModelTestCase):
         self.assertIsNone(self.sites.find_item(TEST_SITE))
 
 class UsersCollectionTest(ModelTestCase):
-    def setUp(self):
-        super(UsersCollectionTest, self).setUp()
-        self.site2 = self.sites.create_item(TEST_SITE2)
-
     def test_create_user(self):
         with self.assert_site_modified(self.site):
             user = self.users.create_item(TEST_USER_EMAIL)
@@ -270,10 +267,6 @@ class UsersCollectionTest(ModelTestCase):
                                 'foo10@bar.com')
 
 class LocationsCollectionTest(ModelTestCase):
-    def setUp(self):
-        super(LocationsCollectionTest, self).setUp()
-        self.site2 = self.sites.create_item(TEST_SITE2)
-
     def test_create_location(self):
         with self.assert_site_modified(self.site):
             location = self.locations.create_item(TEST_LOCATION)
@@ -666,3 +659,26 @@ class LocationsCollectionTest(ModelTestCase):
                                 'Locations limit exceeded',
                                 self.locations.create_item,
                                 '/foo10')
+
+
+class AliasesCollectionTest(ModelTestCase):
+
+    def test_add_alias(self):
+        with self.assert_site_modified(self.site):
+            alias = self.site.aliases.create_item(TEST_SITE)
+        self.assertEqual(TEST_SITE, alias.url)
+        self.assertFalse(alias.force_ssl)
+        self.assertTrue(len(alias.uuid) > 20)
+
+
+    def test_add_alias_invalid_url(self):
+        self.assertRaisesRegexp(ValidationError,
+                                'missing scheme',
+                                self.site.aliases.create_item,
+                                'foo.example.com')
+
+    def test_add_alias_remove_default_port(self):
+        with self.assert_site_modified(self.site):
+            alias = self.site.aliases.create_item('http://example.org:80')
+        self.assertEqual('http://example.org', alias.url)
+

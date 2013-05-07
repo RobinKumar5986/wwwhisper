@@ -39,7 +39,7 @@ from django.db import models
 from django.db import transaction
 from django.forms import ValidationError
 from functools import wraps
-from wwwhisper_auth import  url_path
+from wwwhisper_auth import  url_utils
 from wwwhisper_auth import  email_re
 
 import logging
@@ -101,6 +101,7 @@ class Site(ValidatedModel):
         """
         self.locations = LocationsCollection(self)
         self.users = UsersCollection(self)
+        self.aliases = AliasesCollection(self)
 
     def site_modified(self):
         """Increases the site modification id.
@@ -252,10 +253,6 @@ class Location(ValidatedModel):
     def __unicode__(self):
         return "%s" % (self.path)
 
-    def save(self, *args, **kwargs):
-        assert self.uuid is not None
-        return super(Location, self).save(*args, **kwargs)
-
     @models.permalink
     def get_absolute_url(self):
         """Constructs URL of the location resource."""
@@ -405,6 +402,14 @@ class Permission(ValidatedModel):
         return _add_common_attributes(
             self, site_url, {'user': self.user.attributes_dict(site_url)})
 
+class Alias(ValidatedModel):
+    site = models.ForeignKey(Site, related_name='+')
+    url = models.TextField(db_index=True)
+    uuid = models.CharField(max_length=36, db_index=True,
+                            editable=False, unique=True)
+    force_ssl = models.BooleanField(default=False)
+
+
 class Collection(object):
     """A common base class for managing a collection of resources.
 
@@ -417,8 +422,6 @@ class Collection(object):
     Attributes (Need to be defined in subclasses):
         item_name: Name of a resource stored in the collection.
         model_class: Class that manages storage of resources.
-        site_id_column_name: Name of a column in the model class that stores
-            a site_id of a resource.
     """
 
     def __init__(self, site):
@@ -426,10 +429,9 @@ class Collection(object):
         self.update_cache()
 
     def update_cache(self):
-        filter_args = {self.site_id_column_name: self.site.site_id}
         self._cached_items_dict = {}
         self._cached_items_list = []
-        for item in self.model_class.objects.filter(**filter_args):
+        for item in self.model_class.objects.filter(site_id=self.site.site_id):
             self._cached_items_dict[item.id] = item
             self._cached_items_list.append(item)
             # Use already retrieved site, do not retrieve it again.
@@ -500,10 +502,6 @@ class UsersCollection(Collection):
 
     item_name = 'user'
     model_class = User
-    site_id_column_name = 'site_id'
-
-    def __init__(self, site):
-        super(UsersCollection, self).__init__(site)
 
     @modify_site
     def create_item(self, email):
@@ -544,10 +542,6 @@ class LocationsCollection(Collection):
     # TODO: These should rather also be all caps.
     item_name = 'location'
     model_class = Location
-    site_id_column_name = 'site_id'
-
-    def __init__(self, site):
-        super(LocationsCollection, self).__init__(site)
 
     def update_cache(self):
         super(LocationsCollection, self).update_cache()
@@ -583,19 +577,19 @@ class LocationsCollection(Collection):
         if (locations_limit is not None and self.count() >= locations_limit):
             raise LimitExceeded('Locations limit exceeded')
 
-        if not url_path.is_canonical(path):
+        if not url_utils.is_canonical(path):
             raise ValidationError(
                 'Path should be absolute and normalized (starting with / '\
                     'without /../ or /./ or //).')
         if len(path) > self.PATH_LEN_LIMIT:
             raise ValidationError('Path too long')
-        if url_path.contains_fragment(path):
+        if url_utils.contains_fragment(path):
             raise ValidationError(
                 "Path should not contain fragment ('#' part).")
-        if url_path.contains_query(path):
+        if url_utils.contains_query(path):
             raise ValidationError(
                 "Path should not contain query ('?' part).")
-        if url_path.contains_params(path):
+        if url_utils.contains_params(path):
             raise ValidationError(
                 "Path should not contain parameters (';' part).")
         try:
@@ -647,12 +641,22 @@ class LocationsCollection(Collection):
                 location.open_access_requires_login()):
                 return True
         return False
-
     def has_open_location(self):
         for location in self.all():
             if location.open_access_granted():
                 return True
         return False
+
+class AliasesCollection(Collection):
+    item_name = 'alias'
+    model_class = Alias
+
+    @modify_site
+    def create_item(self, url):
+        (valid, error) = url_utils.validate_site_url(url)
+        if not valid:
+            raise ValidationError('Invalid url: ' + error)
+        return self._do_create_item(url=url_utils.remove_default_port(url))
 
 def _uuid2urn(uuid):
     return 'urn:uuid:' + uuid
@@ -705,3 +709,4 @@ def _gen_random_str(length):
         'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
     return ''.join(
         [secure_generator.choice(allowed_chars) for i in range(length)])
+

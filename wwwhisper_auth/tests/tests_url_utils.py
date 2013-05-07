@@ -15,15 +15,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.test import TestCase
-from wwwhisper_auth.url_path import collapse_slashes
-from wwwhisper_auth.url_path import contains_fragment
-from wwwhisper_auth.url_path import contains_params
-from wwwhisper_auth.url_path import contains_query
-from wwwhisper_auth.url_path import decode
-from wwwhisper_auth.url_path import is_canonical
-from wwwhisper_auth.url_path import strip_query
+from wwwhisper_auth.url_utils import collapse_slashes
+from wwwhisper_auth.url_utils import contains_fragment
+from wwwhisper_auth.url_utils import contains_params
+from wwwhisper_auth.url_utils import contains_query
+from wwwhisper_auth.url_utils import decode
+from wwwhisper_auth.url_utils import is_canonical
+from wwwhisper_auth.url_utils import validate_site_url
+from wwwhisper_auth.url_utils import remove_default_port
+from wwwhisper_auth.url_utils import strip_query
 
-class UrlPathTest(TestCase):
+class PathTest(TestCase):
 
     def test_is_canonical(self):
         self.assertTrue(is_canonical('/'))
@@ -78,3 +80,54 @@ class UrlPathTest(TestCase):
     def test_contains_fragment(self):
         self.assertTrue(contains_params('/foo;'))
         self.assertFalse(contains_params('/foo'))
+
+class SiteUrlTest(TestCase):
+
+    def assertInvalid(self, result, errorRegexp):
+        self.assertEqual(False, result[0])
+        self.assertRegexpMatches(result[1], errorRegexp)
+
+    def assertValid(self, result):
+        self.assertEqual((True, None), result)
+
+    def test_validation(self):
+        self.assertInvalid(
+            validate_site_url('example.com'), 'missing scheme')
+        self.assertInvalid(
+            validate_site_url('ftp://example.com'), 'incorrect scheme')
+        self.assertInvalid(
+            validate_site_url('http://'), 'missing domain')
+        self.assertInvalid(
+            validate_site_url('http://example.com/foo'), 'contains path')
+        self.assertInvalid(
+            validate_site_url('http://example.com/'), 'contains path')
+        self.assertInvalid(
+            validate_site_url('http://example.com?a=b'), 'contains query')
+        self.assertInvalid(
+            validate_site_url('http://example.com#boo'), 'contains fragment')
+        self.assertInvalid(
+            validate_site_url('http://alice@example.com'), 'contains username')
+        self.assertInvalid(
+            validate_site_url('http://:pass@example.com'), 'contains password')
+
+        self.assertValid(validate_site_url('http://example.com'))
+        self.assertValid(validate_site_url('http://example.com:80'))
+        self.assertValid(validate_site_url('https://example.com'))
+        self.assertValid(validate_site_url('https://example.com:123'))
+
+
+    def test_remove_default_port(self):
+        self.assertEqual('http://example.com',
+                         remove_default_port('http://example.com'))
+        self.assertEqual('http://example.com:56',
+                         remove_default_port('http://example.com:56'))
+
+        self.assertEqual('https://example.com',
+                         remove_default_port('https://example.com:443'))
+        self.assertEqual('http://example.com:443',
+                         remove_default_port('http://example.com:443'))
+
+        self.assertEqual('http://example.com',
+                         remove_default_port('http://example.com:80'))
+        self.assertEqual('https://example.com:80',
+                         remove_default_port('https://example.com:80'))

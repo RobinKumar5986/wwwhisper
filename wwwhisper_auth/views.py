@@ -22,7 +22,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth import http
-from wwwhisper_auth import url_path
+from wwwhisper_auth import url_utils
 from wwwhisper_auth.backend import AssertionVerificationException
 
 import logging
@@ -116,13 +116,13 @@ class Auth(View):
         debug_msg = "Auth request to '%s'" % (encoded_path)
 
         path_validation_error = None
-        if url_path.contains_fragment(encoded_path):
+        if url_utils.contains_fragment(encoded_path):
             path_validation_error = "Path should not include fragment ('#')"
         else:
-            stripped_path = url_path.strip_query(encoded_path)
-            decoded_path = url_path.decode(stripped_path)
-            decoded_path = url_path.collapse_slashes(decoded_path)
-            if not url_path.is_canonical(decoded_path):
+            stripped_path = url_utils.strip_query(encoded_path)
+            decoded_path = url_utils.decode(stripped_path)
+            decoded_path = url_utils.collapse_slashes(decoded_path)
+            if not url_utils.is_canonical(decoded_path):
                 path_validation_error = 'Path should be absolute and ' \
                     'normalized (starting with / without /../ or /./ or //).'
         if path_validation_error is not None:

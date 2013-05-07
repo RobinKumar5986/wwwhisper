@@ -19,6 +19,7 @@
 import posixpath
 import urllib
 import re
+import urlparse
 
 def strip_query(path):
     """Strips query from a path."""
@@ -63,3 +64,29 @@ def contains_query(path):
 def contains_params(path):
     """True if path contains params (';' part)."""
     return path.count(';') != 0
+
+
+def validate_site_url(url):
+    parsed_url = urlparse.urlparse(url)
+    if parsed_url.scheme == '':
+        return (False, 'missing scheme (http:// or https://)')
+    if parsed_url.scheme not in ('http', 'https'):
+        return (False, 'incorrect scheme (should be http:// or https://)')
+    if parsed_url.netloc == '':
+        return (False, 'missing domain')
+
+    for attr in ['path', 'username', 'query', 'params', 'fragment', 'password']:
+        val = getattr(parsed_url, attr, None)
+        if val is not None and val != '':
+            return (False, 'contains ' + attr)
+    return (True, None)
+
+def remove_default_port(url):
+    parts = url.split(':')
+    if len(parts) != 3:
+        return url
+    scheme, rest, port = parts
+    if ((scheme == 'https' and port == '443') or
+        (scheme == 'http' and port == '80')):
+        return "%s:%s" % (scheme, rest)
+    return url
