@@ -253,8 +253,7 @@ class Location(ValidatedModel):
         return "%s" % (self.path)
 
     def save(self, *args, **kwargs):
-        if not self.uuid:
-            self.uuid = str(uuidgen.uuid4())
+        assert self.uuid is not None
         return super(Location, self).save(*args, **kwargs)
 
     @models.permalink
@@ -420,8 +419,6 @@ class Collection(object):
         model_class: Class that manages storage of resources.
         site_id_column_name: Name of a column in the model class that stores
             a site_id of a resource.
-        uuid_column_name: Name of a column in the model class that stores
-            a resource uuid.
     """
 
     def __init__(self, site):
@@ -493,7 +490,8 @@ class Collection(object):
 
     def _do_create_item(self, *args, **kwargs):
         """Only to be called by subclasses."""
-        item = self.model_class.objects.create(site=self.site, **kwargs)
+        item = self.model_class.objects.create(
+            site=self.site, uuid=str(uuidgen.uuid4()), **kwargs)
         item.site = self.site
         return item
 
@@ -502,7 +500,6 @@ class UsersCollection(Collection):
 
     item_name = 'user'
     model_class = User
-    uuid_column_name = 'uuid'
     site_id_column_name = 'site_id'
 
     def __init__(self, site):
@@ -530,8 +527,7 @@ class UsersCollection(Collection):
             raise ValidationError('Invalid email format.')
         if self.find_item_by_email(encoded_email) is not None:
             raise ValidationError('User already exists.')
-        return self._do_create_item(
-            uuid=str(uuidgen.uuid4()), email=encoded_email)
+        return self._do_create_item(email=encoded_email)
 
     def find_item_by_email(self, email):
         encoded_email = _encode_email(email)
@@ -548,7 +544,6 @@ class LocationsCollection(Collection):
     # TODO: These should rather also be all caps.
     item_name = 'location'
     model_class = Location
-    uuid_column_name = 'uuid'
     site_id_column_name = 'site_id'
 
     def __init__(self, site):
