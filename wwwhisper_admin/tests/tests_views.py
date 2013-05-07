@@ -24,6 +24,7 @@ FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
 TEST_USER_EMAIL = 'foo@bar.org'
 TEST_LOCATION = '/pub/kika/'
 TEST_SITE = settings.SITE_URL
+TEST_ALIAS = 'https://foo.example.org'
 
 def uid_regexp():
     return '[0-9a-z-]{36}'
@@ -43,6 +44,11 @@ class AdminViewTestCase(HttpTestCase):
 
     def add_location(self):
         response = self.post('/admin/api/locations/', {'path' : TEST_LOCATION})
+        self.assertEqual(201, response.status_code)
+        return json.loads(response.content)
+
+    def add_alias(self):
+        response = self.post('/admin/api/aliases/', {'url' : TEST_ALIAS})
         self.assertEqual(201, response.status_code)
         return json.loads(response.content)
 
@@ -434,3 +440,34 @@ class AccessControlTest(AdminViewTestCase):
                                  'User can not access location.')
 
         self.assertFalse(self.can_access(location_url, user_uuid))
+
+
+class AliasTest(AdminViewTestCase):
+
+    def test_add_alias(self):
+        response = self.post('/admin/api/aliases/', {'url' : TEST_ALIAS})
+        self.assertEqual(201, response.status_code)
+
+        parsed_response_body = json.loads(response.content)
+        alias_uuid = extract_uuid(parsed_response_body['id'])
+
+        self.assertRegexpMatches(parsed_response_body['id'],
+                                 '^urn:uuid:%s$' % uid_regexp())
+        self.assertEqual(TEST_ALIAS, parsed_response_body['url'])
+        self_url = '%s/admin/api/aliases/%s/' % (TEST_SITE, alias_uuid)
+        self.assertEqual(self_url, parsed_response_body['self'])
+        self.assertEqual(self_url, response['Location'])
+        self.assertEqual(self_url, response['Content-Location'])
+
+
+    def test_get_alias(self):
+        parsed_post_response_body = self.add_alias()
+        get_response = self.get(parsed_post_response_body['self'])
+        self.assertEqual(200, get_response.status_code)
+        parsed_get_response_body = json.loads(get_response.content)
+        self.assertEqual(parsed_post_response_body, parsed_get_response_body)
+
+    def test_delete_alias(self):
+        alias_url = self.add_alias()['self']
+        self.assertEqual(204, self.delete(alias_url).status_code)
+        self.assertEqual(404, self.get(alias_url).status_code)

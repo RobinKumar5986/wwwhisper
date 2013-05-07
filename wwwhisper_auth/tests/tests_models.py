@@ -677,8 +677,17 @@ class AliasesCollectionTest(ModelTestCase):
                                 self.site.aliases.create_item,
                                 'foo.example.com')
 
-    def test_add_alias_remove_default_port(self):
+    def test_default_port_removed(self):
         with self.assert_site_modified(self.site):
             alias = self.site.aliases.create_item('http://example.org:80')
         self.assertEqual('http://example.org', alias.url)
+
+
+    def test_alias_must_be_unique(self):
+        self.site.aliases.create_item('http://example.org:123')
+        self.assertRaisesRegexp(ValidationError,
+                                'already exists',
+                                self.site.aliases.create_item,
+                                'http://example.org:123')
+
 

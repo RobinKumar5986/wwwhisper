@@ -38,4 +38,10 @@ urlpatterns = patterns(
         name='wwwhisper_allowed_user'),
     url(r'^locations/(?P<location_uuid>[0-9a-z-]+)/open-access/$',
         OpenAccessView.as_view()),
+    url(r'^aliases/$',
+        CollectionView.as_view(collection_name='aliases')),
+    url(r'^aliases/(?P<uuid>[0-9a-z-]+)/$',
+        ItemView.as_view(collection_name='aliases'),
+        name='wwwhisper_alias'),
+
     )

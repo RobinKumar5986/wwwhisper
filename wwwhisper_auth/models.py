@@ -404,10 +404,18 @@ class Permission(ValidatedModel):
 
 class Alias(ValidatedModel):
     site = models.ForeignKey(Site, related_name='+')
-    url = models.TextField(db_index=True)
+    url = models.TextField(db_index=True, unique=True)
     uuid = models.CharField(max_length=36, db_index=True,
                             editable=False, unique=True)
     force_ssl = models.BooleanField(default=False)
+
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('wwwhisper_alias', (), {'uuid' : self.uuid})
+
+    def attributes_dict(self, site_url):
+        return _add_common_attributes(self, site_url, {'url': self.url})
 
 
 class Collection(object):
