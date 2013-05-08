@@ -4,8 +4,8 @@
 
 ### Get, compile and install nginx.
      # Download and unpack the latest stable nginx.
-    NGINX_VERSION='nginx-1.2.7';
     mkdir -p ~/src; cd ~/src;
+    NGINX_VERSION='nginx-1.4.1';
     wget http://nginx.org/download/${NGINX_VERSION}.tar.gz;
     tar xvfz ${NGINX_VERSION}.tar.gz;
     cd ${NGINX_VERSION};
