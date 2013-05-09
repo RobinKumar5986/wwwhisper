@@ -471,3 +471,19 @@ class AliasTest(AdminViewTestCase):
         alias_url = self.add_alias()['self']
         self.assertEqual(204, self.delete(alias_url).status_code)
         self.assertEqual(404, self.get(alias_url).status_code)
+
+    def test_get_aliases_list(self):
+        self.assertEqual(201, self.post('/admin/api/aliases/',
+                                        {'url' : 'http://foo.org'}).status_code)
+        self.assertEqual(201, self.post('/admin/api/aliases/',
+                                        {'url' : 'http://bar.org'}).status_code)
+        response = self.get('/admin/api/aliases/')
+        self.assertEqual(200, response.status_code)
+        parsed_response_body = json.loads(response.content)
+        self.assertEqual('%s/admin/api/aliases/' % TEST_SITE,
+                         parsed_response_body['self'])
+
+        aliases = parsed_response_body['aliases']
+        self.assertEqual(2, len(aliases))
+        self.assertItemsEqual(['http://foo.org', 'http://bar.org'],
+                              [item['url'] for item in aliases])

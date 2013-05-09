@@ -494,10 +494,6 @@ class Collection(object):
         item.delete()
         return True
 
-    @property
-    def collection_name(self):
-        return self.item_name + 's'
-
     def _do_create_item(self, *args, **kwargs):
         """Only to be called by subclasses."""
         item = self.model_class.objects.create(

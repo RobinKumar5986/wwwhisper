@@ -80,7 +80,7 @@ class CollectionView(http.RestView):
                       for item in self.collection.all()]
         return http.HttpResponseOKJson({
                 'self' : _full_url(request),
-                self.collection.collection_name: items_list
+                self.collection_name: items_list
                 })
 
 class ItemView(http.RestView):
