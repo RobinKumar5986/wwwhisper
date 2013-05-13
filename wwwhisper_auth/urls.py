@@ -49,5 +49,5 @@ urlpatterns = patterns(
     url(r'^login/$', Login.as_view()),
     url(r'^logout/$', Logout.as_view()),
     url(r'^whoami/$', WhoAmI.as_view()),
-    url(r'^is-authorized/$', Auth.as_view(assets=assets)),
+    url(r'^is-authorized/$', Auth.as_view(assets=assets), name='auth-request'),
     )

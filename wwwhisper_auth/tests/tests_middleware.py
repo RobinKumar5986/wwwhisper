@@ -14,122 +14,129 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.conf import settings
 from django.http import HttpRequest
 from django.test import TestCase
-from mock import Mock
 from wwwhisper_auth import http
 from wwwhisper_auth.middleware import SecuringHeadersMiddleware
 from wwwhisper_auth.middleware import ProtectCookiesMiddleware
-from wwwhisper_auth.middleware import SiteMiddleware
+from wwwhisper_auth.middleware import SetSiteMiddleware
+from wwwhisper_auth.middleware import SiteUrlMiddleware
 from wwwhisper_auth.models import SitesCollection
+from wwwhisper_auth.models import SINGLE_SITE_ID
 
-class SiteMiddlewareFromSettingsTest(TestCase):
-
-    def test_site_from_settings(self):
-        site_url = 'http://foo.example.org'
-        site = SitesCollection().create_item(site_url)
-        middleware = SiteMiddleware(site_url)
+class SetSiteMiddlewareTest(TestCase):
+    def test_site_set_if_exists(self):
+        site = SitesCollection().create_item(SINGLE_SITE_ID)
+        middleware = SetSiteMiddleware()
         r = HttpRequest()
-
         self.assertIsNone(middleware.process_request(r))
-        self.assertEqual(site_url, r.site.site_id)
-        self.assertEqual(site_url, r.site_url)
+        self.assertEqual(SINGLE_SITE_ID, r.site.site_id)
 
-    def test_site_from_settings_if_no_such_site(self):
-        site_url = 'http://foo.example.org'
-        middleware = SiteMiddleware(site_url)
+    def test_site_not_set_if_missing(self):
+        middleware = SetSiteMiddleware()
         r = HttpRequest()
-
         self.assertIsNone(middleware.process_request(r))
         self.assertIsNone(r.site)
-        self.assertEqual(site_url, r.site_url)
 
-    def test_is_https(self):
-        r = HttpRequest()
-        middleware = SiteMiddleware('http://foo.com')
-        self.assertIsNone(middleware.process_request(r))
-        self.assertFalse(r.https)
-
-        middleware = SiteMiddleware('https://foo.com')
-        self.assertIsNone(middleware.process_request(r))
-        self.assertTrue(r.https)
-
-
-class SiteMiddlewareFromFrontendTest(TestCase):
-
+class SiteUrlMiddlewareTest(TestCase):
     def setUp(self):
-        settings.USE_X_FORWARDED_HOST = True
-        settings.SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+        self.middleware = SiteUrlMiddleware()
+        self.request = HttpRequest()
+        self.sites = SitesCollection()
+        self.request.site = self.sites.create_item(SINGLE_SITE_ID)
+        self.site_url = 'https://foo.example.com'
+        self.request.site.aliases.create_item(self.site_url)
 
-    def tearDown(self):
-        settings.USE_X_FORWARDED_HOST = False
-        settings.SECURE_PROXY_SSL_HEADER = None
+    def test_allowed_site_url_https(self):
+        self.request.META['HTTP_SITE_URL'] = self.site_url
+        self.assertIsNone(self.middleware.process_request(self.request))
+        self.assertEqual(self.site_url, self.request.site_url)
+        self.assertEqual('foo.example.com', self.request.get_host())
+        self.assertTrue(self.request.https)
+        self.assertTrue(self.request.is_secure())
 
-    def test_site_from_frontend(self):
-        site_url = 'http://foo.example.org'
-        middleware = SiteMiddleware(None)
-        r = HttpRequest()
-        r.META['HTTP_SITE_URL'] = site_url
-        self.assertIsNone(middleware.process_request(r))
-        self.assertEqual(None, r.site)
-        self.assertEqual(site_url, r.site_url)
-        self.assertEqual('foo.example.org', r.get_host())
-        self.assertFalse(r.https)
-        self.assertFalse(r.is_secure())
+    def test_allowed_site_url_http(self):
+        url = 'http://bar.example.com'
+        self.request.site.aliases.create_item(url)
+        self.request.META['HTTP_SITE_URL'] = url
+        self.assertIsNone(self.middleware.process_request(self.request))
+        self.assertEqual(url, self.request.site_url)
+        self.assertEqual('bar.example.com', self.request.get_host())
+        self.assertFalse(self.request.https)
+        self.assertFalse(self.request.is_secure())
 
-    def test_https_site_from_frontend(self):
-        site_url = 'https://foo.example.org'
-        middleware = SiteMiddleware(None)
-        r = HttpRequest()
-        r.META['HTTP_SITE_URL'] = site_url
-        self.assertIsNone(middleware.process_request(r))
-        self.assertEqual(None, r.site)
-        self.assertEqual(site_url, r.site_url)
-        self.assertEqual('foo.example.org', r.get_host())
-        self.assertTrue(r.https)
-        self.assertTrue(r.is_secure())
+    def test_allowed_site_url_with_port(self):
+        url = 'http://bar.example.com:123'
+        self.request.site.aliases.create_item(url)
+        self.request.META['HTTP_SITE_URL'] = url
+        self.assertIsNone(self.middleware.process_request(self.request))
+        self.assertEqual(url, self.request.site_url)
+        self.assertEqual('bar.example.com:123', self.request.get_host())
+        self.assertFalse(self.request.https)
+        self.assertFalse(self.request.is_secure())
 
-    def test_missing_site_from_frontend(self):
-        r = HttpRequest()
-        middleware = SiteMiddleware(None)
-        response = middleware.process_request(r)
+    def test_not_allowed_site_url(self):
+        self.request.META['HTTP_SITE_URL'] = 'https://bar.example.com'
+        response = self.middleware.process_request(self.request)
+        self.assertIsNotNone(response)
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'Invalid request URL')
+
+    def test_not_allowed_site_url2(self):
+        self.request.META['HTTP_SITE_URL'] = 'https://foo.example.com:80'
+        response = self.middleware.process_request(self.request)
+        self.assertIsNotNone(response)
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'Invalid request URL')
+
+    def test_missing_site_url(self):
+        response = self.middleware.process_request(self.request)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'Missing Site-Url header')
 
-    def test_invalid_site_from_frontend(self):
-        r = HttpRequest()
-        r.META['HTTP_SITE_URL'] = 'foo.example.org'
-        middleware = SiteMiddleware(None)
-        response = middleware.process_request(r)
+    def test_invalid_site_url(self):
+        self.request.META['HTTP_SITE_URL'] = 'foo.example.org'
+        response = self.middleware.process_request(self.request)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'Site-Url has incorrect format')
 
-    def test_is_https(self):
-        r = HttpRequest()
-        middleware = SiteMiddleware(None)
-        r.META['HTTP_SITE_URL'] = 'http://bar.example.org'
-        self.assertIsNone(middleware.process_request(r))
-        self.assertFalse(r.https)
+    def test_allowed_site_with_explicit_port(self):
+        # Request with correct explicit port should be accepted, port
+        # should be removed.
+        self.request.META['HTTP_SITE_URL'] = self.site_url + ':443'
+        self.assertIsNone(self.middleware.process_request(self.request))
+        self.assertEqual(self.site_url, self.request.site_url)
+        self.assertEqual('foo.example.com', self.request.get_host())
+        self.assertTrue(self.request.https)
+        self.assertTrue(self.request.is_secure())
 
-        middleware = SiteMiddleware(None)
-        r.META['HTTP_SITE_URL'] = 'https://bar.example.org'
-        self.assertIsNone(middleware.process_request(r))
-        self.assertTrue(r.https)
+    def test_not_allowed_http_site_redirects_to_https_if_exists(self):
+        self.request.META['HTTP_SITE_URL'] = 'http://foo.example.com'
+        self.request.path = '/bar?baz=true'
+        response = self.middleware.process_request(self.request)
+        self.assertIsNotNone(response)
+        self.assertEqual(302, response.status_code)
+        self.assertEqual('https://foo.example.com/bar?baz=true',
+                         response['Location'])
 
-
-def create_request():
-    r = Mock()
-    r.META = {}
-    return r
+    def test_https_redirects_for_auth_request(self):
+        self.request.META['HTTP_SITE_URL'] = 'http://foo.example.com'
+        self.request.path = '/auth/api/is-authorized/?path=/foo/bar/baz'
+        response = self.middleware.process_request(self.request)
+        self.assertIsNotNone(response)
+        self.assertEqual(302, response.status_code)
+        self.assertEqual('https://foo.example.com/foo/bar/baz',
+                         response['Location'])
 
 class ProtectCookiesMiddlewareTest(TestCase):
 
     def test_secure_flag_set_for_https_request(self):
         middleware = ProtectCookiesMiddleware()
-        request = create_request()
+        request = HttpRequest()
         request.https = True
         response = http.HttpResponseNoContent()
         response.set_cookie('session', value='foo', secure=None)
@@ -140,7 +147,7 @@ class ProtectCookiesMiddlewareTest(TestCase):
 
     def test_secure_flag_not_set_for_http_request(self):
         middleware = ProtectCookiesMiddleware()
-        request = create_request()
+        request = HttpRequest()
         request.https = False
         response = http.HttpResponseNoContent()
         response.set_cookie('session', value='foo', secure=None)
@@ -154,7 +161,7 @@ class SecuringHeadersMiddlewareTest(TestCase):
 
     def test_different_origin_framing_not_allowed(self):
         middleware = SecuringHeadersMiddleware()
-        request = create_request()
+        request = HttpRequest()
         response = http.HttpResponseNoContent()
         self.assertFalse('X-Frame-Options' in response)
         self.assertFalse('X-Content-Type-Options' in response)

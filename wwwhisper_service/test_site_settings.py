@@ -9,5 +9,3 @@ DATABASES = {
     }
 }
 
-SITE_URL = 'https://localhost:8080'
-WWWHISPER_ADMINS = ['alice@example.com']

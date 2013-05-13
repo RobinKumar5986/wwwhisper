@@ -14,62 +14,86 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.core.exceptions import ImproperlyConfigured
 from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.shortcuts import redirect
+
 from wwwhisper_auth import http
+from wwwhisper_auth.models import SINGLE_SITE_ID
+from wwwhisper_auth import url_utils
 
 import wwwhisper_auth.site_cache
 import logging
 
 logger = logging.getLogger(__name__)
 
-SITE_URL_FROM_FRONT_END = getattr(
-    settings, 'SITE_URL_FROM_FRONT_END', False)
+SECURE_PROXY_SSL_HEADER = getattr(settings, 'SECURE_PROXY_SSL_HEADER')[0]
 
-SITE_URL = getattr(settings, 'SITE_URL', None)
+class SetSiteMiddleware(object):
+    """Associates a request with the only site that is in a db.
 
-if not SITE_URL and not SITE_URL_FROM_FRONT_END:
-    raise ImproperlyConfigured(
-        'wwwhisper requires either SITE_URL or SITE_URL_FROM_FRONTEND ' +
-        'to be set in Django settings.py file')
+    The middleware is used for setups in which a single wwwhisper
+    instance serves a single site (all standalone setups). In
+    wwwhisper as a service setup, a single wwwhisper instance serves
+    multiple sites.
+    """
 
-if SITE_URL and SITE_URL_FROM_FRONT_END:
-    raise ImproperlyConfigured(
-        'SITE_URL and SITE_URL_FROM_FRONTEND can not be set together.')
-
-
-class SiteMiddleware(object):
-    """Determines to which site a request is related"""
-
-    def _is_https(self, url):
-        return (url[:5].lower() == 'https')
-
-    def __init__(self, site_url=SITE_URL):
+    def __init__(self):
         self.sites = wwwhisper_auth.site_cache.CachingSitesCollection()
-        self.site_url_from_front_end = (site_url is None)
-        if not self.site_url_from_front_end:
-            self.site_url = site_url
 
-    """Sets site_url and (optionally) site to which request is related."""
     def process_request(self, request):
-        if self.site_url_from_front_end:
-            # Site needs to be set by a separate middleware.
-            request.site = None
-            request.site_url = request.META.get('HTTP_SITE_URL', None)
-            if request.site_url is None:
-                return http.HttpResponseBadRequest('Missing Site-Url header')
-            parts = request.site_url.split('://')
-            if len(parts) != 2:
-                return http.HttpResponseBadRequest(
-                    'Site-Url has incorrect format')
-            scheme, host = parts
-            request.META[settings.SECURE_PROXY_SSL_HEADER[0]] = scheme
-            request.META['HTTP_X_FORWARDED_HOST'] = host
-        else:
-            request.site = self.sites.find_item(self.site_url)
-            request.site_url = self.site_url
+        request.site = self.sites.find_item(SINGLE_SITE_ID)
 
-        request.https = self._is_https(request.site_url)
+class SiteUrlMiddleware(object):
+    """Validates and sets site_url for the request.
+
+    A Site-Url header must carry one of site's aliases otherwise a
+    request is rejected. If Site-Url contains http://host_foo address
+    which is not allowed but https://host_foo is allowed, redirect is
+    returned.
+
+    Sets X-Forwarded-Host to match Site-Url. X-Forwarded-Host is used
+    by Django to generate redirects.
+    """
+
+    def _alias_defined(self, site, url):
+        return site.aliases.find_item_by_url(url) is not None
+
+    def _get_full_path(self, request):
+        full_path = request.get_full_path()
+        auth_request_prefix = reverse('auth-request') + '?path='
+        if full_path.startswith(auth_request_prefix):
+            full_path = full_path[len(auth_request_prefix):]
+        return full_path
+
+    def _needs_https_redirect(self, site, scheme, host):
+        return scheme == 'http' and self._alias_defined(site, 'https://' + host)
+
+    def _site_url_invalid(self, request, scheme, host):
+        if self._needs_https_redirect(request.site, scheme, host):
+            logger.debug('Request over http, redirecting to https')
+            return redirect('https://' + host + self._get_full_path(request))
+        msg = 'Invalid request URL, you can use wwwhisper admin to allow ' \
+            'requests from this address.'
+        logger.warning(msg)
+        return http.HttpResponseBadRequest(msg)
+
+    def process_request(self, request):
+        url = request.META.get('HTTP_SITE_URL', None)
+        if url is None:
+            return http.HttpResponseBadRequest('Missing Site-Url header')
+        url = url_utils.remove_default_port(url)
+        parts = url.split('://', 1)
+        if len(parts) != 2:
+            return http.HttpResponseBadRequest('Site-Url has incorrect format')
+        scheme, host = parts
+        if not self._alias_defined(request.site, url):
+            return self._site_url_invalid(request, scheme, host)
+        request.site_url = url
+        request.META[SECURE_PROXY_SSL_HEADER] = scheme
+        request.META['HTTP_X_FORWARDED_HOST'] = host
+        # TODO: use is_secure() instead
+        request.https = (scheme == 'https')
         return None
 
 

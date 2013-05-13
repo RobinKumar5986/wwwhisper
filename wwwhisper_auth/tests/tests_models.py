@@ -34,6 +34,7 @@ class ModelTestCase(TestCase):
         self.sites = SitesCollection()
         self.site = self.sites.create_item(TEST_SITE)
         self.site2 = self.sites.create_item(TEST_SITE2)
+        self.aliases = self.site.aliases
         self.locations = self.site.locations
         self.users = self.site.users
 
@@ -660,34 +661,42 @@ class LocationsCollectionTest(ModelTestCase):
                                 self.locations.create_item,
                                 '/foo10')
 
-
 class AliasesCollectionTest(ModelTestCase):
 
     def test_add_alias(self):
         with self.assert_site_modified(self.site):
-            alias = self.site.aliases.create_item(TEST_SITE)
+            alias = self.aliases.create_item(TEST_SITE)
         self.assertEqual(TEST_SITE, alias.url)
         self.assertFalse(alias.force_ssl)
         self.assertTrue(len(alias.uuid) > 20)
 
-
     def test_add_alias_invalid_url(self):
         self.assertRaisesRegexp(ValidationError,
                                 'missing scheme',
-                                self.site.aliases.create_item,
+                                self.aliases.create_item,
                                 'foo.example.com')
 
     def test_default_port_removed(self):
         with self.assert_site_modified(self.site):
-            alias = self.site.aliases.create_item('http://example.org:80')
+            alias = self.aliases.create_item('http://example.org:80')
         self.assertEqual('http://example.org', alias.url)
 
-
     def test_alias_must_be_unique(self):
-        self.site.aliases.create_item('http://example.org:123')
+        self.aliases.create_item('http://example.org:123')
         self.assertRaisesRegexp(ValidationError,
                                 'already exists',
-                                self.site.aliases.create_item,
+                                self.aliases.create_item,
                                 'http://example.org:123')
 
+    def test_find_alias_by_url(self):
+        self.assertIsNone(self.aliases.find_item_by_url(TEST_SITE))
+        alias1 = self.aliases.create_item(TEST_SITE)
+        with self.assert_site_not_modified(self.site):
+            alias2 = self.aliases.find_item_by_url(TEST_SITE)
+        self.assertIsNotNone(alias2)
+        self.assertEqual(alias1, alias2)
+
+    def test_find_alias_by_url_different_site(self):
+        self.aliases.create_item(TEST_SITE)
+        self.assertIsNone(self.site2.aliases.find_item_by_url(TEST_SITE))
 

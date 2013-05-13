@@ -1,6 +1,6 @@
 # Django settings for wwwhisper_service project.
 
-DEBUG = False
+DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 
 
@@ -62,21 +62,20 @@ if DEBUG:
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+# Site-Url from frontend server is validated by wwwhisper (checked
+# against a list of aliases that are stored in the DB) and set in the
+# X-Forwarded-Host. Host header is not used.
+ALLOWED_HOSTS = ['*']
 
-if 'SITE_URL_FROM_FRONT_END' in globals():
-    USE_X_FORWARDED_HOST = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    # Frontened ensures SITE_URL is valid, Host header is not used.
-    ALLOWED_HOSTS = ['*']
-else:
-    # Django ALLOWED_HOSTS mechanism does not accept port numbers.
-    ALLOWED_HOSTS = [ SITE_URL.split('://', 1)[1].rsplit(':', 1)[0] ]
 
 MIDDLEWARE_CLASSES = (
     #'wwwhisper_service.profile.ProfileMiddleware',
     # Must go before CommonMiddleware, to set a correct url to which
     # CommonMiddleware redirects.
-    'wwwhisper_auth.middleware.SiteMiddleware',
+    'wwwhisper_auth.middleware.SetSiteMiddleware',
+    'wwwhisper_auth.middleware.SiteUrlMiddleware',
     'django.middleware.common.CommonMiddleware',
     # Must be placed before session middleware to alter session cookies.
     'wwwhisper_auth.middleware.ProtectCookiesMiddleware',

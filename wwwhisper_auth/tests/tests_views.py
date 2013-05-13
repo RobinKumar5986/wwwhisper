@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012 Jan Wrobel <wrr@mixedbit.org>
+# Copyright (C) 2012, 2013 Jan Wrobel <wrr@mixedbit.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,14 +18,13 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from wwwhisper_auth import backend
-from wwwhisper_auth.models import SitesCollection
 from wwwhisper_auth.tests.utils import HttpTestCase
+from wwwhisper_auth.tests.utils import TEST_SITE
 
 import json
 import wwwhisper_auth.urls
 
 INCORRECT_ASSERTION = "ThisAssertionIsFalse"
-TEST_SITE = settings.SITE_URL
 
 class FakeAssertionVeryfingBackend(ModelBackend):
     def authenticate(self, assertion, site, site_url=TEST_SITE):
@@ -36,8 +35,6 @@ class FakeAssertionVeryfingBackend(ModelBackend):
 
 class AuthTestCase(HttpTestCase):
     def setUp(self):
-        self.sites = SitesCollection()
-        self.site = self.sites.create_item(TEST_SITE)
         settings.AUTHENTICATION_BACKENDS = (
             'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
         super(AuthTestCase, self).setUp()
@@ -98,8 +95,8 @@ class AuthTest(AuthTestCase):
         self.login('foo@example.com')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         # For an authenticated user 'User' header should be always returned.
-        self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(403, response.status_code)
+        self.assertEqual('foo@example.com', response['User'])
         self.assertRegexpMatches(response['Content-Type'], "text/plain")
         self.assertEqual('User not authorized.', response.content)
 
@@ -109,8 +106,8 @@ class AuthTest(AuthTestCase):
         location.grant_access(user.uuid)
         self.login('foo@example.com')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
-        self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
+        self.assertEqual('foo@example.com', response['User'])
 
     def test_is_authorized_for_user_of_other_site(self):
         site2 = self.sites.create_item('somesite')
@@ -132,8 +129,8 @@ class AuthTest(AuthTestCase):
         location = self.site.locations.create_item('/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
-        self.assertEqual('foo@example.com', response['User'])
         self.assertEqual(200, response.status_code)
+        self.assertEqual('foo@example.com', response['User'])
 
     def test_is_authorized_for_invalid_path(self):
         user = self.site.users.create_item('foo@example.com')
@@ -171,8 +168,8 @@ class AuthTest(AuthTestCase):
         location = self.site.locations.create_item('/foo/')
         location.grant_access(user.uuid)
         self.login('foo@example.com')
-        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
-                                   HTTP_USER='bar@example.com')
+        response = self.get('/auth/api/is-authorized/?path=/foo/',
+                            HTTP_USER='bar@example.com')
         self.assertEqual(400, response.status_code)
 
     def test_caching_disabled_for_auth_request_results(self):
@@ -197,28 +194,28 @@ class AuthStaticAssetsTest(AuthTestCase):
 
     def test_is_authorized_for_not_authenticated_user(self):
         location = self.site.locations.create_item('/foo/')
-        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
-                                   HTTP_ACCEPT='text/plain, text/html')
+        response = self.get('/auth/api/is-authorized/?path=/foo/',
+                            HTTP_ACCEPT='text/plain, text/html')
         self.assertEqual(401, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/html')
         self.assertRegexpMatches(response.content, '<body')
 
-        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
-                                   HTTP_ACCEPT='text/plain')
+        response = self.get('/auth/api/is-authorized/?path=/foo/',
+                            HTTP_ACCEPT='text/plain')
         self.assertEqual(401, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/plain')
 
     def test_html_response_is_authorized_for_not_authorized_user(self):
         self.site.users.create_item('foo@example.com')
         self.login('foo@example.com')
-        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
-                                   HTTP_ACCEPT='*/*')
+        response = self.get('/auth/api/is-authorized/?path=/foo/',
+                            HTTP_ACCEPT='*/*')
         self.assertEqual(403, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/html')
         self.assertRegexpMatches(response.content, '<body')
 
-        response = self.client.get('/auth/api/is-authorized/?path=/foo/',
-                                   HTTP_ACCEPT='text/plain, audio/*')
+        response = self.get('/auth/api/is-authorized/?path=/foo/',
+                            HTTP_ACCEPT='text/plain, audio/*')
         self.assertEqual(403, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/plain')
 

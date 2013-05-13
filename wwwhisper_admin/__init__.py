@@ -16,8 +16,8 @@
 
 """wwwhisper admin API.
 
-The package exposes REST API for specifying which users can access
-which locations.
+The package exposes http API for specifying which users can access
+which locations and for other admin operations.
 """
 from django.forms import ValidationError
 from django.conf import settings
@@ -28,12 +28,15 @@ from django.contrib.auth import models as contrib_auth_models
 from django.core.exceptions import ImproperlyConfigured
 from wwwhisper_auth import models as auth_models
 
-SITE_URL = getattr(settings, 'SITE_URL', None)
+SITE_URL = getattr(settings, 'WWWHISPER_INITIAL_SITE_URL', None)
 
 def _create_site():
     """Creates a site configured in settings.py."""
     try:
-        return auth_models.SitesCollection().create_item(SITE_URL)
+        site =  auth_models.SitesCollection().create_item(
+            auth_models.SINGLE_SITE_ID)
+        site.aliases.create_item(SITE_URL)
+        return site
     except ValidationError as ex:
         raise ImproperlyConfigured('Failed to create site %s: %s'
                                    % (SITE_URL, ex))

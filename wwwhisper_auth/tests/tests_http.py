@@ -22,6 +22,7 @@ from django.test.client import Client
 from wwwhisper_auth.http import accepts_html
 from wwwhisper_auth.http import RestView
 from wwwhisper_auth.tests.utils import HttpTestCase
+from wwwhisper_auth.tests.utils import TEST_SITE
 
 class TestView(RestView):
     def get(self, request):
@@ -68,7 +69,8 @@ class RestViewTest(HttpTestCase):
         response = self.client.post('/testview/',
                                     "{{ 'ping_message' : 'hello world' }",
                                     'application/json ;  charset=UTF-8',
-                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+                                    HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content, 'Failed to parse the '
                                  'request body as a json object.')
@@ -96,14 +98,16 @@ class RestViewTest(HttpTestCase):
 
     def test_content_type_validation(self):
         response = self.client.post(
-            '/testview/', '{"ping_message" : "hello world"}', 'text/json')
+            '/testview/', '{"ping_message" : "hello world"}', 'text/json',
+            HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'Invalid Content-Type')
 
         response = self.client.post(
             '/testview/', '{"ping_message" : "hello world"}',
-            'application/json; charset=UTF-16')
+            'application/json; charset=UTF-16',
+            HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'Invalid Content-Type')
@@ -111,21 +115,23 @@ class RestViewTest(HttpTestCase):
         # Content-Type header should be case-insensitive.
         response = self.client.post(
             '/testview/', '{"ping_message" : "hello world"}',
-            'application/JSON; charset=UTF-8')
+            'application/JSON; charset=UTF-8',
+            HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(277, response.status_code)
 
     def test_csrf_protection(self):
         self.client = Client(enforce_csrf_checks=True)
 
         # No CSRF tokens.
-        response = self.client.get('/testview/')
+        response = self.client.get('/testview/', HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'CSRF token missing or incorrect')
 
         # Too short CSRF tokens.
         self.client.cookies[settings.CSRF_COOKIE_NAME] = 'a'
-        response = self.client.get('/testview/', HTTP_X_CSRFTOKEN='a')
+        response = self.client.get('/testview/', HTTP_X_CSRFTOKEN='a',
+                                   HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'CSRF token missing or incorrect')
@@ -134,7 +140,8 @@ class RestViewTest(HttpTestCase):
         self.client.cookies[settings.CSRF_COOKIE_NAME] = \
             'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
         response = self.client.get(
-            '/testview/', HTTP_X_CSRFTOKEN='xxxxxxxxxxxxxxxOxxxxxxxxxxxxxxxx')
+            '/testview/', HTTP_X_CSRFTOKEN='xxxxxxxxxxxxxxxOxxxxxxxxxxxxxxxx',
+            HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'CSRF token missing or incorrect')
@@ -143,7 +150,8 @@ class RestViewTest(HttpTestCase):
         self.client.cookies[settings.CSRF_COOKIE_NAME] = \
             'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
         response = self.client.get(
-            '/testview/', HTTP_X_CSRFTOKEN='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
+            '/testview/', HTTP_X_CSRFTOKEN='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+            HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(267, response.status_code)
 
     def test_caching_disabled_for_rest_view_results(self):

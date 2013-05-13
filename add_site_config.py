@@ -54,9 +54,9 @@ def usage():
 
 Generates site-specific configuration files and initializes wwwhisper database.
 
---admin-email and --location affect only initial configuration, wwwhisper
-web application can be used to add/remove locations and grant/revoke access
-to other users.
+--site-url, --admin-email and --location are only initial settings,
+wwwhisper web application can be used to add/remove locations and
+grant/revoke access to other users.
 
 Usage:
 
@@ -135,7 +135,7 @@ DATABASES = {
     }
 }
 
-SITE_URL = '%s'
+WWWHISPER_INITIAL_SITE_URL = '%s'
 WWWHISPER_INITIAL_ADMINS = (%s,)
 WWWHISPER_INITIAL_LOCATIONS = (%s,)
 """ % (generate_secret_key(),

@@ -68,6 +68,9 @@ class ValidatedModel(models.Model):
         self.full_clean()
         return super(ValidatedModel, self).save(*args, **kwargs)
 
+# Id used when wwwhisper servers just a single site.
+SINGLE_SITE_ID = 'theone'
+
 class Site(ValidatedModel):
     """A site to which access is protected.
 
@@ -155,7 +158,6 @@ def modify_site(decorated_method):
 
 
 class SitesCollection(object):
-
     def create_item(self, site_id, **kwargs):
         """Creates a new Site object.
 
@@ -661,6 +663,9 @@ class AliasesCollection(Collection):
         if not valid:
             raise ValidationError('Invalid url: ' + error)
         return self._do_create_item(url=url_utils.remove_default_port(url))
+
+    def find_item_by_url(self, url):
+        return self.get_unique(lambda item: item.url == url)
 
 def _uuid2urn(uuid):
     return 'urn:uuid:' + uuid

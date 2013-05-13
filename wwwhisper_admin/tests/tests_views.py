@@ -14,16 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.conf import settings
-from wwwhisper_auth.models import Site, SitesCollection
+from wwwhisper_auth.models import Site
 from wwwhisper_auth.tests.utils import HttpTestCase
+from wwwhisper_auth.tests.utils import TEST_SITE
 
 import json
 
 FAKE_UUID = '41be0192-0fcc-4a9c-935d-69243b75533c'
 TEST_USER_EMAIL = 'foo@bar.org'
 TEST_LOCATION = '/pub/kika/'
-TEST_SITE = settings.SITE_URL
 TEST_ALIAS = 'https://foo.example.org'
 
 def uid_regexp():
@@ -33,9 +32,6 @@ def extract_uuid(urn):
     return urn.replace('urn:uuid:', '')
 
 class AdminViewTestCase(HttpTestCase):
-
-    def setUp(self):
-        self.site = SitesCollection().create_item(TEST_SITE)
 
     def add_user(self, user_name=TEST_USER_EMAIL):
         response = self.post('/admin/api/users/', {'email' : user_name})
@@ -484,6 +480,8 @@ class AliasTest(AdminViewTestCase):
                          parsed_response_body['self'])
 
         aliases = parsed_response_body['aliases']
-        self.assertEqual(2, len(aliases))
-        self.assertItemsEqual(['http://foo.org', 'http://bar.org'],
+        # Two created aliases + the original one.
+        self.assertEqual(3, len(aliases))
+        self.assertItemsEqual(['http://foo.org', 'http://bar.org',
+                               'https://foo.example.org:8080'],
                               [item['url'] for item in aliases])
