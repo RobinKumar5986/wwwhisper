@@ -669,6 +669,7 @@ class AliasesCollection(Collection):
 
     @modify_site
     def create_item(self, url):
+        url = url.lower()
         (valid, error) = url_utils.validate_site_url(url)
         if not valid:
             raise ValidationError('Invalid url: ' + error)

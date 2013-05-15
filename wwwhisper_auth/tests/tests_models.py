@@ -681,6 +681,12 @@ class AliasesCollectionTest(ModelTestCase):
             alias = self.aliases.create_item('http://example.org:80')
         self.assertEqual('http://example.org', alias.url)
 
+    def test_downcased(self):
+        with self.assert_site_modified(self.site):
+            alias = self.aliases.create_item('hTtp://eXamPlE.org')
+        self.assertEqual('http://example.org', alias.url)
+
+
     def test_alias_must_be_unique(self):
         self.aliases.create_item('http://example.org:123')
         self.assertRaisesRegexp(ValidationError,
