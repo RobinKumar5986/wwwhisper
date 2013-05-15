@@ -609,7 +609,7 @@
      * Displays a dialog to compose a notification about shared resources.
      */
     function showNotifyDialog(to, locations) {
-      var body, website, locationsString, delimiter, recipent = '', bcc = '';
+      var body, website, locationsString, recipent = '', bcc = '';
       if (locations.length === 0) {
         body = 'I have shared nothing with you. Enjoy.';
       } else {
@@ -940,7 +940,8 @@
       }), showAlias);
 
       function addAliasCommon(url) {
-        var input = $('#add-alias-input'), url = $.trim(input.val());
+        var input = $('#add-alias-input');
+        url = $.trim(input.val());
         if (url !== '') {
           controller.addAlias($('#add-alias-scheme').val() + url);
         }
@@ -951,17 +952,17 @@
       $('#add-alias-input')
         .keyup(function(event) {
           if (event.which === ENTER_KEY) {
-            addAliasCommon()
+            addAliasCommon();
           } else if ($(this).val() === '') {
             $('#add-alias-button').addClass('disabled');
           } else {
             $('#add-alias-button').removeClass('disabled');
           }
         })
-        .end()
+        .end();
       $('#add-alias-button')
         .click(addAliasCommon)
-        .end()
+        .end();
     }
 
     /**
@@ -1071,7 +1072,7 @@
     }
 
     function hashChanged() {
-      showContainerPointedByHash()
+      showContainerPointedByHash();
       that.refresh();
     }
 
@@ -1084,7 +1085,7 @@
       return function() {
         showContainer(hash);
         that.refresh();
-      }
+      };
     }
 
     /**
@@ -1103,7 +1104,7 @@
       $(document).scrollTop(0);
       $(document).scrollLeft(0);
 
-      if (typeof status === 'undefined' || status === 401 || isTextPlain) {
+      if (status === undefined || status === 401 || isTextPlain) {
         var error = view.errorMessage.clone(true);
 
         if (status === 401) {
@@ -1140,7 +1141,7 @@
       scrollTop = $(document).scrollTop(),
       scrollLeft = $(document).scrollLeft();
 
-      if (typeof locationToActivate === 'undefined') {
+      if (locationToActivate === undefined) {
         // DOM subtrees representing a currently focused input box and
         // an active location will be removed, corresponding elements in
         // a new DOM structure need to be focused and activated.
@@ -1212,8 +1213,7 @@
           $('.help').text('Show help');
         }
       });
-
-      if ("onhashchange" in window) {
+      if (window.onhashchange !== undefined) {
         $(window).on('hashchange', hashChanged);
       } else {
         // Dinosaur browsers.
