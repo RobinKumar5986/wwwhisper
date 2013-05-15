@@ -22,24 +22,35 @@ https://www.gnu.org/licenses/gpl-3.0.html
     <div class="navbar navbar-fixed-top navbar-inverse">
       <div class="navbar-inner">
         <div class="container">
-          <img src="/auth/assets/img/logo.png" alt="share"
-             class="logo">
-          <a class="brand" href="#">
-            Access control for <span class='locations-root'></span>
+          <img src="/auth/assets/img/logo.png" alt="share" class="logo">
+          <a  href="#" class="brand">
+          wwwhisper
           </a>
+          <ul class="nav pull-right">
+            <li><a href="#" class="acl">Access control</a></li>
+            <li><a href="#settings" class="settings">Site settings</a></li>
+            <!-- <li><a href="#about">About</a></li> -->
+          </ul>
         </div>
       </div>
     </div>
 
-    <div class="container content">
+    <div class="container content acl">
+
+      <div class="error-box">
+        <div class="alert alert-error fade in hide">
+          <a class="close" href="#" data-dismiss="alert">&times;</a>
+          <div class="alert-message">
+          </div>
+        </div>  <!-- /.alert -->
+      </div>  <!-- /.error-box -->
+
       <div class="alert alert-success help-message fade in hide">
-        <!-- <a class="close"  href="#" data-dismiss="alert">&times;</a> -->
         <p>
-          Left side: paths on <span class='locations-root'></span>
-          to which access can be granted. <br />
+          Left side: paths to which access can be granted. <br />
           Right side: emails of users that can access a select path
-          (enter * to allow everyone access without login;
-           enter *? to allow everyone access but still require login).
+          (enter * to allow everyone access without login; enter *? to
+          allow everyone access but still require login).
         </p>
 
         <p>
@@ -64,19 +75,11 @@ https://www.gnu.org/licenses/gpl-3.0.html
         </p>
       </div> <!-- /.alert -->
 
-      <div id="error-box">
-        <div class="alert alert-error fade in hide">
-           <a class="close" href="#" data-dismiss="alert">&times;</a>
-          <div class="alert-message">
-          </div>
-        </div>  <!-- /.alert -->
-      </div>  <!-- /.error-box -->
-
       <h4>Locations</h4>
       <div class="tabbable tabs-left">
 
         <ul class="nav nav-tabs span5" id="location-list">
-          <li id="location-list-item">
+          <li id="location-list-item" class="hoverable">
             <a class="url" href="#location-info-list-item" data-toggle="tab">
               <i class="icon-hand-right icon-light invisible can-access"> </i>
               <span class="path"></span>
@@ -106,7 +109,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
             <div class="row">
               <div class="span5">
                 <ul class="allowed-user-list unstyled">
-                  <li id="allowed-user-list-item">
+                  <li id="allowed-user-list-item" class="hoverable">
                     <i class="icon-user icon-light spaced-right"></i>
                     <span class="user-mail"></span>
                     <i class="menu-item icon-remove unshare span1"></i>
@@ -150,7 +153,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
       <div class="row">
         <div class="span5">
           <ul id="user-list" class="unstyled">
-            <li class="user-list-item">
+            <li class="user-list-item hoverable">
               <i class="icon-user icon-light spaced-right"></i>
               <span class="user-mail"> </span>
               <i class="menu-item icon-remove spaced-left remove-user"></i>
@@ -164,7 +167,78 @@ https://www.gnu.org/licenses/gpl-3.0.html
       <div class="row">
         <a class="btn btn-info help">Show help</a>
       </div>
-    </div> <!-- /.container -->
+    </div> <!-- /.container acl -->
+
+    <div class="container content settings hide">
+
+      <div class="error-box">
+        <div class="alert alert-error fade in hide">
+          <a class="close" href="#" data-dismiss="alert">&times;</a>
+          <div class="alert-message">
+          </div>
+        </div>  <!-- /.alert -->
+      </div>  <!-- /.error-box -->
+
+      <div class="alert alert-success help-message fade in hide">
+        <p>
+          A list of addresses that can be used to access the site.  An
+          address has a form protocol://domain[:optional port].
+          Requests from addresses that are not on the lists are
+          rejected (this is an important part of the Persona based
+          login process).
+        </p>
+        <p>
+          If https://example.org is on the list and http://example.org
+          is not, requests to http://example.org will be redirected to
+          https://example.org.
+        </p>
+        <p>
+        It is safe to add http://localhost[:port] to communicate with
+        wwwhisper from a local machine.
+        </p>
+
+        <p>
+        <i class="icon-eye-open icon-light"></i> visit an address in a
+        separate tab.  <br />
+        <i class="icon-remove icon-light"></i> remove an address.
+        </p>
+      </div> <!-- /.alert -->
+
+      <h4>Allowed addresses</h4>
+      <div class="row">
+        <div class="span5">
+          <ul id="alias-list" class="unstyled">
+            <li class="alias-list-item hoverable">
+              <i class="icon-home icon-light spaced-right"></i>
+              <span class="url"> </span>
+              <i class="menu-item icon-remove spaced-left remove-alias"></i>
+              <i class="menu-item icon-eye-open view-page"></i>
+            </li>
+          </ul>
+        </div>  <!-- /.span5 -->
+      </div> <!-- /.row -->
+
+      <div class="row">
+        <div class="input-prepend input-append span5" id="add-alias">
+          <select id="add-alias-scheme">
+            <option>https://</option>
+            <option>http://</option>
+          </select>
+          <input type="text" id="add-alias-input"
+                 placeholder="Enter a domain">
+          <button type="button" id="add-alias-button" class="btn disabled">
+            <i class="icon-arrow-up icon-light"></i>
+          </button>
+        </div>  <!-- /.input-prepend -->
+      </div> <!-- /.row -->
+
+      <div class="row">
+        <a class="btn btn-info help">Show help</a>
+      </div>
+    </div> <!-- /.container settings -->
+
+    <div class="container content about hide">
+    </div> <!-- /.container about -->
 
     <div class="modal hide fade" id="notify-modal">
       <div class="modal-header">

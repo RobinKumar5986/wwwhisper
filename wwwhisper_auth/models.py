@@ -19,7 +19,8 @@
 Each site has users, locations (paths) and permissions - rules that
 define which user can access which locations. Sites are
 isolated. Users and locations are associated with a single site and
-are used only for this site.
+are used only for this site. Site has also aliases: urls that can be
+used to access the site, only requests from these urls are allowed.
 
 Provides methods that map to REST operations that can be performed on
 users, locations and permissions resources. Allows to retrieve
@@ -74,7 +75,7 @@ SINGLE_SITE_ID = 'theone'
 class Site(ValidatedModel):
     """A site to which access is protected.
 
-    Site has locations and users.
+    Site has locations, users and aliases.
 
     Attributes:
       site_id: Can be a domain or any other string.
@@ -405,6 +406,15 @@ class Permission(ValidatedModel):
             self, site_url, {'user': self.user.attributes_dict(site_url)})
 
 class Alias(ValidatedModel):
+    """One of urls that can be used to access the site.
+
+    Attributes:
+      site: Site to which the alias belongs.
+      url: Has form http(s)://domain[:port], default ports (80 for http,
+         443 for https) are always stripped.
+      uuid: Externally visible UUID of the alias.
+    """
+
     site = models.ForeignKey(Site, related_name='+')
     url = models.TextField(db_index=True, unique=True)
     uuid = models.CharField(max_length=36, db_index=True,

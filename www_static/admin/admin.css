@@ -65,8 +65,18 @@ body {
   margin-left: 10px;
 }
 
-.input-append input {
+#add-location-input,
+.add-allowed-user {
   width: 310px;
+}
+
+#add-alias-scheme {
+  width: 85px;
+  float: left;
+}
+
+#add-alias-input {
+ width: 240px;
 }
 
 .tabs-left .input-append {
@@ -119,7 +129,7 @@ li,
   margin-right: 12px;
 }
 
-li:hover {
+.hoverable:hover {
   background: #eeeeee;
 }
 

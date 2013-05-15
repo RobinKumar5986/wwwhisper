@@ -123,6 +123,12 @@
     deepEqual(array, []);
   });
 
+  test('compare', function() {
+    deepEqual(utils.compare('ab', 'ac'), -1);
+    deepEqual(utils.compare('ab', 'ab'), 0);
+    deepEqual(utils.compare('ab', 'aa'), 1);
+  });
+
   test('sort', function() {
     var array = ['b', 'aa', 'a', 'z'];
     deepEqual(utils.sort(array), ['a', 'aa', 'b', 'z']);
@@ -676,6 +682,52 @@
     });
     deepEqual(controller.adminUserEmail, ajaxCallResult.email);
     ok(callbackCalled);
+    mock_stub.verify();
+  });
+
+  test('getAliases', function() {
+    var ajaxCallResult, callbackCalled;
+    ajaxCallResult = {
+      aliases: [
+        {
+          url: 'https://example.org',
+          id: '1'
+        },
+        {
+          url: 'http://example.org',
+          id: '2'
+        }
+      ]
+    };
+    callbackCalled = false;
+    mock_stub.expectAjaxCall('GET', 'api/aliases/', null, ajaxCallResult);
+    controller.getAliases(function() {
+      callbackCalled = true;
+    });
+    deepEqual(controller.aliases, ajaxCallResult.aliases);
+    ok(callbackCalled);
+    mock_stub.verify();
+  });
+
+  test('addAlias', function() {
+    deepEqual(controller.aliases, []);
+    var newAlias = {id: '13', url: 'https://example.org'};
+    mock_stub.expectAjaxCall(
+      'POST', 'api/aliases/', {url: 'https://example.org'}, newAlias);
+    controller.addAlias('https://example.org');
+    deepEqual(controller.aliases, [newAlias]);
+    mock_stub.verify();
+  });
+
+  test('removeAlias', function() {
+    controller.aliases = [{
+      id: '13',
+      url: 'http://example.com',
+      self: 'example.com/aliases/13/'
+    }];
+    mock_stub.expectAjaxCall('DELETE', controller.aliases[0].self, null, null);
+    controller.removeAlias(controller.aliases[0]);
+    deepEqual(controller.aliases, []);
     mock_stub.verify();
   });
 

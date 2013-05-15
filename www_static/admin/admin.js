@@ -80,6 +80,20 @@
     },
 
     /**
+     * Comparision function to be used in sorting algorithms. Returns
+     * -1, 0 or 1.
+     */
+    compare: function(a, b) {
+      if (a < b) {
+        return -1;
+      }
+      if (a > b) {
+        return 1;
+      }
+      return 0;
+    },
+
+    /**
      * Returns array sorted in order defined by a given comparator (or
      * alphabetical if comparator is not passed). Does not modify the
      * input array.
@@ -98,13 +112,7 @@
      */
     sortByProperty: function(array, propertyName) {
       return utils.sort(array, function(a, b) {
-        if (a[propertyName] < b[propertyName]) {
-          return -1;
-        }
-        if (a[propertyName] > b[propertyName]) {
-          return 1;
-        }
-        return 0;
+        return utils.compare(a[propertyName], b[propertyName]);
       });
     },
 
@@ -155,6 +163,7 @@
   function Controller(ui, stub) {
     var that = this;
 
+    this.aliases = [];
     this.locations = [];
     this.users = [];
 
@@ -218,23 +227,25 @@
     };
 
     /**
-     * Retrieves an array of locations from the server, invokes
-     * successCallback when successfully done.
+     * Functions to retrieve arrays of users, locations and
+     * aliases from the server. successCallback is invoked when
+     * successfully done.
      */
+    this.getUsers = function(successCallback) {
+      stub.ajax('GET', 'api/users/', null, function(result) {
+        that.users = result.users;
+        successCallback();
+      });
+    };
     this.getLocations = function(successCallback) {
       stub.ajax('GET', 'api/locations/', null, function(result) {
         that.locations = result.locations;
         successCallback();
       });
     };
-
-    /**
-     * Retrieves an array of users from the server, invokes
-     * successCallback when successfully done.
-     */
-    this.getUsers = function(successCallback) {
-      stub.ajax('GET', 'api/users/', null, function(result) {
-        that.users = result.users;
+    this.getAliases = function(successCallback) {
+      stub.ajax('GET', 'api/aliases/', null, function(result) {
+        that.aliases = result.aliases;
         successCallback();
       });
     };
@@ -292,13 +303,34 @@
     };
 
     /**
+     * Adds an alias (scheme://domain[:optional port]) that can be
+     * used to access the site.
+     */
+    this.addAlias = function(urlArg) {
+      stub.ajax('POST', 'api/aliases/', {url: urlArg},
+                function(alias) {
+                  that.aliases.push(alias);
+                  ui.refresh();
+                });
+    };
+
+    this.removeAlias = function(alias, failureHandler) {
+      stub.ajax('DELETE', alias.self, null,
+                function() {
+                  utils.removeFromArray(alias, that.aliases);
+                  ui.refresh();
+                },
+                failureHandler);
+    };
+
+    /**
      * Adds a location with a given path.
      *
      * Refuses to add sub location to the admin application (this is
      * just a client side check to prevent the user from shooting
      * himself in the foot).
      */
-    this.addLocation = function(locationPathArg, successCallback) {
+    this.addLocation = function(locationPathArg) {
       var locationPath = $.trim(locationPathArg);
       if (that.handledByAdmin(locationPath)) {
         that.errorHandler(
@@ -450,6 +482,7 @@
       stub.setErrorHandler(that.errorHandler);
       that.buildCallbacksChain([that.getLocations,
                                 that.getUsers,
+                                that.getAliases,
                                 that.getAdminUser,
                                 ui.refresh])();
     };
@@ -485,8 +518,9 @@
       // can access, notify a user and grant access to currently
       // active location.
       user : $('.user-list-item').clone(true),
+      alias : $('.alias-list-item').clone(true),
       // Box for displaying error messages.
-      errorMessage : $('.alert-error').clone(true)
+      errorMessage : $('.alert-error').first().clone(true)
     },
     that = this,
     controller = null,
@@ -494,7 +528,15 @@
     // These would preferably be obtained dynamically, but css floats
     // make it hard to get elements' max-width.
     MAX_PATH_WIDTH_PX = 275,
-    MAX_EMAIL_WIDTH_PX = MAX_PATH_WIDTH_PX - 5;
+    MAX_EMAIL_WIDTH_PX = MAX_PATH_WIDTH_PX - 5,
+    MAX_ALIAS_WIDTH_PX = MAX_PATH_WIDTH_PX;
+
+    /**
+     * scheme://domain[:port if not default] of the current document.
+     */
+    function currentUrlRoot() {
+      return location.protocol + '//' + location.host;
+    }
 
     /**
      * Annotates currently signed in user to make it clearer that this
@@ -504,6 +546,16 @@
     function userAnnotation(user) {
       if (user.email === controller.adminUserEmail) {
         return ' (you)';
+      }
+      return '';
+    }
+
+    /**
+     * Annotates a current url on the list of aliases.
+     */
+    function aliasAnnotation(alias) {
+      if (alias.url === currentUrlRoot()) {
+        return ' (current)';
       }
       return '';
     }
@@ -566,8 +618,7 @@
           website = 'websites';
         }
         locationsString = $.map(locations, function(locationPath) {
-          return window.location.protocol + '://' + window.location.host +
-            locationPath;
+          return currentUrlRoot() + locationPath;
         }).join('\n');
 
         body = 'I have shared ' + website + ' with you.\n'
@@ -769,39 +820,39 @@
     }
 
     function showLocation(location) {
-        var pathView, isAdminLocation;
-        isAdminLocation = controller.handledByAdmin(location.path);
-        pathView = view.locationPath.clone(true)
-          .attr('id', locationPathId(location))
-          .attr('location-urn', location.id)
-          .find('.url').attr(
-            'href', '#' + locationInfoId(location))
-          .end()
-          .find('.path').text(location.path)
-          .end()
-          .find('.remove-location').click(function(event) {
-            removeInProgress($(this));
-            controller.removeLocation(location, removeFailedHandler($(this)));
-            // Do not propagete the event (not to show removed location info):
-            return false;
-          })
-          // Do not allow admin location to be removed.
-          .css('visibility', isAdminLocation ? 'hidden' : 'visible')
-          .end()
-          .find('.notify').click(function() {
-            showNotifyDialog(
-              utils.extractProperty(location.allowedUsers, 'email'),
-              [location.path]);
-          })
-          .end()
-          .find('.view-page').click(function() {
-            window.open(location.path,'_blank');
-          })
-          .end()
-          .appendTo('#location-list');
-        trimText(pathView, '.path', MAX_PATH_WIDTH_PX, 'right');
-        pathView = null;
-        isAdminLocation = null;
+      var pathView, isAdminLocation;
+      isAdminLocation = controller.handledByAdmin(location.path);
+      pathView = view.locationPath.clone(true)
+        .attr('id', locationPathId(location))
+        .attr('location-urn', location.id)
+        .find('.url').attr(
+          'href', '#' + locationInfoId(location))
+        .end()
+        .find('.path').text(location.path)
+        .end()
+        .find('.remove-location').click(function(event) {
+          removeInProgress($(this));
+          controller.removeLocation(location, removeFailedHandler($(this)));
+          // Do not propagete the event (not to show removed location info):
+          return false;
+        })
+      // Do not allow admin location to be removed.
+        .css('visibility', isAdminLocation ? 'hidden' : 'visible')
+        .end()
+        .find('.notify').click(function() {
+          showNotifyDialog(
+            utils.extractProperty(location.allowedUsers, 'email'),
+            [location.path]);
+        })
+        .end()
+        .find('.view-page').click(function() {
+          window.open(location.path,'_blank');
+        })
+        .end()
+        .appendTo('#location-list');
+      trimText(pathView, '.path', MAX_PATH_WIDTH_PX, 'right');
+      pathView = null;
+      isAdminLocation = null;
     }
 
     /**
@@ -852,6 +903,65 @@
         // Must be called after activateLocation().
         trimEmailsInActiveLocation();
       }
+    }
+
+    function showAlias(alias) {
+      var aliasView = view.alias.clone(true),
+      isCurrentUrl = (alias.url === currentUrlRoot());
+
+      aliasView.find('.url').text(alias.url + aliasAnnotation(alias))
+        .end()
+        .find('.remove-alias').click(function(event) {
+          removeInProgress($(this));
+          controller.removeAlias(alias, removeFailedHandler($(this)));
+          return false;
+        })
+        .css('visibility', isCurrentUrl ? 'hidden' : 'visible')
+        .end()
+        .find('.view-page').click(function() {
+          window.open(alias.url,'_blank');
+        })
+        .end()
+        .appendTo('#alias-list');
+      trimText(aliasView, '.url', MAX_ALIAS_WIDTH_PX, 'right');
+      aliasView = null;
+    }
+
+    function showAliasesList() {
+      utils.each(utils.sort(controller.aliases, function(a, b) {
+        var partsA = a.url.split('://'),
+        partsB = b.url.split('://'),
+        result = utils.compare(partsA[1], partsB[1]);
+        if (result === 0) {
+          // Domains are the same, compare schemes.
+          return utils.compare(partsA[0], partsB[0]);
+        }
+        return result;
+      }), showAlias);
+
+      function addAliasCommon(url) {
+        var input = $('#add-alias-input'), url = $.trim(input.val());
+        if (url !== '') {
+          controller.addAlias($('#add-alias-scheme').val() + url);
+        }
+        input.val('');
+        $('#add-alias-button').addClass('disabled');
+      }
+
+      $('#add-alias-input')
+        .keyup(function(event) {
+          if (event.which === ENTER_KEY) {
+            addAliasCommon()
+          } else if ($(this).val() === '') {
+            $('#add-alias-button').addClass('disabled');
+          } else {
+            $('#add-alias-button').removeClass('disabled');
+          }
+        })
+        .end()
+      $('#add-alias-button')
+        .click(addAliasCommon)
+        .end()
     }
 
     /**
@@ -936,6 +1046,48 @@
     }
 
     /**
+     * Returns a hash part of the current url (without '#') or 'acl'
+     * if the hash part is empty.
+     */
+    function activeHash() {
+      var hash = location.hash.replace(/^#/, '');
+      if (hash === '' || hash === null) {
+        return 'acl';
+      }
+      return hash;
+    }
+
+    /**
+     * Changes the main content that is displayed on the screen
+     * (access control UI or site settings etc.).
+     */
+    function showContainer(containerClass) {
+      $('.container.content').addClass('hide');
+      $('.container.content.' + containerClass).removeClass('hide');
+    }
+
+    function showContainerPointedByHash() {
+      showContainer(activeHash());
+    }
+
+    function hashChanged() {
+      showContainerPointedByHash()
+      that.refresh();
+    }
+
+    /**
+     * Provides a basic support for browsers that do not expose
+     * hashchanged event. Containers are changed only on menu clicks
+     * (back, forward buttons are not supported).
+     */
+    function hashClickedHandler(hash) {
+      return function() {
+        showContainer(hash);
+        that.refresh();
+      }
+    }
+
+    /**
      * Handles errors. Not HTTP related errors (status undefined)
      * or HTTP errors with plain text messages are displayed and
      * automatically hidden after some time.
@@ -965,7 +1117,7 @@
           .find('.alert-message')
           .text(message)
           .end()
-          .appendTo('#error-box');
+          .appendTo('.' + activeHash() +  ' > .error-box');
 
         window.setTimeout(function() {
           error.alert('close');
@@ -1002,10 +1154,12 @@
 
       focusedElementId = focusedElement().attr('id');
 
+      $('#alias-list').empty();
       $('#location-list').empty();
       $('#location-info-list').empty();
       $('#user-list').empty();
 
+      showAliasesList(activeLocation);
       showLocationsList(activeLocation);
       showUsersList(activeLocation);
 
@@ -1028,6 +1182,10 @@
      * Initializes the UI.
      */
     function initialize() {
+      // Hashchange event is not triggered automatically when page is
+      // loaded.
+      showContainerPointedByHash();
+
       // locationInfo contains a single allowed user element from the
       // html document. Remove it.
       view.locationInfo.find('#allowed-user-list-item').remove();
@@ -1040,10 +1198,6 @@
         $(this).tab('show');
         that.refresh();
       });
-
-      // Displays for which host the admin interface manages access
-      // (in a future may need to be configurable).
-      $('.locations-root').text(location.host);
 
       // TODO: this is only needed if alert is to be removed programmatically.
       $(".alert").alert();
@@ -1058,6 +1212,14 @@
           $('.help').text('Show help');
         }
       });
+
+      if ("onhashchange" in window) {
+        $(window).on('hashchange', hashChanged);
+      } else {
+        // Dinosaur browsers.
+        $('.acl').click(hashClickedHandler('acl'));
+        $('.settings').click(hashClickedHandler('settings'));
+      }
     }
     initialize();
   }
