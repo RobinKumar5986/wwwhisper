@@ -706,3 +706,12 @@ class AliasesCollectionTest(ModelTestCase):
         self.aliases.create_item(TEST_SITE)
         self.assertIsNone(self.site2.aliases.find_item_by_url(TEST_SITE))
 
+    def test_aliases_limit(self):
+        limit = 10
+        self.site.aliases_limit = limit
+        for i in range(0, limit):
+            self.aliases.create_item('http://foo%d.org' % (i))
+        self.assertRaisesRegexp(LimitExceeded,
+                                'Aliases limit exceeded',
+                                self.aliases.create_item,
+                                'http://foo10.org')

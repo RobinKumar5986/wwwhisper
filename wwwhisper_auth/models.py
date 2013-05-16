@@ -87,6 +87,7 @@ class Site(ValidatedModel):
     """
     site_id = models.TextField(primary_key=True, db_index=True, editable=False)
     mod_id = models.IntegerField(default=0)
+    aliases_limit = None
     users_limit = None
     locations_limit = None
 
@@ -669,6 +670,10 @@ class AliasesCollection(Collection):
 
     @modify_site
     def create_item(self, url):
+        aliases_limit = self.site.aliases_limit
+        if (aliases_limit is not None and self.count() >= aliases_limit):
+            raise LimitExceeded('Aliases limit exceeded')
+
         url = url.lower()
         (valid, error) = url_utils.validate_site_url(url)
         if not valid:
