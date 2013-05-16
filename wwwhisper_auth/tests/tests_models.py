@@ -715,3 +715,10 @@ class AliasesCollectionTest(ModelTestCase):
                                 'Aliases limit exceeded',
                                 self.aliases.create_item,
                                 'http://foo10.org')
+
+    def test_alias_length_limit(self):
+        long_url = 'https://%s.org' % ('x' * self.aliases.ALIAS_LEN_LIMIT)
+        self.assertRaisesRegexp(ValidationError,
+                                'Url too long',
+                                self.aliases.create_item,
+                                long_url)

@@ -667,12 +667,16 @@ class LocationsCollection(Collection):
 class AliasesCollection(Collection):
     item_name = 'alias'
     model_class = Alias
+    # RFC 1035
+    ALIAS_LEN_LIMIT = 8 + 253 + 6
 
     @modify_site
     def create_item(self, url):
         aliases_limit = self.site.aliases_limit
         if (aliases_limit is not None and self.count() >= aliases_limit):
             raise LimitExceeded('Aliases limit exceeded')
+        if len(url) > self.ALIAS_LEN_LIMIT:
+            raise ValidationError('Url too long')
 
         url = url.lower()
         (valid, error) = url_utils.validate_site_url(url)
