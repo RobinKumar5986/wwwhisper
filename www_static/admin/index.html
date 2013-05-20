@@ -29,7 +29,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
           <ul class="nav pull-right">
             <li><a href="#" class="acl">Access control</a></li>
             <li><a href="#settings" class="settings">Site settings</a></li>
-            <!-- <li><a href="#about">About</a></li> -->
+            <li><a href="#about">About</a></li>
           </ul>
         </div>
       </div>
@@ -181,11 +181,10 @@ https://www.gnu.org/licenses/gpl-3.0.html
 
       <div class="alert alert-success help-message fade in hide">
         <p>
-          A list of addresses that can be used to access the site.  An
-          address has a form protocol://domain[:optional port].
-          Requests from addresses that are not on the lists are
-          rejected (this is an important part of the Persona based
-          login process).
+          A list of addresses (protocol://domain[:optional port]) that
+          can be used to access the site .  Requests from addresses that
+          are not on the list are rejected (this is an important part of
+          the Persona based login process).
         </p>
         <p>
           If https://example.org is on the list and http://example.org
@@ -193,8 +192,9 @@ https://www.gnu.org/licenses/gpl-3.0.html
           https://example.org.
         </p>
         <p>
-        It is safe to add http://localhost[:port] to communicate with
-        wwwhisper from a local machine.
+          It is safe to add
+          http://localhost[:port] to communicate with wwwhisper from a
+          local machine.
         </p>
 
         <p>
@@ -237,7 +237,33 @@ https://www.gnu.org/licenses/gpl-3.0.html
       </div>
     </div> <!-- /.container settings -->
 
-    <div class="container content about hide">
+    <div class="container content about">
+      <p>
+        Powered by
+        <strong>
+          <a href="https://github.com/wrr/wwwhisper">wwwhisper</a></strong>:
+        an open source, application independent, web access control
+        system.<br />To request new features or report problems,
+        please open
+        a <a href="https://github.com/wrr/wwwhisper/issues">GitHub</a>
+        issue.
+      </p>
+
+      <p>
+        wwwhisper uses many great, open components, among them:
+      </p>
+        <ul>
+          <li><a href="https://www.mozilla.org/en-US/persona/">
+              Mozilla Persona</a>: An Identity System for the Web</li>
+          <li><a href="http://jquery.com/">JQuery</a></li>
+          <li><a href="http://twitter.github.io/bootstrap/">Bootstrap</a></li>
+          <li><a href="http://glyphicons.com/">Glyphicons Free</a></li>
+          <li><a href="http://www.subtlepatterns.com">Subtle Patterns</a></li>
+        </ul>
+
+      <p class="text-center">
+        <small>&copy; 2012, 2013 MixedBit</small>
+      </p>
     </div> <!-- /.container about -->
 
     <div class="modal hide fade" id="notify-modal">
