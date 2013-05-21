@@ -732,10 +732,3 @@ def _encode_email(email):
 def _is_email_valid(email):
     return re.match(email_re.EMAIL_VALIDATION_RE, email)
 
-def _gen_random_str(length):
-    secure_generator = random.SystemRandom()
-    allowed_chars='abcdefghijklmnopqrstuvwxyz'\
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-    return ''.join(
-        [secure_generator.choice(allowed_chars) for i in range(length)])
-
