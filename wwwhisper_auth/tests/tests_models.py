@@ -681,9 +681,9 @@ class AliasesCollectionTest(ModelTestCase):
             alias = self.aliases.create_item('http://example.org:80')
         self.assertEqual('http://example.org', alias.url)
 
-    def test_downcased(self):
+    def test_normalized(self):
         with self.assert_site_modified(self.site):
-            alias = self.aliases.create_item('hTtp://eXamPlE.org')
+            alias = self.aliases.create_item('  hTtp://eXamPlE.org')
         self.assertEqual('http://example.org', alias.url)
 
 

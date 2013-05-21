@@ -678,7 +678,7 @@ class AliasesCollection(Collection):
         if len(url) > self.ALIAS_LEN_LIMIT:
             raise ValidationError('Url too long')
 
-        url = url.lower()
+        url = url.strip().lower()
         (valid, error) = url_utils.validate_site_url(url)
         if not valid:
             raise ValidationError('Invalid url: ' + error)
