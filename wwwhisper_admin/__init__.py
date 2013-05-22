@@ -49,7 +49,7 @@ def _create_initial_locations(site):
             site.locations.create_item(path)
         except ValidationError as ex:
             raise ImproperlyConfigured('Failed to create location %s: %s'
-                                       % (path, ex))
+                                       % (path, ', '.join(ex.messages)))
 
 def _create_initial_admins(site):
     """Creates all users listed in WWWHISPER_INITIAL_ADMINS setting."""
@@ -59,7 +59,7 @@ def _create_initial_admins(site):
             user = site.users.create_item(email)
         except ValidationError as ex:
             raise ImproperlyConfigured('Failed to create admin user %s: %s'
-                                       % (email, ex))
+                                       % (email, ', '.join(ex.messages)))
 
 def _grant_admins_access_to_all_locations(site):
     for user in site.users.all():

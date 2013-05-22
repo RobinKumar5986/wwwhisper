@@ -68,6 +68,6 @@ class BrowserIDBackend(ModelBackend):
             else:
                 return None
         except ValidationError as ex:
-            raise AssertionVerificationException(str(ex))
+            raise AssertionVerificationException(', '.join(ex.messages))
         except LimitExceeded as ex:
             raise AssertionVerificationException(str(ex))

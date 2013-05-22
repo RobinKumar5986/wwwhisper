@@ -63,7 +63,7 @@ class CollectionView(http.RestView):
             created_item = self.collection.create_item(**kwargs)
         except ValidationError as ex:
             # ex.messages is a list of errors.
-            return http.HttpResponseBadRequest(", ".join(ex.messages))
+            return http.HttpResponseBadRequest(', '.join(ex.messages))
         except LimitExceeded as ex:
             return http.HttpResponseLimitExceeded(str(ex))
 
