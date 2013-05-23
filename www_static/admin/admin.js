@@ -529,7 +529,7 @@
     // make it hard to get elements' max-width.
     MAX_PATH_WIDTH_PX = 275,
     MAX_EMAIL_WIDTH_PX = MAX_PATH_WIDTH_PX - 5,
-    MAX_ALIAS_WIDTH_PX = MAX_PATH_WIDTH_PX;
+    MAX_ALIAS_WIDTH_PX = 300;
 
     /**
      * scheme://domain[:port if not default] of the current document.
