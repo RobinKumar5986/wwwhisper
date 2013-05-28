@@ -2,9 +2,8 @@ wwwhisper simplifies sharing of Web resources that are not intended
 for everyone. It is a generic access control layer for HTTP server
 that allows to specify which resources can be accessed by which
 visitors. At the moment wwwhisper works with nginx, there is also a
-[Heroku add-on](https://github.com/wrr/rack-wwwhisper/blob/master/heroku-doc.md)
-that allows to easily use wwwhisper with any Ruby Rack based
-application.
+[Heroku add-on](https://addons.heroku.com/wwwhisper) that provides
+wwwhisper as a service for any Ruby Rack based application on Heroku.
 
 * wwwhisper grants access to HTTP resources based on users' email
   addresses, which enables sharing with almost every Internet user.
@@ -120,10 +119,9 @@ Setup
 -----
 
 Heroku users can use the [wwwhisper
-add-on](https://github.com/wrr/rack-wwwhisper/blob/master/heroku-doc.md)
-with any Rack based application (Rails, Sinatra). This is the fastest
-and easiest way to setup wwwhisper authorization, it requires only 3
-lines of config.
+add-on](https://addons.heroku.com/wwwhisper) with any Rack based
+application (Rails, Sinatra). This is the fastest and easiest way to
+setup wwwhisper authorization, it requires only 3 lines of config.
 
 Another easy way is to setup a standalone wwwhisper instance on
 OpenShift cloud platform by RedHat. Follow [these
