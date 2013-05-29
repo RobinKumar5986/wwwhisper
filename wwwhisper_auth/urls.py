@@ -22,26 +22,7 @@ the outside world, other views need to be externally accessible.
 
 from django.conf import settings
 from django.conf.urls import patterns, url
-from wwwhisper_auth.assets import Asset
-from wwwhisper_auth.http import HttpResponseNotAuthenticated
-from wwwhisper_auth.http import HttpResponseNotAuthorized
 from wwwhisper_auth.views import Auth, CsrfToken, Login, Logout, WhoAmI
-
-import logging
-
-logger = logging.getLogger(__name__)
-
-if settings.WWWHISPER_STATIC is not None:
-    logger.debug('Auth request configured to return html responses.')
-    assets = {
-        HttpResponseNotAuthenticated :
-            Asset(settings.WWWHISPER_STATIC, 'auth', 'login.html'),
-        HttpResponseNotAuthorized :
-            Asset(settings.WWWHISPER_STATIC, 'auth', 'not_authorized.html'),
-        }
-else:
-    logger.debug('Auth request configured to return empty responses.')
-    assets = None
 
 urlpatterns = patterns(
     'wwwhisper_auth.views',
@@ -49,5 +30,5 @@ urlpatterns = patterns(
     url(r'^login/$', Login.as_view()),
     url(r'^logout/$', Logout.as_view()),
     url(r'^whoami/$', WhoAmI.as_view()),
-    url(r'^is-authorized/$', Auth.as_view(assets=assets), name='auth-request'),
+    url(r'^is-authorized/$', Auth.as_view(), name='auth-request'),
     )

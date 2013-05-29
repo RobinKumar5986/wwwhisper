@@ -11,24 +11,16 @@
   <body>
    <div class="container">
 
-     <div class="hide" id="authenticated">
-       <h1>Access denied</h1>
-       <p class="lead">
-         <span id="email"></span> can not access this URL. </p>
-       Go somewhere else or <a href="#" id="logout">sign out</a>.
-     </div>
-
-     <div class="hide" id="not-authenticated">
-       <h1>Not authenticated</h1>
-       <p class="lead">
-         You are signed out.
-       </p>
-     </div>
+     <h1>Access denied</h1>
+     <p class="lead">
+       {{email}} can not access this URL.
+     </p>
+     Go somewhere else or <a href="#" id="logout">sign out</a>.
 
    </div>
 
     <script src="/auth/assets/js/jquery.js" type="text/javascript"></script>
     <script src="/auth/assets/js/stub.js" type="text/javascript"></script>
-    <script src="/auth/logout.js"></script>
+    <script src="/auth/not_authorized.js"></script>
   </body>
 </html>

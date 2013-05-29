@@ -18,6 +18,7 @@
 
 from django.contrib import auth
 from django.core.cache import cache
+from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
@@ -71,8 +72,6 @@ class Auth(View):
 
       Auth view does not need to be externally accessible.
     """
-
-    assets = None
 
     @http.never_ever_cache
     def get(self, request):
@@ -142,7 +141,8 @@ class Auth(View):
             else:
                 logger.debug('%s: access denied.' % (debug_msg))
                 response = http.HttpResponseNotAuthorized(
-                    self._html_body(request, http.HttpResponseNotAuthorized))
+                    self._html_or_none(request, 'not_authorized.html',
+                                       {'email' : user.email}))
             response['User'] = user.email
             return response
 
@@ -153,17 +153,15 @@ class Auth(View):
             return http.HttpResponseOK('Access granted.')
         logger.debug('%s: user not authenticated.' % (debug_msg))
         return http.HttpResponseNotAuthenticated(
-            self._html_body(request, http.HttpResponseNotAuthenticated))
+            self._html_or_none(request, 'login.html'))
 
-    def _html_body(self, request, response_class):
-        """Returns html response body suitable for a given class of response.
+    def _html_or_none(self, request, template, context={}):
+        """Renders html response string from a given template.
 
-        Returns None if request does not accept html or static files are not
-        configured.
+        Returns None if request does not accept html response type.
         """
-        if (self.assets and
-            http.accepts_html(request.META.get('HTTP_ACCEPT'))):
-            return self.assets[response_class].body
+        if (http.accepts_html(request.META.get('HTTP_ACCEPT'))):
+            return render_to_string(template, context)
         return None
 
     @staticmethod

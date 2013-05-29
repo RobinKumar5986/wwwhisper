@@ -182,17 +182,9 @@ class AuthTest(AuthTestCase):
         control.index('must-revalidate')
         control.index('max-age=0')
 
-class AuthStaticAssetsTest(AuthTestCase):
-    def setUp(self):
-        settings.WWWHISPER_STATIC = './www_static'
-        reload(wwwhisper_auth.urls)
-        super(AuthStaticAssetsTest, self).setUp()
+    # Make sure HTML responses are returned when request accepts HTML.
 
-    def tearDown(self):
-        settings.WWWHISPER_STATIC = None
-        reload(wwwhisper_auth.urls)
-
-    def test_is_authorized_for_not_authenticated_user(self):
+    def test_html_response_is_authorized_for_not_authenticated_user(self):
         location = self.site.locations.create_item('/foo/')
         response = self.get('/auth/api/is-authorized/?path=/foo/',
                             HTTP_ACCEPT='text/plain, text/html')
@@ -218,7 +210,6 @@ class AuthStaticAssetsTest(AuthTestCase):
                             HTTP_ACCEPT='text/plain, audio/*')
         self.assertEqual(403, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/plain')
-
 
 class LogoutTest(AuthTestCase):
     def test_authentication_requested_after_logout(self):

@@ -112,7 +112,7 @@ if DEBUG:
 
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
-#    'django.template.loaders.app_directories.Loader',
+    'django.template.loaders.app_directories.Loader',
 )
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
