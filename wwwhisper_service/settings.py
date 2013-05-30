@@ -84,6 +84,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
     # Must be placed before session middleware to alter session cookies.
     'wwwhisper_auth.middleware.ProtectCookiesMiddleware',
+    'wwwhisper_auth.middleware.SecuringHeadersMiddleware',
     #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
