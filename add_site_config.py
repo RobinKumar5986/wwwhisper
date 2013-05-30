@@ -42,7 +42,7 @@ DB_NAME = 'acl_db'
 
 WWWHISPER_USER = 'wwwhisper'
 WWWHISPER_GROUP = 'www-data'
-DEFAULT_INITIAL_LOCATIONS = ['/', '/admin/']
+DEFAULT_INITIAL_LOCATIONS = ['/', '/wwwhisper/admin/']
 
 def err_quit(errmsg):
     """Prints an error message and quits."""

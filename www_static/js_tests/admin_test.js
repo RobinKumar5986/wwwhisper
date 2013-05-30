@@ -379,16 +379,17 @@
   });
 
   test('handledByAdmin', function() {
-    controller.adminPath = '/admin';
-    ok(controller.handledByAdmin('/admin'));
-    ok(controller.handledByAdmin('/admin/'));
-    ok(controller.handledByAdmin('/admin/foo/bar'));
+    controller.adminPath = '/wwwhisper/admin';
+    ok(controller.handledByAdmin('/wwwhisper/admin/'));
+    ok(controller.handledByAdmin('/wwwhisper/admin/foo/bar'));
+    ok(!controller.handledByAdmin('/wwwhisper/admi'));
+    ok(!controller.handledByAdmin('/admin'));
     ok(!controller.handledByAdmin('/admino'));
   });
 
   test('addLocation refuses to add sublocations to admin', function() {
-    controller.adminPath = '/admin';
-    controller.addLocation('/admin/api');
+    controller.adminPath = '/wwwhisper/admin';
+    controller.addLocation('/wwwhisper/admin/api');
     deepEqual(controller.locations, []);
     ok(utils.startsWith(mock_ui.lastError,
                         'Adding sublocations to admin is not supported'))
@@ -676,7 +677,7 @@
     };
     callbackCalled = false;
     ok(controller.adminUserEmail === null);
-    mock_stub.expectAjaxCall('GET', '/auth/api/whoami/', null, ajaxCallResult);
+    mock_stub.expectAjaxCall('GET', '/wwwhisper/auth/api/whoami/', null, ajaxCallResult);
     controller.getAdminUser(function() {
       callbackCalled = true;
     });

@@ -9,3 +9,4 @@ DATABASES = {
     }
 }
 
+WWWHISPER_PATH_PREFIX = ''

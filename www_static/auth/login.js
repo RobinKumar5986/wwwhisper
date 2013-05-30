@@ -15,7 +15,7 @@
    */
   function login(assertion) {
     if (assertion) {
-      stub.ajax('POST', '/auth/api/login/',
+      stub.ajax('POST', '/wwwhisper/auth/api/login/',
                 { 'assertion' : assertion.toString() },
                 function() {
                   window.location.reload(true);
@@ -38,9 +38,9 @@
    */
   function gotoLogoutIfAuthenticated() {
     // Whoami succeeds only for authenticated users.
-    stub.ajax('GET', '/auth/api/whoami/', null,
+    stub.ajax('GET', '/wwwhisper/auth/api/whoami/', null,
               function() {
-                window.location = '/auth/logout';
+                window.location = '/wwwhisper/auth/logout';
               },
               function() {
                 // Logget out (errorStatus 401) or some other error.

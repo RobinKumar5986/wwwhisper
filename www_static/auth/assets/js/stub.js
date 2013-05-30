@@ -89,7 +89,7 @@
         nextCallback(token);
       } else {
         // No token in a cookie, set it with an ajax call.
-        ajaxCommon('GET', '/auth/api/csrftoken/', null, null,
+        ajaxCommon('GET', '/wwwhisper/auth/api/csrftoken/', null, null,
                    function(result) {
                      // Call succeeded, examine the cookie again.
                      token = getCookie('wwwhisper-csrftoken');

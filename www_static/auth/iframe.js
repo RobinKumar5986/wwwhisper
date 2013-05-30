@@ -15,7 +15,7 @@
   function createIframe() {
     var iframe = document.createElement('iframe');
     iframe.id = 'wwwhisper-iframe';
-    iframe.src = '/auth/overlay.html';
+    iframe.src = '/wwwhisper/auth/overlay.html';
     iframe.width = 340;
     iframe.height = 30;
     iframe.allowTransparency = 'true';

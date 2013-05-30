@@ -24,11 +24,11 @@
   }
 
   function logoutSucceeded() {
-    window.top.location = '/auth/goodbye.html';
+    window.top.location = '/wwwhisper/auth/goodbye.html';
   }
 
   function logout() {
-    stub.ajax('POST', '/auth/api/logout/', {}, logoutSucceeded);
+    stub.ajax('POST', '/wwwhisper/auth/api/logout/', {}, logoutSucceeded);
   }
 
   function authenticated(result) {
@@ -43,7 +43,7 @@
     $('#logout').click(logout);
   }
 
-  stub.ajax('GET', '/auth/api/whoami/', null,
+  stub.ajax('GET', '/wwwhisper/auth/api/whoami/', null,
             // User is authenticated.
             authenticated,
             // User is not authenticated or some other error occurred.

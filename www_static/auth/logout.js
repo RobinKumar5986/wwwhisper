@@ -10,15 +10,16 @@
   var stub = new wwwhisper.Stub();
 
   // Make sure a user is authenticated.
-  stub.ajax('GET', '/auth/api/whoami/', null,
+  stub.ajax('GET', '/wwwhisper/auth/api/whoami/', null,
             function(result) {
               // Logged in.
               $('#email').text(result.email);
               $('#authenticated').removeClass('hide');
               $('#logout').click(function() {
-                stub.ajax('POST', '/auth/api/logout/', {}, function() {
-                  window.top.location = '/auth/goodbye.html';
-                });
+                stub.ajax(
+                  'POST', '/wwwhisper/auth/api/logout/', {}, function() {
+                    window.top.location = '/wwwhisper/auth/goodbye.html';
+                  });
                 return false;
               });
             },

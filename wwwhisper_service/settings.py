@@ -14,6 +14,11 @@ TEMPLATE_DEBUG = DEBUG
 # response body to the user, so needs to obtain this documents from a
 # separate location or with a separate request.
 WWWHISPER_STATIC = None
+# Serve all wwwhisper pages from /wwwhisper/ prefix (/wwwhisper/auth/,
+# /wwwhisper/admin/)
+WWWHISPER_PATH_PREFIX = 'wwwhisper/'
+# Static files are also served from /wwwhisper/ prefix.
+STATIC_URL = '/' + 'wwwhisper/'
 
 import os
 import sys
@@ -102,6 +107,7 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
+    'django.contrib.staticfiles',
     'django_browserid',
     'wwwhisper_auth',
     'wwwhisper_admin'

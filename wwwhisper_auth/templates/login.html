@@ -1,3 +1,4 @@
+{% load staticfiles %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -5,8 +6,8 @@
     <meta charset="utf-8">
     <title>wwwhisper: Web Access Control</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/auth/assets/css/bootstrap.min.css" rel="stylesheet"
-          type="text/css">
+    <link href="{% static "auth/assets/css/bootstrap.min.css" %}"
+          rel="stylesheet" type="text/css">
   </head>
 
   <body>
@@ -37,18 +38,19 @@
      </noscript>
 
      <a class="hide" href="#" id="login" title="Sign in with BrowserID">
-       <img src="/auth/assets/img/sign_in_green.png" alt="Sign in">
+       <img src="{% static "auth/assets/img/sign_in_green.png" %}"
+            alt="Sign in">
      </a>
    </div>
 
-   <script src="/auth/assets/js/jquery.js" type="text/javascript">
-   </script>
-   <script src="https://login.persona.org/include.js" type="text/javascript">
-   </script>
-   <script src="/auth/assets/js/stub.js" type="text/javascript">
-   </script>
-   <script src="/auth/login.js" type="text/javascript">
-   </script>
+   <script src="{% static "auth/assets/js/jquery.js" %}"
+           type="text/javascript"> </script>
+   <script src="https://login.persona.org/include.js"
+           type="text/javascript"> </script>
+   <script src="{% static "auth/assets/js/stub.js" %}"
+           type="text/javascript"> </script>
+   <script src="{% static "auth/login.js" %}"
+           type="text/javascript"> </script>
 
   </body>
 </html>
