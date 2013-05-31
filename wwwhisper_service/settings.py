@@ -12,7 +12,8 @@ WWWHISPER_STATIC = None
 # /wwwhisper/admin/)
 WWWHISPER_PATH_PREFIX = 'wwwhisper/'
 # Static files are also served from /wwwhisper/ prefix.
-STATIC_URL = '/' + 'wwwhisper/'
+import cdn_container
+STATIC_URL = cdn_container.CDN_CONTAINER + '/' + 'wwwhisper/'
 
 import os
 import sys
