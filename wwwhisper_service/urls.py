@@ -19,6 +19,10 @@ from django.conf.urls import include, patterns, url
 from django.conf import settings
 from wwwhisper_auth.assets import Asset, HtmlFileView, JsFileView
 
+import logging
+
+logger = logging.getLogger(__name__
+
 def _add_suffix(suffix):
     return r'^%s%s' % (settings.WWWHISPER_PATH_PREFIX, suffix)
 

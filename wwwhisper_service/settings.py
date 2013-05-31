@@ -7,14 +7,8 @@ TEMPLATE_DEBUG = DEBUG
 # If WWWHISPER_STATIC is set, wwwhisper serves static html resources
 # needed for login and for the admin application (this is not needed
 # if these resources are served directly by a frontend server).
-#
-# In addition, auth request returns html documents to be displayed to
-# the user along with 401 and 403 responses. This is also not always
-# needed. For example, nginx_auth_request module can not pass returned
-# response body to the user, so needs to obtain this documents from a
-# separate location or with a separate request.
 WWWHISPER_STATIC = None
-# Serve all wwwhisper pages from /wwwhisper/ prefix (/wwwhisper/auth/,
+# Serve all wwwhisper resources from /wwwhisper/ prefix (/wwwhisper/auth/,
 # /wwwhisper/admin/)
 WWWHISPER_PATH_PREFIX = 'wwwhisper/'
 # Static files are also served from /wwwhisper/ prefix.
@@ -79,13 +73,13 @@ MIDDLEWARE_CLASSES = (
     #'wwwhisper_service.profile.ProfileMiddleware',
     # Must go before CommonMiddleware, to set a correct url to which
     # CommonMiddleware redirects.
+    #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'wwwhisper_auth.middleware.SetSiteMiddleware',
     'wwwhisper_auth.middleware.SiteUrlMiddleware',
     'django.middleware.common.CommonMiddleware',
     # Must be placed before session middleware to alter session cookies.
     'wwwhisper_auth.middleware.ProtectCookiesMiddleware',
     'wwwhisper_auth.middleware.SecuringHeadersMiddleware',
-    #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
