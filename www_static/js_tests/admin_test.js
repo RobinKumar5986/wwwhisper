@@ -321,25 +321,49 @@
     deepEqual(controller.accessibleLocations(userC), []);
   });
 
-  test('buildCallbacksChain', function() {
-    var callbackA, callbackB, callbackC, cnt;
-    cnt = 0;
-    callbackA = function(nextCallback) {
-      deepEqual(cnt, 0);
+  test('asyncExecuteAll', function() {
+    var cnt = 0, success = false;
+    function taskA(onSuccess) {
       cnt += 1;
-      nextCallback();
+      onSuccess();
     };
-    callbackB = function(nextCallback) {
-      deepEqual(cnt, 1);
+    function taskB(onSuccess) {
       cnt += 1;
-      nextCallback();
+      onSuccess();
     };
-    callbackC = function() {
-      deepEqual(cnt, 2);
+    function taskC(onSuccess) {
       cnt += 1;
+      onSuccess();
     };
-    controller.buildCallbacksChain([callbackA, callbackB, callbackC])();
+    function allDone() {
+      success = true;
+    };
+    controller.asyncExecuteAll([taskA, taskB, taskC], allDone);
     deepEqual(cnt, 3);
+    ok(success);
+  });
+
+  test('asyncExecuteAllTaskFailure', function() {
+    var cnt = 0, success = false;
+    function taskA(onSuccess) {
+      cnt += 1;
+      // This task fails (onSuccess is not invoked).
+    };
+    function taskB(onSuccess) {
+      cnt += 1;
+      onSuccess();
+    };
+    function taskC(onSuccess) {
+      cnt += 1;
+      onSuccess();
+    };
+    function allDone() {
+      success = true;
+    };
+    controller.asyncExecuteAll([taskA, taskB, taskC], allDone);
+    deepEqual(cnt, 3);
+    // allDone should not be invoked.
+    ok(!success);
   });
 
   module('Controller Ajax calls');

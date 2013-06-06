@@ -292,23 +292,24 @@
         utils.startsWith(path, that.adminPath + '/');
     };
 
-
     /**
-     * Returns a callback that, when invoked, executes all callbacks
-     * from a callbacks array in sequence. Each callback from the
-     * array needs to accept a single argument: the next callback to
-     * be invoked.
+     * Executes all asynchronous tasks from the tasks array. Each task
+     * is a function that needs to accept a single argument: a
+     * callback to be asynchronously invoked on success. If all tasks
+     * finish successfully, allDone callback is invoked.
      */
-    this.buildCallbacksChain = function(callbacks) {
-      if (callbacks.length === 1) {
-        return callbacks[0];
-      }
-      return function() {
-        callbacks[0](
-          that.buildCallbacksChain(callbacks.slice(1, callbacks.length))
-        );
+    this.asyncExecuteAll = function(tasks, allDone) {
+      var succesfull_cnt = 0;
+      function done() {
+        succesfull_cnt += 1;
+        if (succesfull_cnt == tasks.length) {
+          allDone();
+        }
       };
-    };
+      utils.each(tasks, function(task) {
+        task(done);
+      });
+    }
 
     /**
      * Adds an alias (scheme://domain[:optional port]) that can be
@@ -496,13 +497,12 @@
       that.adminPath = utils.stripTrailingIndexHtmlAndSlash(
         window.location.pathname);
       stub.setErrorHandler(that.errorHandler);
-      // TODO: execute these callbacks in parallel.
-      that.buildCallbacksChain([that.getLocations,
-                                that.getUsers,
-                                that.getAliases,
-                                that.getSkin,
-                                that.getAdminUser,
-                                ui.refresh])();
+      that.asyncExecuteAll([that.getLocations,
+                            that.getUsers,
+                            that.getAliases,
+                            that.getSkin,
+                            that.getAdminUser],
+                           ui.refresh);
     };
   }
 
@@ -542,6 +542,8 @@
     },
     that = this,
     controller = null,
+    loading = true,
+
     ENTER_KEY = 13,
     // These would preferably be obtained dynamically, but css floats
     // make it hard to get elements' max-width.
@@ -1127,6 +1129,9 @@
      */
     function activeHash() {
       var hash = location.hash.replace(/^#/, '');
+      if (loading) {
+        return 'loading';
+      }
       if (hash === '' || hash === null) {
         return 'acl';
       }
@@ -1216,6 +1221,8 @@
       scrollTop = $(document).scrollTop(),
       scrollLeft = $(document).scrollLeft();
 
+      loading = false;
+
       if (locationToActivate === undefined) {
         // DOM subtrees representing a currently focused input box and
         // an active location will be removed, corresponding elements in
@@ -1246,6 +1253,7 @@
       // Rewind a document to where it was.
       $(document).scrollTop(scrollTop);
       $(document).scrollLeft(scrollLeft);
+      showContainerPointedByHash();
     };
 
     /**
@@ -1261,7 +1269,7 @@
     function initialize() {
       // Hashchange event is not triggered automatically when page is
       // loaded.
-      showContainerPointedByHash();
+      //showContainerPointedByHash();
 
       // locationInfo contains a single allowed user element from the
       // html document. Remove it.
