@@ -302,14 +302,14 @@
       var succesful_cnt = 0;
       function done() {
         succesful_cnt += 1;
-        if (succesful_cnt == tasks.length) {
+        if (succesful_cnt === tasks.length) {
           allDone();
         }
-      };
+      }
       utils.each(tasks, function(task) {
         task(done);
       });
-    }
+    };
 
     /**
      * Adds an alias (scheme://domain[:optional port]) that can be
