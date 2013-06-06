@@ -299,10 +299,10 @@
      * finish successfully, allDone callback is invoked.
      */
     this.asyncExecuteAll = function(tasks, allDone) {
-      var succesfull_cnt = 0;
+      var succesful_cnt = 0;
       function done() {
-        succesfull_cnt += 1;
-        if (succesfull_cnt == tasks.length) {
+        succesful_cnt += 1;
+        if (succesful_cnt == tasks.length) {
           allDone();
         }
       };
