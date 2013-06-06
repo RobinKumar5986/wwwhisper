@@ -227,3 +227,19 @@ class AllowedUsersView(http.RestView):
             return http.HttpResponseNoContent()
         except LookupError as ex:
             return http.HttpResponseNotFound(str(ex))
+
+
+class SkinView(http.RestView):
+    """Configures the login page."""
+
+    def put(self, request, title, header, message, branding):
+        try:
+            request.site.update_skin(title=title, header=header,
+                                     message=message, branding=branding)
+        except ValidationError as ex:
+            return http.HttpResponseBadRequest(
+                'Failed to update login page: ' + ', '.join(ex.messages))
+        return http.HttpResponseOKJson(request.site.skin())
+
+    def get(self, request):
+        return http.HttpResponseOKJson(request.site.skin())

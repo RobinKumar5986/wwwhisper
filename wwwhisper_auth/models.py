@@ -87,6 +87,21 @@ class Site(ValidatedModel):
     """
     site_id = models.TextField(primary_key=True, db_index=True, editable=False)
     mod_id = models.IntegerField(default=0)
+
+    # Default values for texts on a login page (used when custom texts
+    # are set to empty values).
+    _default_skin = {
+        'title': 'wwwhisper: Web Access Control',
+        'header': 'Protected site',
+        'message': 'Access to this site is restricted. ' + \
+            'Please sign in with your email:',
+    }
+
+    title = models.CharField(max_length=80, blank=True)
+    header = models.CharField(max_length=100, blank=True)
+    message = models.CharField(max_length=500, blank=True)
+    branding = models.BooleanField(default=True)
+
     aliases_limit = None
     users_limit = None
     locations_limit = None
@@ -122,6 +137,23 @@ class Site(ValidatedModel):
         transaction.commit_unless_managed()
         with self.mod_id_lock:
             self.mod_id = mod_id
+
+    def skin(self):
+        """Dictionary with settings that configure the site's login page."""
+        result = {attr: getattr(self, attr) or self._default_skin[attr]
+                  for attr in self._default_skin.iterkeys()}
+        result['branding'] = self.branding
+        return result
+
+    def update_skin(self, title, header, message, branding):
+        for attr in self._default_skin.iterkeys():
+            arg = locals()[attr].strip()
+            if arg == self._default_skin[attr]:
+                arg = ''
+            setattr(self, attr, arg)
+        self.branding = branding
+        self.save()
+        self.site_modified()
 
     def get_mod_id_ts(self):
         """This method can be safely invoked by a non main thread"""

@@ -24,9 +24,6 @@ https://www.gnu.org/licenses/gpl-3.0.html
         <div class="container">
           <img src="/wwwhisper/auth/assets/img/logo.png" alt="share"
                class="logo">
-          <a  href="#" class="brand">
-          wwwhisper
-          </a>
           <ul class="nav pull-right">
             <li><a href="#" class="acl">Access control</a></li>
             <li><a href="#settings" class="settings">Site settings</a></li>
@@ -77,7 +74,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
       </div> <!-- /.alert -->
 
       <h4>Locations</h4>
-      <div class="tabbable tabs-left">
+      <div class="tabbable tabs-left" id="location-control">
 
         <ul class="nav nav-tabs span5" id="location-list">
           <li id="location-list-item" class="hoverable">
@@ -180,6 +177,49 @@ https://www.gnu.org/licenses/gpl-3.0.html
         </div>  <!-- /.alert -->
       </div>  <!-- /.error-box -->
 
+
+      <div class="alert alert-success help-message fade in hide">
+        <p>
+          Customizes a page shown to not authenticated users.
+        <p>
+          Set a field to an empty string to revert the field to its
+          default value. HTML tags are not interpreted.
+        </p>
+        <p>
+          <i class="icon-trash icon-light"></i> marks changed, but not
+          yet saved fields. When clicked, reverts the changes. <br />
+        </p>
+      </div> <!-- /.alert -->
+
+      <h4>Login page</h4>
+      <div class="well well-large" id="custom-login-control">
+        <form id="custom-login">
+          <fieldset>
+            <div>
+              <label>Title</label>
+              <input type="text" class="span6" id="title">
+              <i class="icon-trash icon-light revert invisible"></i>
+            </div>
+            <div>
+              <label>Header</label>
+              <input type="text" class="span6" id="header">
+              <i class="icon-trash icon-light revert invisible"></i>
+            </div>
+            <div>
+              <label>Message</label>
+              <input type="text" class="span6" id="message">
+              <i class="icon-trash icon-light revert invisible"></i>
+            </div>
+            <label class="checkbox">
+              <input type="checkbox" id="branding"> wwwhisper branding
+            </label>
+            <button type="submit" class="btn disabled" id="custom-login-save">
+              Save
+            </button>
+          </fieldset>
+        </form>
+      </div>
+
       <div class="alert alert-success help-message fade in hide">
         <p>
           A list of addresses (protocol://domain[:optional port]) that
@@ -207,11 +247,10 @@ https://www.gnu.org/licenses/gpl-3.0.html
 
       <h4>Allowed addresses</h4>
       <div class="row">
-        <div class="span5">
+        <div class="span6">
           <ul id="alias-list" class="unstyled">
             <li class="alias-list-item hoverable">
-              <i class="icon-home icon-light spaced-right"></i>
-              <span class="url"> </span>
+              <span class="url spaced-left"> </span>
               <i class="menu-item icon-remove spaced-left remove-alias"></i>
               <i class="menu-item icon-eye-open view-page"></i>
             </li>
@@ -220,7 +259,7 @@ https://www.gnu.org/licenses/gpl-3.0.html
       </div> <!-- /.row -->
 
       <div class="row">
-        <div class="input-prepend input-append span5" id="add-alias">
+        <div class="input-prepend input-append span6" id="add-alias">
           <select id="add-alias-scheme">
             <option>https://</option>
             <option>http://</option>
@@ -232,7 +271,6 @@ https://www.gnu.org/licenses/gpl-3.0.html
           </button>
         </div>  <!-- /.input-prepend -->
       </div> <!-- /.row -->
-
       <div class="row">
         <a class="btn btn-info help">Show help</a>
       </div>

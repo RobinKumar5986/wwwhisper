@@ -17,7 +17,7 @@
 """Urls exposed by the wwwhisper_admin application."""
 
 from django.conf.urls import patterns, url
-from views import CollectionView, ItemView
+from views import CollectionView, ItemView, SkinView
 from views import OpenAccessView, AllowedUsersView
 
 urlpatterns = patterns(
@@ -43,5 +43,5 @@ urlpatterns = patterns(
     url(r'^aliases/(?P<uuid>[0-9a-z-]+)/$',
         ItemView.as_view(collection_name='aliases'),
         name='wwwhisper_alias'),
-
+    url(r'^skin/$', SkinView.as_view()),
     )

@@ -677,7 +677,8 @@
     };
     callbackCalled = false;
     ok(controller.adminUserEmail === null);
-    mock_stub.expectAjaxCall('GET', '/wwwhisper/auth/api/whoami/', null, ajaxCallResult);
+    mock_stub.expectAjaxCall(
+      'GET', '/wwwhisper/auth/api/whoami/', null, ajaxCallResult);
     controller.getAdminUser(function() {
       callbackCalled = true;
     });
@@ -729,6 +730,37 @@
     mock_stub.expectAjaxCall('DELETE', controller.aliases[0].self, null, null);
     controller.removeAlias(controller.aliases[0]);
     deepEqual(controller.aliases, []);
+    mock_stub.verify();
+  });
+
+  test('getSkin', function() {
+    var ajaxCallResult, callbackCalled;
+    ajaxCallResult = {
+      'title': 'Foo',
+      'header': 'Bar',
+      'message': 'Baz',
+      'branding': false
+    };
+    callbackCalled = false;
+    mock_stub.expectAjaxCall('GET', 'api/skin/', null, ajaxCallResult);
+    controller.getSkin(function() {
+      callbackCalled = true;
+    });
+    deepEqual(controller.skin, ajaxCallResult);
+    ok(callbackCalled);
+    mock_stub.verify();
+  });
+
+  test('updateSkin', function() {
+    var newSkin = {
+      'title': 'Foo',
+      'header': 'Bar',
+      'message': 'Baz',
+      'branding': false
+    };
+    mock_stub.expectAjaxCall('PUT', 'api/skin/', newSkin, newSkin);
+    controller.updateSkin(newSkin)
+    deepEqual(controller.skin, newSkin);
     mock_stub.verify();
   });
 

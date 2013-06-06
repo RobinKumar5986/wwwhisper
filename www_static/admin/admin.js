@@ -80,7 +80,7 @@
     },
 
     /**
-     * Comparision function to be used in sorting algorithms. Returns
+     * Comparison function to be used in sorting algorithms. Returns
      * -1, 0 or 1.
      */
     compare: function(a, b) {
@@ -166,6 +166,8 @@
     this.aliases = [];
     this.locations = [];
     this.users = [];
+    // Holds a wwwhisper login page configuration.
+    this.skin = null;
 
     // An email of a currently signed in user that accesses the admin
     // application. This is kept to prevent the user from deleting a
@@ -246,6 +248,12 @@
     this.getAliases = function(successCallback) {
       stub.ajax('GET', 'api/aliases/', null, function(result) {
         that.aliases = result.aliases;
+        successCallback();
+      });
+    };
+    this.getSkin = function(successCallback) {
+      stub.ajax('GET', 'api/skin/', null, function(result) {
+        that.skin = result;
         successCallback();
       });
     };
@@ -472,6 +480,14 @@
         failureHandler);
     };
 
+    this.updateSkin = function(newSkin) {
+      stub.ajax('PUT', 'api/skin/', newSkin,
+                function(result) {
+                  that.skin = result;
+                  ui.refresh();
+                });
+    };
+
     /**
      * Activates the admin application (retrieves all dynamic data
      * from the server and refreshes the UI).
@@ -480,9 +496,11 @@
       that.adminPath = utils.stripTrailingIndexHtmlAndSlash(
         window.location.pathname);
       stub.setErrorHandler(that.errorHandler);
+      // TODO: execute these callbacks in parallel.
       that.buildCallbacksChain([that.getLocations,
                                 that.getUsers,
                                 that.getAliases,
+                                that.getSkin,
                                 that.getAdminUser,
                                 ui.refresh])();
     };
@@ -529,7 +547,7 @@
     // make it hard to get elements' max-width.
     MAX_PATH_WIDTH_PX = 275,
     MAX_EMAIL_WIDTH_PX = MAX_PATH_WIDTH_PX - 5,
-    MAX_ALIAS_WIDTH_PX = 300;
+    MAX_ALIAS_WIDTH_PX = 390;
 
     /**
      * scheme://domain[:port if not default] of the current document.
@@ -833,7 +851,7 @@
         .find('.remove-location').click(function(event) {
           removeInProgress($(this));
           controller.removeLocation(location, removeFailedHandler($(this)));
-          // Do not propagete the event (not to show removed location info):
+          // Do not propagate the event (not to show removed location info):
           return false;
         })
       // Do not allow admin location to be removed.
@@ -1047,6 +1065,63 @@
     }
 
     /**
+     * Enables a 'Save' button if any site customization inputs are
+     * changed, otherwise disables the button.
+     */
+    function toggleSaveButton() {
+      if ($('#custom-login i:not(.invisible)').length === 0 &&
+          $('#branding').prop('checked') === controller.skin.branding) {
+        $('#custom-login-save').addClass('disabled');
+      } else {
+        $('#custom-login-save').removeClass('disabled');
+      }
+    }
+
+    /**
+     * Configures controls to customize the wwwhisper login page.
+     */
+    function showCustomizeLogin() {
+      var inputChangedHandler = function() {
+        var revert = $(this).siblings('.revert');
+        // Shows a revert icon beside all changed inputs.
+        if ($(this).val() !== controller.skin[$(this).attr('id')]) {
+          revert.removeClass('invisible');
+        } else {
+          revert.addClass('invisible');
+        }
+        toggleSaveButton();
+      };
+      $('#custom-login input:text').each(function() {
+        var field = $(this).attr('id');
+        $(this).val(controller.skin[field]);
+        $(this).siblings('.revert').click(function() {
+          $(this).siblings('input').val(controller.skin[field]);
+          $(this).addClass('invisible');
+          toggleSaveButton();
+        }).addClass('invisible');
+        $(this).change(inputChangedHandler);
+        // Redundant, but for input fields change() is not fired until
+        // focus is changed, and keyup() is not fired when the input is
+        // changes with a mouse (for example on copy-paste).
+        $(this).keyup(inputChangedHandler);
+      });
+      // Branding checkbox does not have the revert icon.
+      $('#branding').prop('checked', controller.skin.branding)
+        .change(toggleSaveButton);
+      toggleSaveButton();
+    }
+
+    function saveCusomizedLogin() {
+      var skin = {};
+      $('#custom-login input:text').each(function() {
+        var field = $(this).attr('id');
+        skin[field] = $(this).val();
+      });
+      skin.branding = $('#branding').prop('checked');
+      controller.updateSkin(skin);
+    }
+
+    /**
      * Returns a hash part of the current url (without '#') or 'acl'
      * if the hash part is empty.
      */
@@ -1163,6 +1238,7 @@
       showAliasesList(activeLocation);
       showLocationsList(activeLocation);
       showUsersList(activeLocation);
+      showCustomizeLogin();
 
       if (focusedElementId) {
         $('#' + focusedElementId).focus();
@@ -1220,6 +1296,7 @@
         $('.acl').click(hashClickedHandler('acl'));
         $('.settings').click(hashClickedHandler('settings'));
       }
+      $('#custom-login-save').click(saveCusomizedLogin);
     }
     initialize();
   }

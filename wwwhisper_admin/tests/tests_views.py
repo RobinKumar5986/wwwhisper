@@ -485,3 +485,37 @@ class AliasTest(AdminViewTestCase):
         self.assertItemsEqual(['http://foo.org', 'http://bar.org',
                                'https://foo.example.org:8080'],
                               [item['url'] for item in aliases])
+
+class SkinTest(AdminViewTestCase):
+
+    def test_get_skin(self):
+        response = self.get('/admin/api/skin/')
+        self.assertEqual(200, response.status_code)
+        skin = json.loads(response.content)
+        self.assertEqual('wwwhisper: Web Access Control', skin['title'])
+        self.assertEqual('Protected site', skin['header'])
+        self.assertRegexpMatches(skin['message'], 'Access to this site is')
+        self.assertTrue(skin['branding'])
+
+    def test_put_skin(self):
+        response = self.put('/admin/api/skin/',
+                            {'title': 'xyz',
+                             'header': 'foo',
+                             'message': 'bar',
+                             'branding': False})
+        self.assertEqual(200, response.status_code)
+        skin = json.loads(response.content)
+        self.assertEqual('xyz', skin['title'])
+        self.assertEqual('foo', skin['header'])
+        self.assertRegexpMatches('bar', skin['message'])
+        self.assertFalse(skin['branding'])
+
+    def test_put_invalid_skin(self):
+        response = self.put('/admin/api/skin/',
+                            {'title': 'xyz' * 1000,
+                             'header': '',
+                             'message': '',
+                             'branding': False})
+        self.assertEqual(400, response.status_code)
+        self.assertRegexpMatches(response.content,
+                                 'Failed to update login page')

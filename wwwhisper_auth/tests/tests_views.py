@@ -80,7 +80,7 @@ class AuthTest(AuthTestCase):
         response = self.get('/auth/api/is-authorized/?pat=/foo')
         self.assertEqual(400, response.status_code)
 
-    def test_is_authorized_for_not_authenticated_user(self):
+    def test_is_authorized_if_not_authenticated(self):
         location = self.site.locations.create_item('/foo/')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
@@ -90,7 +90,7 @@ class AuthTest(AuthTestCase):
         self.assertRegexpMatches(response['Content-Type'], "text/plain")
         self.assertEqual('Authentication required.', response.content)
 
-    def test_is_authorized_for_not_authorized_user(self):
+    def test_is_authorized_if_not_authorized(self):
         self.site.users.create_item('foo@example.com')
         self.login('foo@example.com')
         response = self.get('/auth/api/is-authorized/?path=/foo/')
@@ -100,7 +100,7 @@ class AuthTest(AuthTestCase):
         self.assertRegexpMatches(response['Content-Type'], "text/plain")
         self.assertEqual('User not authorized.', response.content)
 
-    def test_is_authorized_for_authorized_user(self):
+    def test_is_authorized_if_authorized(self):
         user = self.site.users.create_item('foo@example.com')
         location = self.site.locations.create_item('/foo/')
         location.grant_access(user.uuid)
@@ -109,21 +109,21 @@ class AuthTest(AuthTestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual('foo@example.com', response['User'])
 
-    def test_is_authorized_for_user_of_other_site(self):
+    def test_is_authorized_if_user_of_other_site(self):
         site2 = self.sites.create_item('somesite')
         user = site2.users.create_item('foo@example.com')
         location = self.site.locations.create_item('/foo/')
         self.login('foo@example.com', site2)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
 
-    def test_is_authorized_for_open_location(self):
+    def test_is_authorized_if_open_location(self):
         location = self.site.locations.create_item('/foo/')
         location.grant_open_access(require_login=False)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertFalse(response.has_header('User'))
         self.assertEqual(200, response.status_code)
 
-    def test_is_authorized_for_open_location_and_authenticated_user(self):
+    def test_is_authorized_if_open_location_and_authenticated(self):
         user = self.site.users.create_item('foo@example.com')
         self.login('foo@example.com')
         location = self.site.locations.create_item('/foo/')
@@ -132,7 +132,7 @@ class AuthTest(AuthTestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual('foo@example.com', response['User'])
 
-    def test_is_authorized_for_invalid_path(self):
+    def test_is_authorized_if_invalid_path(self):
         user = self.site.users.create_item('foo@example.com')
         location = self.site.locations.create_item('/foo/')
         location.grant_access(user.uuid)
@@ -184,7 +184,7 @@ class AuthTest(AuthTestCase):
 
     # Make sure HTML responses are returned when request accepts HTML.
 
-    def test_html_response_is_authorized_for_not_authenticated_user(self):
+    def test_is_authorized_if_not_authenticated_html_response(self):
         location = self.site.locations.create_item('/foo/')
         response = self.get('/auth/api/is-authorized/?path=/foo/',
                             HTTP_ACCEPT='text/plain, text/html')
@@ -197,7 +197,18 @@ class AuthTest(AuthTestCase):
         self.assertEqual(401, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/plain')
 
-    def test_html_response_is_authorized_for_not_authorized_user(self):
+    def test_is_authorized_if_not_authenticated_custom_html_response(self):
+        self.site.update_skin(
+            title='Foo', header='Bar', message='Baz', branding=False)
+        response = self.get('/auth/api/is-authorized/?path=/foo/',
+                            HTTP_ACCEPT='*/*')
+        self.assertEqual(401, response.status_code)
+        self.assertRegexpMatches(response['Content-Type'], 'text/html')
+        self.assertRegexpMatches(response.content, '<title>Foo</title>')
+        self.assertRegexpMatches(response.content, '<h1>Bar</h1>')
+        self.assertRegexpMatches(response.content, 'class="lead">Baz')
+
+    def test_is_authorized_if_not_authorized_html_response(self):
         self.site.users.create_item('foo@example.com')
         self.login('foo@example.com')
         response = self.get('/auth/api/is-authorized/?path=/foo/',

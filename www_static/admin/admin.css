@@ -6,6 +6,12 @@ body {
  background: url("../auth/assets/img/random_grey_variations.png");
 }
 
+h4 {
+ margin-bottom: 17px;
+ font-weight: normal;
+ font-size: 21px;
+}
+
 .icon-light,
 .menu-item {
   background-image: url("../auth/assets/img/glyphicons-halflings-light.png");
@@ -76,7 +82,7 @@ body {
 }
 
 #add-alias-input {
- width: 240px;
+  width: 330px;
 }
 
 .tabs-left .input-append {
@@ -156,6 +162,7 @@ li,
 
 .logo {
   float: left;
+  margin-top: 5px;
   margin-right: 5px;
   margin-left: -30px;
 }
@@ -164,7 +171,16 @@ li,
   float: right;
 }
 
+#custom-login-control {
+  margin-bottom: 60px;
+}
+
+#location-control {
+  margin-bottom: 20px;
+}
+
 /* Enable for debugging
 div, span, p{
     border: 1px solid red;
 } */
+

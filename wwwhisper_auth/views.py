@@ -153,7 +153,7 @@ class Auth(View):
             return http.HttpResponseOK('Access granted.')
         logger.debug('%s: user not authenticated.' % (debug_msg))
         return http.HttpResponseNotAuthenticated(
-            self._html_or_none(request, 'login.html'))
+            self._html_or_none(request, 'login.html', request.site.skin()))
 
     def _html_or_none(self, request, template, context={}):
         """Renders html response string from a given template.

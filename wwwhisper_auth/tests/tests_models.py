@@ -102,6 +102,32 @@ class SitesTest(ModelTestCase):
         self.assertTrue(self.sites.delete_item(TEST_SITE))
         self.assertIsNone(self.sites.find_item(TEST_SITE))
 
+    def test_default_skin(self):
+        skin = self.site.skin()
+        self.assertEqual('wwwhisper: Web Access Control', skin['title'])
+        self.assertEqual('Protected site', skin['header'])
+        self.assertRegexpMatches(skin['message'], 'Access to this site is')
+        self.assertTrue(skin['branding'])
+
+    def test_update_skin(self):
+        with self.assert_site_modified(self.site):
+            self.site.update_skin(title='BarFoo', header='', message='hello',
+                                  branding=False)
+        with self.assert_site_not_modified(self.site):
+            skin = self.site.skin()
+        self.assertEqual('BarFoo', skin['title'])
+        self.assertEqual('Protected site', skin['header'])
+        self.assertEqual('hello', skin['message'])
+        self.assertFalse(skin['branding'])
+
+        # If default value is used, it should not be saved to a db,
+        # but it should still be returned in the skin dict.
+        self.site.update_skin(title='wwwhisper: Web Access Control ', header='',
+                              message='', branding=False)
+        self.assertEqual('', self.site.title)
+        self.assertEqual('wwwhisper: Web Access Control',
+                         self.site.skin()['title'])
+
 class UsersCollectionTest(ModelTestCase):
     def test_create_user(self):
         with self.assert_site_modified(self.site):
