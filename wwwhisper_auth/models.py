@@ -140,8 +140,9 @@ class Site(ValidatedModel):
 
     def skin(self):
         """Dictionary with settings that configure the site's login page."""
-        result = {attr: getattr(self, attr) or self._default_skin[attr]
-                  for attr in self._default_skin.iterkeys()}
+        # Dict comprehensions not used to support python 2.6.
+        result = dict([(attr, getattr(self, attr) or self._default_skin[attr])
+                       for attr in self._default_skin.iterkeys()])
         result['branding'] = self.branding
         return result
 

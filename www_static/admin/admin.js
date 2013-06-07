@@ -1267,10 +1267,6 @@
      * Initializes the UI.
      */
     function initialize() {
-      // Hashchange event is not triggered automatically when page is
-      // loaded.
-      //showContainerPointedByHash();
-
       // locationInfo contains a single allowed user element from the
       // html document. Remove it.
       view.locationInfo.find('#allowed-user-list-item').remove();
