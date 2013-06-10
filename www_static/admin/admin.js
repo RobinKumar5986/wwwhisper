@@ -543,7 +543,6 @@
     that = this,
     controller = null,
     loading = true,
-
     ENTER_KEY = 13,
     // These would preferably be obtained dynamically, but css floats
     // make it hard to get elements' max-width.
@@ -1188,10 +1187,8 @@
         var error = view.errorMessage.clone(true);
 
         if (status === 401) {
-          message = 'User signed-out, reloading the admin page in 3 seconds...';
-          window.setTimeout(function() {
-            window.location.reload(true);
-          }, 3000);
+          // User signed out, reload the admin page.
+          window.location.reload(true);
         }
 
         error.removeClass('hide')
