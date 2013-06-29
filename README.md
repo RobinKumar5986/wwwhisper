@@ -21,6 +21,8 @@ wwwhisper as a service for any Ruby Rack based application on Heroku.
   wwwhisper, this allows to easily authenticate, add and remove admin
   users.
 
+[![Build Status](https://travis-ci.org/wrr/wwwhisper.png?branch=master)](https://travis-ci.org/wrr/wwwhisper)
+
 Quick tour
 -----------
 
