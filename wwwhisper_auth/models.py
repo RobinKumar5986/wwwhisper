@@ -134,7 +134,6 @@ class Site(ValidatedModel):
             'SET mod_id = mod_id + 1 WHERE site_id = %s', [self.site_id])
         cursor.close()
         mod_id = self.mod_id_from_db()
-        transaction.commit_unless_managed()
         with self.mod_id_lock:
             self.mod_id = mod_id
 
@@ -764,4 +763,3 @@ def _encode_email(email):
 
 def _is_email_valid(email):
     return re.match(email_re.EMAIL_VALIDATION_RE, email)
-
