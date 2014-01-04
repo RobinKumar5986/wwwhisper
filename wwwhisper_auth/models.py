@@ -449,7 +449,7 @@ class Alias(ValidatedModel):
     """
 
     site = models.ForeignKey(Site, related_name='+')
-    url = models.TextField(db_index=True, unique=True)
+    url = models.TextField(db_index=True)
     uuid = models.CharField(max_length=36, db_index=True,
                             editable=False, unique=True)
     force_ssl = models.BooleanField(default=False)
@@ -714,6 +714,8 @@ class AliasesCollection(Collection):
         (valid, error) = url_utils.validate_site_url(url)
         if not valid:
             raise ValidationError('Invalid url: ' + error)
+        if self.find_item_by_url(url):
+            raise ValidationError('Alias with this url already exists')
         return self._do_create_item(url=url_utils.remove_default_port(url))
 
     def find_item_by_url(self, url):

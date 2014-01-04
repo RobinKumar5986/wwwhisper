@@ -720,6 +720,12 @@ class AliasesCollectionTest(ModelTestCase):
                                 self.aliases.create_item,
                                 'http://example.org:123')
 
+    def test_alias_for_different_site_can_duplicate(self):
+        alias = self.aliases.create_item('http://example.org:123')
+        self.assertIsNotNone(alias)
+        alias = self.site2.aliases.create_item('http://example.org:123')
+        self.assertIsNotNone(alias)
+
     def test_find_alias_by_url(self):
         self.assertIsNone(self.aliases.find_item_by_url(TEST_SITE))
         alias1 = self.aliases.create_item(TEST_SITE)
