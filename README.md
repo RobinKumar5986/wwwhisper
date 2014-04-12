@@ -153,5 +153,4 @@ correct file permissions for protected static files and
 communication sockets. If nginx is delegating requests to back-end
 servers, make sure the back-ends are not externally accessible.
 
-2. Use SSL for anything important. You can get a free [SSL certificate
-   for personal use](https://cert.startcom.org/).
+2. Use SSL for anything important.
