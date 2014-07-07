@@ -39,19 +39,19 @@ UI](http://mixedbit.org/admin/).
 Upon visiting a wwwhisper protected site, a user is presented with a
 login prompt:
 
-![Login prompt](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/login_required.png)
+![Login prompt](https://raw.github.com/wrr/wwwhisper/master/doc/screens/login_required.png)
 
 'Sign in' button opens Mozilla Persona authentication dialog. Persona
 allows the user to smoothly and securely prove that she owns a
 given email address:
 
-![Login prompt](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/persona_dialog.png)
+![Login prompt](https://raw.github.com/wrr/wwwhisper/master/doc/screens/persona_dialog.png)
 
 After successful authentication, wwwhisper checks that the user is
 allowed to visit the URL. If this is the case, the user is taken
 to the site:
 
-![Access granted](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/access_granted.png)
+![Access granted](https://raw.github.com/wrr/wwwhisper/master/doc/screens/access_granted.png)
 
 Usually authentication systems are built into web applications. With
 wwwhisper this is not required. The photo album above consist of
@@ -64,13 +64,13 @@ user and a 'Sign out' button.
 
 If the user visits a location that she is not allowed to access, an
 error is displayed:
-![Access denied](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/access_denied.png)
+![Access denied](https://raw.github.com/wrr/wwwhisper/master/doc/screens/access_denied.png)
 
 Finally, the admin application allows to easily grant and revoke
 access and to check who can access what. It also helps to compose
 invitation emails to allowed users:
 
-![Admin](https://raw.github.com/wrr/www/master/mixedbit.org/wwwhisper_screens/admin.png)
+![Admin](https://raw.github.com/wrr/wwwhisper/master/doc/screens/admin.png)
 
 The admin users need to only specify emails of people allowed to
 access a given location. There is no need to create, distribute and
