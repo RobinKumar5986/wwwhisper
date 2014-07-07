@@ -1,5 +1,5 @@
 Django>=1.6.1,<1.7.0
-django-browserid
+django-browserid>=0.10.1,<0.11.0
 uwsgi
 mock
 django-debug-toolbar

@@ -18,7 +18,7 @@
 
 from django.contrib.auth.backends import ModelBackend
 from django.forms import ValidationError
-from django_browserid.base import verify
+from django_browserid import RemoteVerifier, BrowserIDException
 from models import LimitExceeded
 
 class AssertionVerificationException(Exception):
@@ -32,6 +32,9 @@ class BrowserIDBackend(ModelBackend):
     used here, because it does not allow to distinguish between an
     assertion verification error and an unknown user.
     """
+
+    def __init__(self):
+        self.verifier = RemoteVerifier()
 
     # TODO: Put site_url in the model and find it based on id. Allow
     # for aliases.
@@ -47,13 +50,16 @@ class BrowserIDBackend(ModelBackend):
         Raises:
             AssertionVerificationException: verification failed.
         """
-        result = verify(assertion=assertion, audience=site_url)
+        try:
+            result = self.verifier.verify(assertion=assertion,
+                                          audience=site_url)
+        except BrowserIDException as ex:
+            return AssertionVerificationException(
+                'Failed to contact Persona verification service')
         if not result:
-            # TODO: different error if Persona is down.
             raise AssertionVerificationException(
                 'BrowserID assertion verification failed.')
-        email = result['email']
-        user = site.users.find_item_by_email(result['email'])
+        user = site.users.find_item_by_email(result.email)
         if user is not None:
             return user
         try:
