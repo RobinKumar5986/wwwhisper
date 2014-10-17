@@ -66,6 +66,7 @@ exec uwsgi  --socket="${SITE_DIR}/uwsgi.sock"\
  --vacuum\
  --processes=1\
  --chmod-socket=660\
+ --buffer-size=16384\
  --plugins=python\
  --python-path="${SITE_DIR}/django/"\
  --virtualenv="${VIRTUALENV_DIR}"\
