@@ -70,7 +70,7 @@ class BrowserIDBackend(ModelBackend):
             # be marked and automatically deleted on logout or after
             # some time of inactivity.
             if site.locations.has_open_location_with_login():
-                return site.users.create_item(email)
+                return site.users.create_item(result.email)
             else:
                 return None
         except ValidationError as ex:
