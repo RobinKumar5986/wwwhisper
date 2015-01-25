@@ -1,7 +1,7 @@
 # coding=utf-8
 
 # wwwhisper - web access control.
-# Copyright (C) 2012, 2013, 2014 Jan Wrobel <wrr@mixedbit.org>
+# Copyright (C) 2012-2015 Jan Wrobel <jan@mixedbit.org>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
