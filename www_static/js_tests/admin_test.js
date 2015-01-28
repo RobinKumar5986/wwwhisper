@@ -60,7 +60,7 @@
 
   test('assert', function() {
     utils.assert(true, "Should not throw.");
-    raises(function() {
+    throws(function() {
       utils.assert(false, "Should throw.");
     });
   });
@@ -86,7 +86,7 @@
                              function(x) {
                                return x === 6;
                              }), null);
-    raises(function() {
+    throws(function() {
       utils.findOnly([1, 2, 3, 1],
                      function(x) {
                        return x === 1;
