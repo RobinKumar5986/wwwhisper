@@ -3,6 +3,8 @@
 
 from django.http import HttpRequest
 from django.test import TestCase
+from django.test.client import RequestFactory
+
 from wwwhisper_auth import http
 from wwwhisper_auth.middleware import SecuringHeadersMiddleware
 from wwwhisper_auth.middleware import ProtectCookiesMiddleware
@@ -28,65 +30,69 @@ class SetSiteMiddlewareTest(TestCase):
 class SiteUrlMiddlewareTest(TestCase):
     def setUp(self):
         self.middleware = SiteUrlMiddleware()
-        self.request = HttpRequest()
-        self.sites = SitesCollection()
-        self.request.site = self.sites.create_item(SINGLE_SITE_ID)
+        self.factory = RequestFactory()
+        sites_collection = SitesCollection()
         self.site_url = 'https://foo.example.com'
-        self.request.site.aliases.create_item(self.site_url)
+        self.site = sites_collection.create_item(SINGLE_SITE_ID)
+        self.site.aliases.create_item(self.site_url)
+
+    def get(self, site_url, path=''):
+        request = self.factory.get(path)
+        request.site = self.site
+        request.META['HTTP_SITE_URL'] = site_url
+        return request
 
     def test_allowed_site_url_https(self):
-        self.request.META['HTTP_SITE_URL'] = self.site_url
-        self.assertIsNone(self.middleware.process_request(self.request))
-        self.assertEqual(self.site_url, self.request.site_url)
-        self.assertEqual('foo.example.com', self.request.get_host())
-        self.assertTrue(self.request.https)
-        self.assertTrue(self.request.is_secure())
+        request = self.get(self.site_url)
+        self.assertIsNone(self.middleware.process_request(request))
+        self.assertEqual(self.site_url, request.site_url)
+        self.assertEqual('foo.example.com', request.get_host())
+        self.assertTrue(request.https)
+        self.assertTrue(request.is_secure())
 
     def test_allowed_site_url_http(self):
         url = 'http://bar.example.com'
-        self.request.site.aliases.create_item(url)
-        self.request.META['HTTP_SITE_URL'] = url
-        self.assertIsNone(self.middleware.process_request(self.request))
-        self.assertEqual(url, self.request.site_url)
-        self.assertEqual('bar.example.com', self.request.get_host())
-        self.assertFalse(self.request.https)
-        self.assertFalse(self.request.is_secure())
+        self.site.aliases.create_item(url)
+        request = self.get(url)
+        self.assertIsNone(self.middleware.process_request(request))
+        self.assertEqual(url, request.site_url)
+        self.assertEqual('bar.example.com', request.get_host())
+        self.assertFalse(request.https)
+        self.assertFalse(request.is_secure())
 
     def test_allowed_site_url_with_port(self):
         url = 'http://bar.example.com:123'
-        self.request.site.aliases.create_item(url)
-        self.request.META['HTTP_SITE_URL'] = url
-        self.assertIsNone(self.middleware.process_request(self.request))
-        self.assertEqual(url, self.request.site_url)
-        self.assertEqual('bar.example.com:123', self.request.get_host())
-        self.assertFalse(self.request.https)
-        self.assertFalse(self.request.is_secure())
+        self.site.aliases.create_item(url)
+        request = self.get(url);
+        self.assertIsNone(self.middleware.process_request(request))
+        self.assertEqual(url, request.site_url)
+        self.assertEqual('bar.example.com:123', request.get_host())
+        self.assertFalse(request.https)
+        self.assertFalse(request.is_secure())
 
     def test_not_allowed_site_url(self):
-        self.request.META['HTTP_SITE_URL'] = 'https://bar.example.com'
-        response = self.middleware.process_request(self.request)
+        request = self.get('https://bar.example.com')
+        response = self.middleware.process_request(request)
         self.assertIsNotNone(response)
         self.assertEqual(400, response.status_code)
-        self.assertRegexpMatches(response.content,
-                                 'Invalid request URL')
+        self.assertRegexpMatches(response.content, 'Invalid request URL')
 
     def test_not_allowed_site_url2(self):
-        self.request.META['HTTP_SITE_URL'] = 'https://foo.example.com:80'
-        response = self.middleware.process_request(self.request)
+        request = self.get('https://foo.example.com:80')
+        response = self.middleware.process_request(request)
         self.assertIsNotNone(response)
         self.assertEqual(400, response.status_code)
-        self.assertRegexpMatches(response.content,
-                                 'Invalid request URL')
+        self.assertRegexpMatches(response.content, 'Invalid request URL')
 
     def test_missing_site_url(self):
-        response = self.middleware.process_request(self.request)
+        request = self.get(None)
+        response = self.middleware.process_request(request)
         self.assertEqual(400, response.status_code)
-        self.assertRegexpMatches(response.content,
-                                 'Missing Site-Url header')
+        self.assertRegexpMatches(response.content, 'Missing Site-Url header')
 
     def test_invalid_site_url(self):
-        self.request.META['HTTP_SITE_URL'] = 'foo.example.org'
-        response = self.middleware.process_request(self.request)
+        request = self.get('foo.example.org')
+        response = self.middleware.process_request(request)
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'Site-Url has incorrect format')
@@ -94,29 +100,44 @@ class SiteUrlMiddlewareTest(TestCase):
     def test_allowed_site_with_explicit_port(self):
         # Request with correct explicit port should be accepted, port
         # should be removed.
-        self.request.META['HTTP_SITE_URL'] = self.site_url + ':443'
-        self.assertIsNone(self.middleware.process_request(self.request))
-        self.assertEqual(self.site_url, self.request.site_url)
-        self.assertEqual('foo.example.com', self.request.get_host())
-        self.assertTrue(self.request.https)
-        self.assertTrue(self.request.is_secure())
+        request = self.get(self.site_url + ':443')
+        self.assertIsNone(self.middleware.process_request(request))
+        self.assertEqual(self.site_url, request.site_url)
+        self.assertEqual('foo.example.com', request.get_host())
+        self.assertTrue(request.https)
+        self.assertTrue(request.is_secure())
 
     def test_not_allowed_http_site_redirects_to_https_if_exists(self):
-        self.request.META['HTTP_SITE_URL'] = 'http://foo.example.com'
-        self.request.path = '/bar?baz=true'
-        response = self.middleware.process_request(self.request)
+        request = self.get('http://foo.example.com', '/')
+        response = self.middleware.process_request(request)
+        self.assertIsNotNone(response)
+        self.assertEqual(302, response.status_code)
+        self.assertEqual('https://foo.example.com/', response['Location'])
+
+    def test_not_allowed_http_site_redirects_to_https_if_exists2(self):
+        request = self.get('http://foo.example.com', '/bar?baz=true')
+        response = self.middleware.process_request(request)
         self.assertIsNotNone(response)
         self.assertEqual(302, response.status_code)
         self.assertEqual('https://foo.example.com/bar?baz=true',
                          response['Location'])
 
     def test_https_redirects_for_auth_request(self):
-        self.request.META['HTTP_SITE_URL'] = 'http://foo.example.com'
-        self.request.path = '/auth/api/is-authorized/?path=/foo/bar/baz'
-        response = self.middleware.process_request(self.request)
+        request = self.get('http://foo.example.com',
+                           '/auth/api/is-authorized/?path=/foo/bar/baz')
+        response = self.middleware.process_request(request)
         self.assertIsNotNone(response)
         self.assertEqual(302, response.status_code)
         self.assertEqual('https://foo.example.com/foo/bar/baz',
+                         response['Location'])
+
+    def test_https_redirects_for_auth_request2(self):
+        request = self.get('http://foo.example.com',
+                           '/auth/api/is-authorized/?path=/foo/bar/baz?x=y&z=1')
+        response = self.middleware.process_request(request)
+        self.assertIsNotNone(response)
+        self.assertEqual(302, response.status_code)
+        self.assertEqual('https://foo.example.com/foo/bar/baz?x=y&z=1',
                          response['Location'])
 
 class ProtectCookiesMiddlewareTest(TestCase):
