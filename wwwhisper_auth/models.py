@@ -26,6 +26,8 @@ from django.db import connection
 from django.db import models
 from django.db import transaction
 from django.forms import ValidationError
+from django.utils import timezone
+
 from functools import wraps
 from wwwhisper_auth import  url_utils
 from wwwhisper_auth import  email_re
@@ -561,7 +563,14 @@ class UsersCollection(Collection):
             raise ValidationError('Invalid email format.')
         if self.find_item_by_email(encoded_email) is not None:
             raise ValidationError('User already exists.')
-        return self._do_create_item(email=encoded_email)
+        # Django 1.8 correctly sets last_login field to NULL for newly
+        # created users. Earlier Django versions set this field to
+        # date_joined and had a 'not NULL' constraint on the
+        # field. For compatibility with old databases, old behavior is
+        # preserved, last_login is initally set to a date when user is
+        # created.
+        return self._do_create_item(email=encoded_email,
+                                    last_login=timezone.now())
 
     def find_item_by_email(self, email):
         encoded_email = _encode_email(email)
