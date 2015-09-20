@@ -55,8 +55,8 @@ Usage:
             initial locations. Multiple emails can be given with multiple
             -a directives.
       -l, --location A location that admin users will be able to access
-            initially (defaults to /admin/ and /). Multiple locations can
-            be given with mutliple -l directives.
+            initially (defaults to /wwwhisper/admin/ and /). Multiple
+            locations can be given with mutliple -l directives.
       -o, --output-dir A directory to store configuration (defaults to
             '%(config-dir)s' in the wwwhisper directory).
       -n, --no-supervisor Do not generate config file for supervisord.
