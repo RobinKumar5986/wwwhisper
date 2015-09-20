@@ -10,7 +10,6 @@ from django.forms import ValidationError
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.db.models import signals
-from django.contrib.auth.management import create_superuser
 from django.contrib.auth import models as contrib_auth_models
 from django.core.exceptions import ImproperlyConfigured
 from wwwhisper_auth import models as auth_models
@@ -71,15 +70,9 @@ def grant_initial_permission(app, created_models, *args, **kwargs):
         _create_initial_admins(site)
         _grant_admins_access_to_all_locations(site)
 
-# Disable default behaviour for admin user creation (interactive
-# question).
-signals.post_syncdb.disconnect(
-    create_superuser,
-    sender=contrib_auth_models,
-    dispatch_uid = "django.contrib.auth.management.create_superuser")
-
 if SITE_URL:
-    # Instead, invoke grant_initial_permission function defined in this module.
+    # Invoke grant_initial_permission function defined in this module
+    # when admin user is created.
     signals.post_syncdb.connect(
         grant_initial_permission,
         sender=contrib_auth_models,
