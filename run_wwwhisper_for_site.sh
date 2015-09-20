@@ -18,7 +18,7 @@ Starts uWSGI managed wwwhisper instance for a given site.
    The script accepts a single argument - a path to a site-specific
    directory that was generated with 'add_protected_site.py'.
    Example usage:
-      ${0} -d ./sites/https/example.com/
+      ${0} -d ./sites/https.example.com/
 EOF
     exit 1
 }
