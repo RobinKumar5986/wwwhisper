@@ -31,9 +31,8 @@ else:
 # although not all choices may be available on all operating systems.
 # On Unix systems, a value of None will cause Django to use the same
 # timezone as the operating system.
-# If running in a Windows environment this must be set to the same as your
-# system time zone.
-TIME_ZONE = None
+# Postgres backend requires this to be set.
+TIME_ZONE = 'UTC'
 
 # Language code for this installation. All choices can be found here:
 # http://www.i18nguy.com/unicode/language-identifiers.html
