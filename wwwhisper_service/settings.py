@@ -72,7 +72,6 @@ MIDDLEWARE_CLASSES = (
     #'wwwhisper_service.profile.ProfileMiddleware',
     # Must go before CommonMiddleware, to set a correct url to which
     # CommonMiddleware redirects.
-    #'debug_toolbar.middleware.DebugToolbarMiddleware',
     'wwwhisper_auth.middleware.SetSiteMiddleware',
     'wwwhisper_auth.middleware.SiteUrlMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -106,9 +105,6 @@ INSTALLED_APPS = (
     'wwwhisper_auth',
     'wwwhisper_admin'
 )
-
-if DEBUG:
-    INSTALLED_APPS += ('debug_toolbar',)
 
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
