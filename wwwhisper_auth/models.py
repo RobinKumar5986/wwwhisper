@@ -53,6 +53,9 @@ class ValidatedModel(models.Model):
     class Meta:
         """Disables creation of a DB table for ValidatedModel."""
         abstract = True
+        # Needed because models are used from signal handlers, before
+        # the application is loaded.
+        app_label = 'wwwhisper_auth'
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -209,6 +212,9 @@ class SitesCollection(object):
         return True
 
 class User(AbstractBaseUser):
+    class Meta:
+        app_label = 'wwwhisper_auth'
+
     # Site to which the user belongs.
     site = models.ForeignKey(Site, related_name='+')
 
