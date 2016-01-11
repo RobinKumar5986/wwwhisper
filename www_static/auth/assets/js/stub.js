@@ -1,6 +1,6 @@
 /*!
  * wwwhisper - web access control.
- * Copyright (C) 2012-2015 Jan Wrobel
+ * Copyright (C) 2012-2016 Jan Wrobel
  */
 (function () {
   'use strict';
