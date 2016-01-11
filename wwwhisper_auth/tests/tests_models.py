@@ -707,6 +707,18 @@ class AliasesCollectionTest(ModelTestCase):
                                 self.aliases.create_item,
                                 'http://example.org:123')
 
+    def test_alias_must_be_unique_after_normalization(self):
+        # There was a bug in wwwhisper that allowed to add a
+        # duplicated alias, by appending a default port to it (default
+        # port is automatically stripped from the alias). Such
+        # duplicated aliases caused later assertion failures.
+        self.aliases.create_item('http://example.org')
+        with self.assert_site_not_modified(self.site):
+            self.assertRaisesRegexp(ValidationError,
+                                    'already exists',
+                                    self.aliases.create_item,
+                                    'http://example.org:80')
+
     def test_alias_for_different_site_can_duplicate(self):
         alias = self.aliases.create_item('http://example.org:123')
         self.assertIsNotNone(alias)

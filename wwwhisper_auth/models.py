@@ -716,9 +716,10 @@ class AliasesCollection(Collection):
         (valid, error) = url_utils.validate_site_url(url)
         if not valid:
             raise ValidationError('Invalid url: ' + error)
+        url = url_utils.remove_default_port(url)
         if self.find_item_by_url(url):
             raise ValidationError('Alias with this url already exists')
-        return self._do_create_item(url=url_utils.remove_default_port(url))
+        return self._do_create_item(url=url)
 
     def find_item_by_url(self, url):
         return self.get_unique(lambda item: item.url == url)
