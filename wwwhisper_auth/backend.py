@@ -8,8 +8,7 @@ from django.forms import ValidationError
 from django_browserid import RemoteVerifier, BrowserIDException
 from models import LimitExceeded
 
-class AssertionVerificationException(Exception):
-    """Raised when BrowserId assertion was not verified successfully."""
+class AuthenticationError(Exception):
     pass
 
 class BrowserIDBackend(ModelBackend):
@@ -35,16 +34,16 @@ class BrowserIDBackend(ModelBackend):
              object is created. In other cases, None is returned.
 
         Raises:
-            AssertionVerificationException: verification failed.
+            AuthenticationError: verification failed.
         """
         try:
             result = self.verifier.verify(assertion=assertion,
                                           audience=site_url)
         except BrowserIDException as ex:
-            return AssertionVerificationException(
+            return AuthenticationError(
                 'Failed to contact Persona verification service')
         if not result:
-            raise AssertionVerificationException(
+            raise AuthenticationError(
                 'BrowserID assertion verification failed.')
         user = site.users.find_item_by_email(result.email)
         if user is not None:
@@ -61,6 +60,6 @@ class BrowserIDBackend(ModelBackend):
             else:
                 return None
         except ValidationError as ex:
-            raise AssertionVerificationException(', '.join(ex.messages))
+            raise AuthenticationError(', '.join(ex.messages))
         except LimitExceeded as ex:
-            raise AssertionVerificationException(str(ex))
+            raise AuthenticationError(str(ex))
