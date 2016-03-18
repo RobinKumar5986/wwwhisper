@@ -77,6 +77,7 @@ def validate_redirection_target(path):
     # split into two headers (should be also prevented by Django).
     return (is_canonical(parsed_url.path) and
             not '\n' in path)
+
 def validate_site_url(url):
     parsed_url = urlparse.urlparse(url)
     if parsed_url.scheme == '':

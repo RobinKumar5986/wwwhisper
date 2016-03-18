@@ -1,15 +1,20 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2015 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2016 Jan Wrobel <jan@mixedbit.org>
 
 """Views that handle user authentication and authorization."""
 
+from django.conf import settings
 from django.contrib import auth
+from django.core import signing
 from django.core.cache import cache
+from django.core.mail import send_mail
+from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth import http
+from wwwhisper_auth import models
 from wwwhisper_auth import url_utils
 from wwwhisper_auth.backend import AuthenticationError
 
@@ -218,6 +223,44 @@ class Login(http.RestView):
             # Return not authorized because request was well formed (400
             # doesn't seem appropriate).
             return http.HttpResponseNotAuthorized()
+
+
+class SendToken(http.RestView):
+
+    @http.never_ever_cache
+    def post(self, request, email, path):
+        """Sends secret token in email to verify email ownership.
+
+        Token is signed (but not encrypted) and valid only for the
+        current site. It encodes a path to which the user should be
+        redirected after successful verification.
+        """
+        if email == None:
+            return http.HttpResponseBadRequest('Email not set.')
+        if not models.is_email_valid(email):
+            return http.HttpResponseBadRequest('Email has invalid format.')
+        if path is None or not url_utils.validate_redirection_target(path):
+            path = '/'
+
+        token_data = {
+            'site': request.site_url,
+            'email': email,
+            'path': path
+        }
+        value = signing.dumps(token_data, salt=request.site_url, compress=True)
+        # TODO(jw): use reverse('/login-token/') when LoginToken view
+        # is added.
+        url = request.site_url + '/wwwhisper/auth/api/login-token/' + value
+        subject = '[{0}] email verification'.format(request.site_url)
+        from_email = settings.TOKEN_EMAIL_FROM
+        body = (
+            'Follow the link to verify your email address\n' +
+            '{0}\n'.format(url) +
+            '\n' +
+            'Ignore this email if you have not requested such verification.')
+        send_mail(subject, body, from_email, [email], fail_silently=False)
+        return http.HttpResponseNoContent()
+
 
 class Logout(http.RestView):
     """Allows a user to logout."""

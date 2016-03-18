@@ -25,6 +25,8 @@ if TESTING:
 else:
     from site_settings import *
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+TOKEN_EMAIL_FROM = 'verify@wwwhisper.io'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
