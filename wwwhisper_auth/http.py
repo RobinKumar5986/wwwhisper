@@ -99,6 +99,20 @@ class HttpResponseCreated(HttpResponse):
             content_type=JSON_MIME_TYPE,
             status=201)
 
+class HttpResponseRedirect(HttpResponse):
+    """See other resource.
+
+    302 is used, but 303 or 307 should also work (for example oauth2,
+    which depends heavily on redirections, uses 302 in examples but
+    allows implementations to use other codes).
+    """
+
+    def __init__(self, location):
+        super(HttpResponseRedirect, self).__init__(
+            content_type=JSON_MIME_TYPE,
+            status=302)
+        self['Location'] = location
+
 class HttpResponseNotAuthenticated(HttpResponse):
     """User is not authenticated.
 
