@@ -8,6 +8,7 @@ from wwwhisper_auth.url_utils import contains_params
 from wwwhisper_auth.url_utils import contains_query
 from wwwhisper_auth.url_utils import decode
 from wwwhisper_auth.url_utils import is_canonical
+from wwwhisper_auth.url_utils import validate_redirection_target
 from wwwhisper_auth.url_utils import validate_site_url
 from wwwhisper_auth.url_utils import remove_default_port
 from wwwhisper_auth.url_utils import strip_query
@@ -68,6 +69,23 @@ class PathTest(TestCase):
         self.assertTrue(contains_params('/foo;'))
         self.assertFalse(contains_params('/foo'))
 
+class RedirectionTargetTest(TestCase):
+
+    def test_validate_redirection_target(self):
+        self.assertTrue(validate_redirection_target('/'))
+        self.assertTrue(validate_redirection_target('/foo'))
+        self.assertTrue(validate_redirection_target('/foo/'))
+        self.assertTrue(validate_redirection_target('/foo/?bar=baz'))
+        self.assertTrue(validate_redirection_target('/foo?bar=baz/../'))
+
+        self.assertFalse(validate_redirection_target(''))
+        self.assertFalse(validate_redirection_target('/' + 'f' * 200))
+        self.assertFalse(validate_redirection_target('http://example.org/'))
+        self.assertFalse(validate_redirection_target('example.org/'))
+        self.assertFalse(validate_redirection_target('/foo\n'))
+        self.assertFalse(validate_redirection_target('/foo/../bar'))
+        self.assertFalse(validate_redirection_target(''))
+
 class SiteUrlTest(TestCase):
 
     def assertInvalid(self, result, errorRegexp):
@@ -101,7 +119,6 @@ class SiteUrlTest(TestCase):
         self.assertValid(validate_site_url('http://example.com:80'))
         self.assertValid(validate_site_url('https://example.com'))
         self.assertValid(validate_site_url('https://example.com:123'))
-
 
     def test_remove_default_port(self):
         self.assertEqual('http://example.com',

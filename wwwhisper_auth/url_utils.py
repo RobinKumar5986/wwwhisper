@@ -39,7 +39,6 @@ def is_canonical(path):
         return False
     return True
 
-
 def contains_fragment(path):
     """True if path contains fragment id ('#' part)."""
     return path.count('#') != 0
@@ -52,7 +51,32 @@ def contains_params(path):
     """True if path contains params (';' part)."""
     return path.count(';') != 0
 
+# Path where successful login redirects is stored in email
+# verification token, so should not be too long.
+REDIRECTION_PATH_LIMIT = 200
+def validate_redirection_target(path):
+    """Checks if login can safely redirect to a path.
 
+    For example, if instead of a path a full url is used (with a
+    domain part), the redirect could leak a login token in the Referer
+    header (not an obvious problem since token is intended to be one
+    time, but better to prevent it).
+
+    These are conservative checks. Discarding a valid path is not a
+    distaster, because login then redirects to '/' and is still
+    successful.
+    """
+    if len(path) > REDIRECTION_PATH_LIMIT:
+        return False
+    parsed_url = urlparse.urlparse(path)
+    for attr in ['scheme', 'netloc', 'username', 'password']:
+        val = getattr(parsed_url, attr, None)
+        if  val is not None and val != '':
+            return False
+    # Filter new lines for additional protection from Location header
+    # split into two headers (should be also prevented by Django).
+    return (is_canonical(parsed_url.path) and
+            not '\n' in path)
 def validate_site_url(url):
     parsed_url = urlparse.urlparse(url)
     if parsed_url.scheme == '':
