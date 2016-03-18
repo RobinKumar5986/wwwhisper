@@ -762,9 +762,9 @@ def _encode_email(email):
     user signs-in with.
     """
     encoded_email = email.lower()
-    if not _is_email_valid(encoded_email):
+    if not is_email_valid(encoded_email):
         return None
     return encoded_email
 
-def _is_email_valid(email):
+def is_email_valid(email):
     return re.match(email_re.EMAIL_VALIDATION_RE, email)

@@ -25,6 +25,7 @@ if TESTING:
 else:
     from site_settings import *
 
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
@@ -119,7 +120,7 @@ TEMPLATE_DIRS = (
 AUTH_USER_MODEL = 'wwwhisper_auth.User'
 
 AUTHENTICATION_BACKENDS = (
-    'wwwhisper_auth.backend.BrowserIDBackend',
+    'wwwhisper_auth.backend.TokenBackend',
 )
 
 BROWSERID_VERIFICATION_URL = 'https://verifier.login.persona.org/verify'

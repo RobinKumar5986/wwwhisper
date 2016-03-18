@@ -5,11 +5,14 @@
 
 from django.contrib import auth
 from django.core.cache import cache
+from django.core.mail import send_mail
+from django.core import signing
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth import http
+from wwwhisper_auth import models
 from wwwhisper_auth import url_utils
 from wwwhisper_auth.backend import AssertionVerificationException
 
@@ -219,6 +222,75 @@ class Login(http.RestView):
             # doesn't seem appropriate).
             return http.HttpResponseNotAuthorized()
 
+
+
+class LoginToken(View):
+    """Allows a user to authenticates with BrowserID."""
+
+    @http.never_ever_cache
+    def get(self, request, token):
+        """Logs a user in (establishes a session cookie).
+
+        Verifies BrowserID assertion and check that a user with an
+        email verified by the BrowserID is known (added to users
+        list).
+        """
+        if token == None:
+            return http.HttpResponseBadRequest('BrowserId assertion not set.')
+        try:
+            token_data = signing.loads(token)
+        except signing.BadSignature:
+            return http.HttpResponseBadRequest('Token invalid or expired')
+        try:
+            user = auth.authenticate(site=request.site,
+                                     site_url=request.site_url,
+                                     signed_token_data=token_data)
+        except AssertionVerificationException as ex:
+            logger.debug('Assertion verification failed.')
+            return http.HttpResponseBadRequest(str(ex))
+        if user is not None:
+            auth.login(request, user)
+
+            # Store all user data needed by Auth view in session, this
+            # way, user table does not need to be queried during the
+            # performance critical request (sessions are cached).
+            request.session['user_id'] = user.id
+            logger.debug('%s successfully logged.' % (user.email))
+            # TODO: validate path and set to '/' if invalid
+            return http.HttpResponseRedirect(
+                request.site_url + token_data['path'])
+        else:
+            # Unkown user.
+            # Return not authorized because request was well formed (400
+            # doesn't seem appropriate).
+            return http.HttpResponseNotAuthorized()
+
+class SendToken(http.RestView):
+
+    @http.never_ever_cache
+    def post(self, request, email, path):
+        """Logs a user in (establishes a session cookie).
+
+        Verifies BrowserID assertion and check that a user with an
+        email verified by the BrowserID is known (added to users
+        list).
+        """
+        if email == None:
+            return http.HttpResponseBadRequest('email not set.')
+        if not models.is_email_valid(email):
+            return http.HttpResponseBadRequest('email invalid.')
+        value = signing.dumps({
+            'site': request.site_url,
+            'email': email,
+            'path': path
+        }, salt=request.site_url, compress=True)
+        # TODO: start here(redirect to path on success)
+        url = request.site_url + '/wwwhisper/auth/api/login-token/' + value
+        send_mail('Subject here', 'Here is the link: ' + url, 'authenticate@mixedbit.org',
+                  [email], fail_silently=False)
+        return http.HttpResponseNoContent()
+
+
 class Logout(http.RestView):
     """Allows a user to logout."""
 
@@ -232,6 +304,7 @@ class Logout(http.RestView):
 class WhoAmI(http.RestView):
     """Allows to obtain an email of a currently logged in user."""
 
+    @http.never_ever_cache
     def get(self, request):
         """Returns an email or an authentication required error."""
         user = get_user(request)
