@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2015 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2016 Jan Wrobel <jan@mixedbit.org>
 
 """Authentication backend used by wwwhisper_auth."""
 
@@ -8,8 +8,7 @@ from django.forms import ValidationError
 from django_browserid import RemoteVerifier, BrowserIDException
 from models import LimitExceeded
 
-class AssertionVerificationException(Exception):
-    """Raised when BrowserId assertion was not verified successfully."""
+class AuthenticationError(Exception):
     pass
 
 class BrowserIDBackend(ModelBackend):
@@ -35,16 +34,16 @@ class BrowserIDBackend(ModelBackend):
              object is created. In other cases, None is returned.
 
         Raises:
-            AssertionVerificationException: verification failed.
+            AuthenticationError: verification failed.
         """
         try:
             result = self.verifier.verify(assertion=assertion,
                                           audience=site_url)
         except BrowserIDException as ex:
-            return AssertionVerificationException(
+            return AuthenticationError(
                 'Failed to contact Persona verification service')
         if not result:
-            raise AssertionVerificationException(
+            raise AuthenticationError(
                 'BrowserID assertion verification failed.')
         user = site.users.find_item_by_email(result.email)
         if user is not None:
@@ -61,6 +60,49 @@ class BrowserIDBackend(ModelBackend):
             else:
                 return None
         except ValidationError as ex:
-            raise AssertionVerificationException(', '.join(ex.messages))
+            raise AuthenticationError(', '.join(ex.messages))
         except LimitExceeded as ex:
-            raise AssertionVerificationException(str(ex))
+            raise AuthenticationError(str(ex))
+
+
+class TokenBackend(ModelBackend):
+    """"Backend that authenticates the user using verified token"""
+
+    def authenticate(self, site, site_url, verified_token_data):
+        """verified_token_data is a dict that was encoded in a signed token.
+        A caller responsibility is to decode the data and verify the
+        signature (the reason why the backend does not decode tokens,
+        is that token data includes also redirection path, that can't
+        be easily passed backed from this method).
+
+        Returns:
+             Object that represents a user with an email verified by
+             the token. If a user with such email does not exists,
+             but there are open locations that require login, the user
+             object is created. In other cases, None is returned.
+
+        Raises:
+            AuthenticationError: verification failed.
+        """
+        if verified_token_data['site_url'] != site_url:
+            # Token generated for a different site.
+            raise AuthenticationError('Invalid token.')
+        email = verified_token_data['email']
+        user = site.users.find_item_by_email(email)
+        if user is not None:
+            return user
+        try:
+            # The site has open locations that require login, every
+            # user needs to be allowed.
+            #
+            # TODO: user objects created in such way should probably
+            # be marked and automatically deleted on logout or after
+            # some time of inactivity.
+            if site.locations.has_open_location_with_login():
+                return site.users.create_item(email)
+            else:
+                return None
+        except ValidationError as ex:
+            raise AuthenticationError(', '.join(ex.messages))
+        except LimitExceeded as ex:
+            raise AuthenticationError(str(ex))

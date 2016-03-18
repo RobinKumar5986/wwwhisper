@@ -16,7 +16,7 @@ INCORRECT_ASSERTION = "ThisAssertionIsFalse"
 class FakeAssertionVeryfingBackend(ModelBackend):
     def authenticate(self, assertion, site, site_url=TEST_SITE):
         if assertion == INCORRECT_ASSERTION:
-            raise backend.AssertionVerificationException(
+            raise backend.AuthenticationError(
                 'Assertion verification failed.')
         return site.users.find_item_by_email(assertion)
 

@@ -14,7 +14,7 @@ from django.views.generic import View
 from wwwhisper_auth import http
 from wwwhisper_auth import models
 from wwwhisper_auth import url_utils
-from wwwhisper_auth.backend import AssertionVerificationException
+from wwwhisper_auth.backend import AuthenticationError
 
 import logging
 
@@ -204,7 +204,7 @@ class Login(http.RestView):
             user = auth.authenticate(site=request.site,
                                      site_url=request.site_url,
                                      assertion=assertion)
-        except AssertionVerificationException as ex:
+        except AuthenticationError as ex:
             logger.debug('Assertion verification failed.')
             return http.HttpResponseBadRequest(str(ex))
         if user is not None:
