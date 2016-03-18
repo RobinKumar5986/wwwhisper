@@ -64,7 +64,7 @@ class PathTest(TestCase):
         self.assertTrue(contains_query('/foo?'))
         self.assertFalse(contains_query('/foo'))
 
-    def test_contains_fragment(self):
+    def test_contains_params(self):
         self.assertTrue(contains_params('/foo;'))
         self.assertFalse(contains_params('/foo'))
 
