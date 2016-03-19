@@ -226,6 +226,50 @@ class Login(http.RestView):
             return http.HttpResponseNotAuthorized()
 
 
+class LoginToken(View):
+    """Allows a user to authenticates with a token."""
+
+    @http.never_ever_cache
+    def get(self, request):
+        """Logs a user in (establishes a session cookie).
+
+        Verifies a token and check that a user with an email encoded
+        in the token is known.
+
+        On success redirects to path that is encoded in the tokn.
+        """
+        token = request.GET.get('token')
+        if token == None:
+            return http.HttpResponseBadRequest('Token missing.')
+        token_data = login_token.load_login_token(request.site_url, token)
+        if token_data is None:
+            return http.HttpResponseBadRequest('Token invalid or expired.')
+        (verified_email, path) = token_data
+
+        try:
+            user = auth.authenticate(site=request.site,
+                                     site_url=request.site_url,
+                                     verified_email=verified_email)
+        except AuthenticationError as ex:
+            logger.debug('Token verification failed.')
+            return http.HttpResponseBadRequest(str(ex))
+        if user is not None:
+            auth.login(request, user)
+
+            # Store all user data needed by Auth view in session, this
+            # way, user table does not need to be queried during the
+            # performance critical request (sessions are cached).
+            request.session['user_id'] = user.id
+            logger.debug('%s successfully logged.' % (user.email))
+            # TODO: validate path and set to '/' if invalid
+            return http.HttpResponseRedirect(request.site_url + path)
+        else:
+            # Return not authorized because request was well formed (400
+            # Unkown user.
+            # doesn't seem appropriate).
+            return http.HttpResponseNotAuthorized()
+
+
 class SendToken(http.RestView):
 
     @http.never_ever_cache
@@ -246,10 +290,8 @@ class SendToken(http.RestView):
         token = login_token.generate_login_token(
             site_url=request.site_url, email=email, path=path)
 
-        # TODO(jw): use reverse('/login-token/') when LoginToken view
-        # is added.
-        url = '{0}/wwwhisper/auth/api/login-token/{1}'.format(
-            request.site_url, token)
+        url = '{0}{1}{2}'.format(
+            request.site_url, reverse('login-token'), token)
         subject = '[{0}] email verification'.format(request.site_url)
         from_email = settings.TOKEN_EMAIL_FROM
         body = (

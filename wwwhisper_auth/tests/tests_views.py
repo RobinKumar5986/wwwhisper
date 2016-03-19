@@ -8,6 +8,7 @@ from django.contrib.auth.backends import ModelBackend
 from django.core import mail
 
 from wwwhisper_auth import backend
+from wwwhisper_auth.login_token import generate_login_token
 from wwwhisper_auth.tests.utils import HttpTestCase
 from wwwhisper_auth.tests.utils import TEST_SITE
 
@@ -285,7 +286,7 @@ class SendTokenTest(AuthTestCase):
         self.assertEqual('verify@wwwhisper.io', msg.from_email)
         self.assertEqual('alice@example.org', msg.to[0])
         self.assertTrue(
-            '{0}/wwwhisper/auth/api/login-token/'.format(TEST_SITE) in msg.body)
+            '{0}/auth/api/login-token/'.format(TEST_SITE) in msg.body)
 
     def test_email_address_is_none(self):
         response = self.post('/auth/api/send-token/',
@@ -298,6 +299,50 @@ class SendTokenTest(AuthTestCase):
                              {'email': 'alice', 'path': '/'})
         self.assertEqual(400, response.status_code)
         self.assertEqual('Email has invalid format.', response.content)
+
+class LoginTokenTest(AuthTestCase):
+    def setUp(self):
+        # TODO(jw): remove when this is the default backend.
+        settings.AUTHENTICATION_BACKENDS = (
+            'wwwhisper_auth.backend.VerifiedEmailBackend',)
+        super(AuthTestCase, self).setUp()
+
+    def test_login_fails_if_token_missing(self):
+        response = self.get('/auth/api/login-token/')
+        self.assertEqual(400, response.status_code)
+        self.assertEqual('Token missing.', response.content)
+
+    def test_login_fails_if_token_invalid(self):
+        response = self.get('/auth/api/login-token/?token=xyz')
+        self.assertEqual(400, response.status_code)
+        self.assertEqual('Token invalid or expired.', response.content)
+
+    def test_login_fails_if_token_for_different_site(self):
+        token = generate_login_token(
+            'https://foo.com', 'foo@example.org', '/foo')
+        response = self.get('/auth/api/login-token/?token=' + token)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual('Token invalid or expired.', response.content)
+
+    def test_login_succeeds_if_known_user(self):
+        self.site.users.create_item('foo@example.org')
+        token = generate_login_token(TEST_SITE, 'foo@example.org', '/foo')
+        response = self.get('/auth/api/login-token/?token=' + token)
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(TEST_SITE + '/foo', response['Location'])
+
+    def test_login_fails_if_unknown_user(self):
+        token = generate_login_token(TEST_SITE, 'foo@example.org', '/foo')
+        response = self.get('/auth/api/login-token/?token=' + token)
+        self.assertEqual(403, response.status_code)
+
+    def test_login_succeeds_if_unknown_user_but_site_has_open_locations(self):
+        location = self.site.locations.create_item('/foo/')
+        location.grant_open_access(require_login=True)
+        token = generate_login_token(TEST_SITE, 'foo@example.org', '/foo')
+        response = self.get('/auth/api/login-token/?token=' + token)
+        self.assertEqual(302, response.status_code)
+        self.assertEqual(TEST_SITE + '/foo', response['Location'])
 
 class SessionCacheTest(AuthTestCase):
     def test_user_cached_in_session(self):
