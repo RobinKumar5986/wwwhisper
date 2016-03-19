@@ -65,30 +65,27 @@ class BrowserIDBackend(ModelBackend):
             raise AuthenticationError(str(ex))
 
 
-class TokenBackend(ModelBackend):
-    """"Backend that authenticates the user using verified token"""
+class VerifiedEmailBackend(ModelBackend):
+    """"Backend that authenticates the user using verified email"""
 
-    def authenticate(self, site, site_url, verified_token_data):
-        """verified_token_data is a dict that was encoded in a signed token.
-        A caller responsibility is to decode the data and verify the
-        signature (the reason why the backend does not decode tokens,
-        is that token data includes also redirection path, that can't
-        be easily passed backed from this method).
+    def authenticate(self, site, site_url, verified_email):
+        """verified_email was encoded in a signed token. A caller
+        responsibility is to check token validity and decode the token
+        data (the reason why the backend does not decode tokens, is
+        that token data includes also redirection path, that can't be
+        easily passed backed from this method).
 
         Returns:
-             Object that represents a user with an email verified by
-             the token. If a user with such email does not exists,
-             but there are open locations that require login, the user
-             object is created. In other cases, None is returned.
+             Object that represents a user with the verified email
+             passed to this method If a user with such email does not
+             exists, but there are open locations that require login,
+             the user object is created. In other cases, None is
+             returned.
 
         Raises:
             AuthenticationError: verification failed.
         """
-        if verified_token_data['site_url'] != site_url:
-            # Token generated for a different site.
-            raise AuthenticationError('Invalid token.')
-        email = verified_token_data['email']
-        user = site.users.find_item_by_email(email)
+        user = site.users.find_item_by_email(verified_email)
         if user is not None:
             return user
         try:
@@ -99,7 +96,7 @@ class TokenBackend(ModelBackend):
             # be marked and automatically deleted on logout or after
             # some time of inactivity.
             if site.locations.has_open_location_with_login():
-                return site.users.create_item(email)
+                return site.users.create_item(verified_email)
             else:
                 return None
         except ValidationError as ex:

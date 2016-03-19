@@ -14,6 +14,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import View
 from wwwhisper_auth import http
+from wwwhisper_auth import login_token
 from wwwhisper_auth import models
 from wwwhisper_auth import url_utils
 from wwwhisper_auth.backend import AuthenticationError
@@ -242,15 +243,13 @@ class SendToken(http.RestView):
         if path is None or not url_utils.validate_redirection_target(path):
             path = '/'
 
-        token_data = {
-            'site': request.site_url,
-            'email': email,
-            'path': path
-        }
-        value = signing.dumps(token_data, salt=request.site_url, compress=True)
+        token = login_token.generate_login_token(
+            site_url=request.site_url, email=email, path=path)
+
         # TODO(jw): use reverse('/login-token/') when LoginToken view
         # is added.
-        url = request.site_url + '/wwwhisper/auth/api/login-token/' + value
+        url = '{0}/wwwhisper/auth/api/login-token/{1}'.format(
+            request.site_url, token)
         subject = '[{0}] email verification'.format(request.site_url)
         from_email = settings.TOKEN_EMAIL_FROM
         body = (
