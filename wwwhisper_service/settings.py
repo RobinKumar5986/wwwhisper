@@ -27,6 +27,7 @@ else:
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 TOKEN_EMAIL_FROM = 'verify@wwwhisper.io'
+AUTH_TOKEN_SECONDS_VALID = 60 * 30
 
 # Local time zone for this installation. Choices can be found here:
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name

@@ -1,6 +1,7 @@
 # wwwhisper - web access control.
 # Copyright (C) 2016 Jan Wrobel <jan@mixedbit.org>
 
+from django.conf import settings
 from django.core import signing
 
 def generate_login_token(site_url, email, path):
@@ -28,7 +29,8 @@ def load_login_token(site_url, token):
     Returns (email, path) if the token is valid, None otherwise.
     """
     try:
-        token_data = signing.loads(token, salt=site_url)
+        token_data = signing.loads(
+            token, salt=site_url, max_age=settings.AUTH_TOKEN_SECONDS_VALID)
         # site_url in the token seems like an overkill. site_url is
         # already used as salt which should give adequate protection
         # against using a token for sites different than the one for
