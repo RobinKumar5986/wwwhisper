@@ -292,7 +292,7 @@ class SendToken(http.RestView):
             path = '/'
 
         token = login_token.generate_login_token(
-            site_url=request.site_url, email=email)
+            request.site, site_url=request.site_url, email=email)
 
         params = urllib.urlencode(dict(next=path, token=token))
         url = '{0}{1}?{2}'.format(

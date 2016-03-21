@@ -86,7 +86,7 @@ class VerifiedEmailBackend(ModelBackend):
             limit is exceeded (this can happen only if site has open
             locations that require login).
         """
-        verified_email = login_token.load_login_token(site_url, token)
+        verified_email = login_token.load_login_token(site, site_url, token)
         if verified_email is None:
             raise AuthenticationError('Token invalid or expired.')
 

@@ -333,28 +333,29 @@ class LoginTokenTest(AuthTestCase):
         self.assertEqual('Token invalid or expired.', response.content)
 
     def test_login_fails_if_token_for_different_site(self):
-        token = generate_login_token('https://foo.com', 'foo@example.org')
+        token = generate_login_token(
+            self.site, 'https://foo.com', 'foo@example.org')
         response = self.get('/auth/api/login-token/?token=' + token)
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token invalid or expired.', response.content)
 
     def test_login_succeeds_if_known_user(self):
         self.site.users.create_item('foo@example.org')
-        token = generate_login_token(TEST_SITE, 'foo@example.org')
+        token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         params = urllib.urlencode(dict(token=token, next='/foo'))
         response = self.get('/auth/api/login-token/?' + params)
         self.assertEqual(302, response.status_code)
         self.assertEqual(TEST_SITE + '/foo', response['Location'])
 
     def test_login_fails_if_unknown_user(self):
-        token = generate_login_token(TEST_SITE, 'foo@example.org')
+        token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         response = self.get('/auth/api/login-token/?token=' + token)
         self.assertEqual(403, response.status_code)
 
     def test_login_succeeds_if_unknown_user_but_site_has_open_locations(self):
         location = self.site.locations.create_item('/foo/')
         location.grant_open_access(require_login=True)
-        token = generate_login_token(TEST_SITE, 'foo@example.org')
+        token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         params = urllib.urlencode(dict(token=token, next='/foo'))
         response = self.get('/auth/api/login-token/?' + params)
         self.assertEqual(302, response.status_code)
@@ -364,12 +365,21 @@ class LoginTokenTest(AuthTestCase):
         # 'next' argument is not signed, so can be replaced by the
         # user. This is OK as long as all tricky paths are replaced.
         self.site.users.create_item('foo@example.org')
-        token = generate_login_token(TEST_SITE, 'foo@example.org')
+        token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         params = urllib.urlencode(dict(token=token, next='www.example.com'))
         response = self.get('/auth/api/login-token/?' + params)
         self.assertEqual(302, response.status_code)
         # Ignore 'next' argument from the login URL
         self.assertEqual(TEST_SITE + '/', response['Location'])
+
+    def test_successful_login_invalidates_token(self):
+        self.site.users.create_item('foo@example.org')
+        token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
+        response = self.get('/auth/api/login-token/?token=' + token)
+        self.assertEqual(302, response.status_code)
+        response = self.get('/auth/api/login-token/?token=' + token)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual('Token invalid or expired.', response.content)
 
 class SessionCacheTest(AuthTestCase):
     def test_user_cached_in_session(self):
