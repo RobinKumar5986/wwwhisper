@@ -12,8 +12,10 @@ from wwwhisper_auth.login_token import generate_login_token
 from wwwhisper_auth.tests.utils import HttpTestCase
 from wwwhisper_auth.tests.utils import TEST_SITE
 
-import json
 import wwwhisper_auth.urls
+
+import json
+import urllib
 
 INCORRECT_ASSERTION = "ThisAssertionIsFalse"
 
@@ -276,7 +278,7 @@ class CsrfTokenTest(AuthTestCase):
 class SendTokenTest(AuthTestCase):
     def test_email_send(self):
         response = self.post('/auth/api/send-token/',
-                             {'email': 'alice@example.org', 'path': '/'})
+                             {'email': 'alice@example.org', 'path': '/foo/bar'})
         self.assertEqual(204, response.status_code)
         self.assertEqual(1, len(mail.outbox))
         msg = mail.outbox[0]
@@ -285,8 +287,10 @@ class SendTokenTest(AuthTestCase):
         self.assertEqual(1, len(msg.to))
         self.assertEqual('verify@wwwhisper.io', msg.from_email)
         self.assertEqual('alice@example.org', msg.to[0])
-        self.assertTrue(
-            '{0}/auth/api/login-token/'.format(TEST_SITE) in msg.body)
+        path = urllib.urlencode({'next': '/foo/bar'})
+        regexp = (TEST_SITE + '/auth/api/login-token/\?token=.{60,}&' + path +
+                  '\n')
+        self.assertRegexpMatches(msg.body, regexp)
 
     def test_email_address_is_none(self):
         response = self.post('/auth/api/send-token/',
@@ -299,6 +303,17 @@ class SendTokenTest(AuthTestCase):
                              {'email': 'alice', 'path': '/'})
         self.assertEqual(400, response.status_code)
         self.assertEqual('Email has invalid format.', response.content)
+
+    def test_tricky_redirection_replaced(self):
+        response = self.post('/auth/api/send-token/',
+                             {'email': 'alice@example.org', 'path': '/foo/../'})
+        self.assertEqual(204, response.status_code)
+        msg = mail.outbox[0]
+        # Login ignores '/foo/../' and redirects to '/'.
+        path = urllib.urlencode({'next': '/'})
+        regexp = (TEST_SITE + '/auth/api/login-token/\?token=.{60,}&' + path +
+                  '\n')
+        self.assertRegexpMatches(msg.body, regexp)
 
 class LoginTokenTest(AuthTestCase):
     def setUp(self):
@@ -318,31 +333,43 @@ class LoginTokenTest(AuthTestCase):
         self.assertEqual('Token invalid or expired.', response.content)
 
     def test_login_fails_if_token_for_different_site(self):
-        token = generate_login_token(
-            'https://foo.com', 'foo@example.org', '/foo')
+        token = generate_login_token('https://foo.com', 'foo@example.org')
         response = self.get('/auth/api/login-token/?token=' + token)
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token invalid or expired.', response.content)
 
     def test_login_succeeds_if_known_user(self):
         self.site.users.create_item('foo@example.org')
-        token = generate_login_token(TEST_SITE, 'foo@example.org', '/foo')
-        response = self.get('/auth/api/login-token/?token=' + token)
+        token = generate_login_token(TEST_SITE, 'foo@example.org')
+        params = urllib.urlencode(dict(token=token, next='/foo'))
+        response = self.get('/auth/api/login-token/?' + params)
         self.assertEqual(302, response.status_code)
         self.assertEqual(TEST_SITE + '/foo', response['Location'])
 
     def test_login_fails_if_unknown_user(self):
-        token = generate_login_token(TEST_SITE, 'foo@example.org', '/foo')
+        token = generate_login_token(TEST_SITE, 'foo@example.org')
         response = self.get('/auth/api/login-token/?token=' + token)
         self.assertEqual(403, response.status_code)
 
     def test_login_succeeds_if_unknown_user_but_site_has_open_locations(self):
         location = self.site.locations.create_item('/foo/')
         location.grant_open_access(require_login=True)
-        token = generate_login_token(TEST_SITE, 'foo@example.org', '/foo')
-        response = self.get('/auth/api/login-token/?token=' + token)
+        token = generate_login_token(TEST_SITE, 'foo@example.org')
+        params = urllib.urlencode(dict(token=token, next='/foo'))
+        response = self.get('/auth/api/login-token/?' + params)
         self.assertEqual(302, response.status_code)
         self.assertEqual(TEST_SITE + '/foo', response['Location'])
+
+    def test_tricky_redirection_replaced(self):
+        # 'next' argument is not signed, so can be replaced by the
+        # user. This is OK as long as all tricky paths are replaced.
+        self.site.users.create_item('foo@example.org')
+        token = generate_login_token(TEST_SITE, 'foo@example.org')
+        params = urllib.urlencode(dict(token=token, next='www.example.com'))
+        response = self.get('/auth/api/login-token/?' + params)
+        self.assertEqual(302, response.status_code)
+        # Ignore 'next' argument from the login URL
+        self.assertEqual(TEST_SITE + '/', response['Location'])
 
 class SessionCacheTest(AuthTestCase):
     def test_user_cached_in_session(self):

@@ -5,7 +5,6 @@
 
 from django.conf import settings
 from django.contrib import auth
-from django.core import signing
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.urlresolvers import reverse
@@ -20,6 +19,7 @@ from wwwhisper_auth import url_utils
 from wwwhisper_auth.backend import AuthenticationError
 
 import logging
+import urllib
 
 logger = logging.getLogger(__name__)
 
@@ -236,16 +236,15 @@ class LoginToken(View):
         Verifies a token and check that a user with an email encoded
         in the token is known.
 
-        On success redirects to path that is encoded in the tokn.
+        On success redirects to path passed in the 'next' url
+        argument.
         """
         token = request.GET.get('token')
         if token == None:
             return http.HttpResponseBadRequest('Token missing.')
-        token_data = login_token.load_login_token(request.site_url, token)
-        if token_data is None:
+        verified_email = login_token.load_login_token(request.site_url, token)
+        if verified_email is None:
             return http.HttpResponseBadRequest('Token invalid or expired.')
-        (verified_email, path) = token_data
-
         try:
             user = auth.authenticate(site=request.site,
                                      site_url=request.site_url,
@@ -262,7 +261,13 @@ class LoginToken(View):
             request.session['user_id'] = user.id
             logger.debug('%s successfully logged.' % (user.email))
             # TODO: validate path and set to '/' if invalid
-            return http.HttpResponseRedirect(request.site_url + path)
+
+            redirect_to = request.GET.get('next')
+            if (redirect_to is None or
+                not url_utils.validate_redirection_target(redirect_to)):
+                redirect_to = '/'
+
+            return http.HttpResponseRedirect(request.site_url + redirect_to)
         else:
             # Return not authorized because request was well formed (400
             # Unkown user.
@@ -274,10 +279,12 @@ class SendToken(http.RestView):
 
     @http.never_ever_cache
     def post(self, request, email, path):
-        """Sends secret token in email to verify email ownership.
+        """Emails login url with secret token to verify email ownership.
 
         Token is signed (but not encrypted) and valid only for the
-        current site. It encodes a path to which the user should be
+        current site.
+
+        The login url contains a path to which the user should be
         redirected after successful verification.
         """
         if email == None:
@@ -288,10 +295,11 @@ class SendToken(http.RestView):
             path = '/'
 
         token = login_token.generate_login_token(
-            site_url=request.site_url, email=email, path=path)
+            site_url=request.site_url, email=email)
 
-        url = '{0}{1}{2}'.format(
-            request.site_url, reverse('login-token'), token)
+        params = urllib.urlencode(dict(next=path, token=token))
+        url = '{0}{1}?{2}'.format(
+            request.site_url, reverse('login-token'), params)
         subject = '[{0}] email verification'.format(request.site_url)
         from_email = settings.TOKEN_EMAIL_FROM
         body = (

@@ -4,7 +4,7 @@
 from django.conf import settings
 from django.core import signing
 
-def generate_login_token(site_url, email, path):
+def generate_login_token(site_url, email):
     """Returns a signed token to login a user with a given email.
 
     The token should be emailed to the user to verify that the user
@@ -13,20 +13,18 @@ def generate_login_token(site_url, email, path):
     The token is valid only for the given site (it will be discarded
     if it is submitted to a different site protected by the same
     wwwhisper instance).
-
-    path specifies where the user should be redirected after login.
     """
     token_data = {
         'site': site_url,
-        'email': email,
-        'path': path
+        'email': email
     }
     return signing.dumps(token_data, salt=site_url, compress=True)
 
 def load_login_token(site_url, token):
     """Verifies the login token.
 
-    Returns (email, path) if the token is valid, None otherwise.
+    Returns email encoded in the token if the token is valid, None
+    otherwise.
     """
     try:
         token_data = signing.loads(
@@ -37,6 +35,6 @@ def load_login_token(site_url, token):
         # which the token was generated.
         if token_data['site'] != site_url:
             return None
-        return (token_data['email'], token_data['path'])
+        return token_data['email']
     except signing.BadSignature:
         return None
