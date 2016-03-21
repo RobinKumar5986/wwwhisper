@@ -242,13 +242,10 @@ class LoginToken(View):
         token = request.GET.get('token')
         if token == None:
             return http.HttpResponseBadRequest('Token missing.')
-        verified_email = login_token.load_login_token(request.site_url, token)
-        if verified_email is None:
-            return http.HttpResponseBadRequest('Token invalid or expired.')
         try:
             user = auth.authenticate(site=request.site,
                                      site_url=request.site_url,
-                                     verified_email=verified_email)
+                                     token=token)
         except AuthenticationError as ex:
             logger.debug('Token verification failed.')
             return http.HttpResponseBadRequest(str(ex))

@@ -6,7 +6,9 @@
 from django.contrib.auth.backends import ModelBackend
 from django.forms import ValidationError
 from django_browserid import RemoteVerifier, BrowserIDException
-from models import LimitExceeded
+
+from wwwhisper_auth import login_token
+from wwwhisper_auth.models import LimitExceeded
 
 class AuthenticationError(Exception):
     pass
@@ -68,23 +70,26 @@ class BrowserIDBackend(ModelBackend):
 class VerifiedEmailBackend(ModelBackend):
     """"Backend that authenticates the user using verified email"""
 
-    def authenticate(self, site, site_url, verified_email):
-        """verified_email was encoded in a signed token. A caller
-        responsibility is to check token validity and decode the token
-        data (the reason why the backend does not decode tokens, is
-        that token data includes also redirection path, that can't be
-        easily passed backed from this method).
+    def authenticate(self, site, site_url, token):
+        """Token was a part of a login url that proves email ownership.
 
         Returns:
              Object that represents a user with the verified email
-             passed to this method If a user with such email does not
+             encoded in the token. If a user with such email does not
              exists, but there are open locations that require login,
              the user object is created. In other cases, None is
              returned.
-
         Raises:
-            AuthenticationError: verification failed.
+            AuthenticationError: token is invalid, expired or
+            generated for a different site. Token is valid, but the
+            user does not exist yet and can't be added because user
+            limit is exceeded (this can happen only if site has open
+            locations that require login).
         """
+        verified_email = login_token.load_login_token(site_url, token)
+        if verified_email is None:
+            raise AuthenticationError('Token invalid or expired.')
+
         user = site.users.find_item_by_email(verified_email)
         if user is not None:
             return user
@@ -100,6 +105,8 @@ class VerifiedEmailBackend(ModelBackend):
             else:
                 return None
         except ValidationError as ex:
+            # Should not happen, because email in the signed token is
+            # validated before the token is generated.
             raise AuthenticationError(', '.join(ex.messages))
         except LimitExceeded as ex:
             raise AuthenticationError(str(ex))
