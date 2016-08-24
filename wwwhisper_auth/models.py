@@ -85,8 +85,7 @@ class Site(ValidatedModel):
     _default_skin = {
         'title': 'wwwhisper: Web Access Control',
         'header': 'Protected site',
-        'message': 'Access to this site is restricted. ' + \
-            'Please sign in with your email:',
+        'message': 'Access to this site is restricted, please verify your email:'
     }
 
     title = models.CharField(max_length=80, blank=True)

@@ -39,7 +39,12 @@
    <div class="container">
      <div class="hide" id="login-required">
        <h1>{{header}}</h1>
-       <p class="lead">{{message}}</p>
+       <p id="intro" class="lead">{{message}}</p>
+       <p id="token-send-success" class="lead hide">
+         A link with the login token was sent
+         to <em><span class="entered-email"></span></em>, open the link to login.
+       </p>
+
      </div>
 
      <div class="hide" id="nothing-shared">
@@ -53,7 +58,7 @@
          <div id="error-box">
            <div class="alert alert-error">
              <div class="alert-message">
-               To sign in JavaScript needs to be enabled. See
+               To login in JavaScript needs to be enabled. See
                <a href="http://activatejavascript.org/en/instructions">
                  the instructions </a> to enable JavaScript in your browser.
              </div>
@@ -61,10 +66,21 @@
          </div>  <!-- /.error-box -->
      </noscript>
 
-     <a class="hide" href="#" id="login" title="Sign in with BrowserID">
-       <img src="{% static "auth/assets/img/sign_in_green.png" %}"
-            alt="Sign in">
-     </a>
+     <form id="login-form" class="hide">
+       <div class="input-append">
+         <input class="span3" id="email" type="text"
+                placeholder="Enter your email">
+         <button class="btn btn-success" type="submit">
+           Request login token
+         </button>
+       </div>
+       <div id="token-send-error" class="hide text-error">
+         Failed to send the token to
+         <em><span class="entered-email"></span></em>:
+         <span id="token-send-error-message"></span>
+       </div>
+
+     </form>
    </div>
    {% if branding %}
    <div class="branding">
@@ -76,8 +92,6 @@
    </div>
    {% endif %}
    <script src="{% static "auth/assets/js/jquery-min.js" %}"
-           type="text/javascript"> </script>
-   <script src="https://login.persona.org/include.js"
            type="text/javascript"> </script>
    <script src="{% static "auth/assets/js/stub.js" %}"
            type="text/javascript"> </script>

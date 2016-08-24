@@ -122,7 +122,7 @@ TEMPLATE_DIRS = (
 AUTH_USER_MODEL = 'wwwhisper_auth.User'
 
 AUTHENTICATION_BACKENDS = (
-    'wwwhisper_auth.backend.BrowserIDBackend',
+    'wwwhisper_auth.backend.VerifiedEmailBackend',
 )
 
 BROWSERID_VERIFICATION_URL = 'https://verifier.login.persona.org/verify'

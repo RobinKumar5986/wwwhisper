@@ -9,24 +9,21 @@
    * Sends an assertion from a BrowserID sign-in window to the
    * authentication back-end. Reloads the page if login succeeded.
    */
-  function login(assertion) {
-    if (assertion) {
-      stub.ajax('POST', '/wwwhisper/auth/api/login/',
-                { 'assertion' : assertion.toString() },
-                function() {
-                  window.location.reload(true);
-                },
-                function(errorMessage, errorStatus) {
-                  if (errorStatus === 403) {
-                    // Login failed because the user is unknown.
-                    $('#login-required').addClass('hide');
-                    $('#nothing-shared').removeClass('hide');
-                  } else {
-                    // Other error.
-                    $('body').html(errorMessage);
-                  }
-                });
-    }
+  function login(email) {
+    $('.entered-email').text(email);
+    stub.ajax('POST', '/wwwhisper/auth/api/send-token/',
+              { 'email' : email,
+                'path': window.location.pathname
+              },
+              function() {
+                $('#intro').addClass('hide');
+                $('#login-form').addClass('hide');
+                $('#token-send-success').removeClass('hide');
+              },
+              function(errorMessage, errorStatus) {
+                $('#token-send-error-message').text(errorMessage);
+                $('#token-send-error').removeClass('hide');
+              });
   }
 
   /**
@@ -47,11 +44,14 @@
   }
 
   $('#login-required').removeClass('hide');
-  $('#login').removeClass('hide');
+  $('#login-form').removeClass('hide');
 
-  // Register a callback to process a BrowserID assertion.
-  $('#login').click(function() {
-    navigator.id.get(login);
+  $('#login-form').submit(function() {
+    var email = $.trim($('#email').val());
+    $('#token-send-error').addClass('hide');
+    if (email.length !== 0) {
+      login(email);
+    }
     return false;
   });
 
