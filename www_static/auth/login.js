@@ -12,7 +12,8 @@
   function login(email) {
     $('.entered-email').text(email);
     stub.ajax('POST', '/wwwhisper/auth/api/send-token/',
-              { 'email' : email,
+              {
+                'email' : email,
                 'path': window.location.pathname
               },
               function() {
