@@ -20,8 +20,8 @@ class AuthTestCase(HttpTestCase):
     def setUp(self):
        settings.EMAIL_BACKEND = \
             'django.core.mail.backends.locmem.EmailBackend'
-        settings.TOKEN_EMAIL_FROM = 'verify@wwwhisper.io'
-        super(AuthTestCase, self).setUp()
+       settings.TOKEN_EMAIL_FROM = 'verify@wwwhisper.io'
+       super(AuthTestCase, self).setUp()
 
     def tearDown(self):
         if mail.outbox:
