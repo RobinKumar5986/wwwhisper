@@ -10,15 +10,13 @@ the outside world, other views need to be externally accessible.
 from django.conf import settings
 from django.conf.urls import patterns, url
 from wwwhisper_auth.views import Auth, CsrfToken, Login, Logout, WhoAmI
-from wwwhisper_auth.views import LoginToken, SendToken
+from wwwhisper_auth.views import SendToken
 
 urlpatterns = patterns(
     'wwwhisper_auth.views',
     url(r'^csrftoken/$', CsrfToken.as_view()),
-    # TODO(jw): rename to Login after Persona login is no longer supported.
-    url(r'^login-token/$', LoginToken.as_view(), name='login-token'),
     url(r'^send-token/$', SendToken.as_view()),
-    url(r'^login/$', Login.as_view()),
+    url(r'^login/$', Login.as_view(), name='login'),
     url(r'^logout/$', Logout.as_view()),
     url(r'^whoami/$', WhoAmI.as_view()),
     url(r'^is-authorized/$', Auth.as_view(), name='auth-request'),

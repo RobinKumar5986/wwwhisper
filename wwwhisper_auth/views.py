@@ -191,42 +191,8 @@ class CsrfToken(View):
         """
         return http.HttpResponseNoContent()
 
-class Login(http.RestView):
-    """Allows a user to authenticates with BrowserID."""
 
-    def post(self, request, assertion):
-        """Logs a user in (establishes a session cookie).
-
-        Verifies BrowserID assertion and check that a user with an
-        email verified by the BrowserID is known (added to users
-        list).
-        """
-        if assertion == None:
-            return http.HttpResponseBadRequest('BrowserId assertion not set.')
-        try:
-            user = auth.authenticate(site=request.site,
-                                     site_url=request.site_url,
-                                     assertion=assertion)
-        except AuthenticationError as ex:
-            logger.debug('Assertion verification failed.')
-            return http.HttpResponseBadRequest(str(ex))
-        if user is not None:
-            auth.login(request, user)
-
-            # Store all user data needed by Auth view in session, this
-            # way, user table does not need to be queried during the
-            # performance critical request (sessions are cached).
-            request.session['user_id'] = user.id
-            logger.debug('%s successfully logged.' % (user.email))
-            return http.HttpResponseNoContent()
-        else:
-            # Unkown user.
-            # Return not authorized because request was well formed (400
-            # doesn't seem appropriate).
-            return http.HttpResponseNotAuthorized()
-
-
-class LoginToken(View):
+class Login(View):
     """Allows a user to authenticates with a token."""
 
     @http.never_ever_cache
@@ -257,8 +223,6 @@ class LoginToken(View):
             # performance critical request (sessions are cached).
             request.session['user_id'] = user.id
             logger.debug('%s successfully logged.' % (user.email))
-            # TODO: validate path and set to '/' if invalid
-
             redirect_to = request.GET.get('next')
             if (redirect_to is None or
                 not url_utils.validate_redirection_target(redirect_to)):
@@ -295,8 +259,7 @@ class SendToken(http.RestView):
             request.site, site_url=request.site_url, email=email)
 
         params = urllib.urlencode(dict(next=path, token=token))
-        url = '{0}{1}?{2}'.format(
-            request.site_url, reverse('login-token'), params)
+        url = '{0}{1}?{2}'.format(request.site_url, reverse('login'), params)
         subject = '[{0}] email verification'.format(request.site_url)
         from_email = settings.TOKEN_EMAIL_FROM
         body = (

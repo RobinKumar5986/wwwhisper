@@ -104,7 +104,6 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
-    'django_browserid',
     'wwwhisper_auth',
     'wwwhisper_admin'
 )
@@ -124,8 +123,6 @@ AUTH_USER_MODEL = 'wwwhisper_auth.User'
 AUTHENTICATION_BACKENDS = (
     'wwwhisper_auth.backend.VerifiedEmailBackend',
 )
-
-BROWSERID_VERIFICATION_URL = 'https://verifier.login.persona.org/verify'
 
 ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: "/admin/api/users/%s/" % u.username,
@@ -154,11 +151,6 @@ LOGGING = {
             },
         },
     'loggers': {
-        'django_browserid': {
-            'handlers': ['console'],
-            'propagate': True,
-            'level': level,
-            },
         'wwwhisper_service': {
             'handlers': ['console'],
             'propagate': True,

@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib.auth.backends import ModelBackend
 from django.core import mail
 
-from wwwhisper_auth import backend
 from wwwhisper_auth.login_token import generate_login_token
 from wwwhisper_auth.tests.utils import HttpTestCase
 from wwwhisper_auth.tests.utils import TEST_SITE
@@ -17,20 +16,9 @@ import wwwhisper_auth.urls
 import json
 import urllib
 
-INCORRECT_ASSERTION = "ThisAssertionIsFalse"
-
-class FakeAssertionVeryfingBackend(ModelBackend):
-    def authenticate(self, assertion, site, site_url=TEST_SITE):
-        if assertion == INCORRECT_ASSERTION:
-            raise backend.AuthenticationError(
-                'Assertion verification failed.')
-        return site.users.find_item_by_email(assertion)
-
 class AuthTestCase(HttpTestCase):
     def setUp(self):
-        settings.AUTHENTICATION_BACKENDS = (
-            'wwwhisper_auth.tests.FakeAssertionVeryfingBackend',)
-        settings.EMAIL_BACKEND = \
+       settings.EMAIL_BACKEND = \
             'django.core.mail.backends.locmem.EmailBackend'
         settings.TOKEN_EMAIL_FROM = 'verify@wwwhisper.io'
         super(AuthTestCase, self).setUp()
@@ -42,7 +30,8 @@ class AuthTestCase(HttpTestCase):
     def login(self, email, site=None):
         if site is None:
             site = self.site
-        self.assertTrue(self.client.login(assertion=email, site=site))
+        token = generate_login_token(site, TEST_SITE, email)
+        self.assertTrue(self.client.login(site=site, site_url=TEST_SITE, token=token))
         # Login needs to set user_id in session.
         user = site.users.find_item_by_email(email)
         self.assertIsNotNone(user)
@@ -51,29 +40,6 @@ class AuthTestCase(HttpTestCase):
         s = self.client.session
         s['user_id'] = user.id
         s.save()
-
-class LoginTest(AuthTestCase):
-    def test_login_requires_assertion(self):
-        response = self.post('/auth/api/login/', {})
-        self.assertEqual(400, response.status_code)
-
-    def test_login_fails_if_unknown_user(self):
-        response = self.post('/auth/api/login/',
-                             {'assertion' : 'foo@example.com'})
-        self.assertEqual(403, response.status_code)
-
-    def test_login_fails_if_incorrect_assertion(self):
-        response = self.post('/auth/api/login/',
-                             {'assertion' : INCORRECT_ASSERTION})
-        self.assertEqual(400, response.status_code)
-        self.assertRegexpMatches(
-            response.content, 'Assertion verification failed')
-
-    def test_login_succeeds_if_known_user(self):
-        self.site.users.create_item('foo@example.com')
-        response = self.post('/auth/api/login/',
-                             {'assertion' : 'foo@example.com'})
-        self.assertEqual(204, response.status_code)
 
 class AuthTest(AuthTestCase):
     def test_is_authorized_requires_path_parameter(self):
@@ -115,6 +81,7 @@ class AuthTest(AuthTestCase):
         location = self.site.locations.create_item('/foo/')
         self.login('foo@example.com', site2)
         response = self.get('/auth/api/is-authorized/?path=/foo/')
+        self.assertEqual(401, response.status_code)
 
     def test_is_authorized_if_open_location(self):
         location = self.site.locations.create_item('/foo/')
@@ -225,7 +192,7 @@ class AuthTest(AuthTestCase):
 class LogoutTest(AuthTestCase):
     def test_authentication_requested_after_logout(self):
         user = self.site.users.create_item('foo@example.com')
-        self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
+        self.login('foo@example.com')
 
         response = self.get('/auth/api/is-authorized/?path=/bar/')
         # Not authorized
@@ -247,7 +214,7 @@ class WhoAmITest(AuthTestCase):
         response = self.get('/auth/api/whoami/')
         self.assertEqual(401, response.status_code)
 
-        self.post('/auth/api/login/', {'assertion' : 'foo@example.com'})
+        self.login('foo@example.com')
         response = self.get('/auth/api/whoami/')
         self.assertEqual(200, response.status_code)
         parsed_response_body = json.loads(response.content)
@@ -288,7 +255,7 @@ class SendTokenTest(AuthTestCase):
         self.assertEqual('verify@wwwhisper.io', msg.from_email)
         self.assertEqual('alice@example.org', msg.to[0])
         path = urllib.urlencode({'next': '/foo/bar'})
-        regexp = (TEST_SITE + '/auth/api/login-token/\?token=.{60,}&' + path +
+        regexp = (TEST_SITE + '/auth/api/login/\?token=.{60,}&' + path +
                   '\n')
         self.assertRegexpMatches(msg.body, regexp)
 
@@ -311,31 +278,29 @@ class SendTokenTest(AuthTestCase):
         msg = mail.outbox[0]
         # Login ignores '/foo/../' and redirects to '/'.
         path = urllib.urlencode({'next': '/'})
-        regexp = (TEST_SITE + '/auth/api/login-token/\?token=.{60,}&' + path +
+        regexp = (TEST_SITE + '/auth/api/login/\?token=.{60,}&' + path +
                   '\n')
         self.assertRegexpMatches(msg.body, regexp)
 
-class LoginTokenTest(AuthTestCase):
+class LoginTest(AuthTestCase):
     def setUp(self):
-        # TODO(jw): remove when this is the default backend.
-        settings.AUTHENTICATION_BACKENDS = (
-            'wwwhisper_auth.backend.VerifiedEmailBackend',)
         super(AuthTestCase, self).setUp()
 
     def test_login_fails_if_token_missing(self):
-        response = self.get('/auth/api/login-token/')
+        response = self.get('/auth/api/login/')
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token missing.', response.content)
 
     def test_login_fails_if_token_invalid(self):
-        response = self.get('/auth/api/login-token/?token=xyz')
+        response = self.get('/auth/api/login/?token=xyz')
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token invalid or expired.', response.content)
 
-    def test_login_fails_if_token_for_different_site(self):
+    def test_login_fails_if_token_for_different_site_url(self):
+        self.site.users.create_item('foo@example.org')
         token = generate_login_token(
             self.site, 'https://foo.com', 'foo@example.org')
-        response = self.get('/auth/api/login-token/?token=' + token)
+        response = self.get('/auth/api/login/?token=' + token)
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token invalid or expired.', response.content)
 
@@ -343,13 +308,13 @@ class LoginTokenTest(AuthTestCase):
         self.site.users.create_item('foo@example.org')
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         params = urllib.urlencode(dict(token=token, next='/foo'))
-        response = self.get('/auth/api/login-token/?' + params)
+        response = self.get('/auth/api/login/?' + params)
         self.assertEqual(302, response.status_code)
         self.assertEqual(TEST_SITE + '/foo', response['Location'])
 
     def test_login_fails_if_unknown_user(self):
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
-        response = self.get('/auth/api/login-token/?token=' + token)
+        response = self.get('/auth/api/login/?token=' + token)
         self.assertEqual(403, response.status_code)
 
     def test_login_succeeds_if_unknown_user_but_site_has_open_locations(self):
@@ -357,7 +322,7 @@ class LoginTokenTest(AuthTestCase):
         location.grant_open_access(require_login=True)
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         params = urllib.urlencode(dict(token=token, next='/foo'))
-        response = self.get('/auth/api/login-token/?' + params)
+        response = self.get('/auth/api/login/?' + params)
         self.assertEqual(302, response.status_code)
         self.assertEqual(TEST_SITE + '/foo', response['Location'])
 
@@ -367,7 +332,7 @@ class LoginTokenTest(AuthTestCase):
         self.site.users.create_item('foo@example.org')
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         params = urllib.urlencode(dict(token=token, next='www.example.com'))
-        response = self.get('/auth/api/login-token/?' + params)
+        response = self.get('/auth/api/login/?' + params)
         self.assertEqual(302, response.status_code)
         # Ignore 'next' argument from the login URL
         self.assertEqual(TEST_SITE + '/', response['Location'])
@@ -375,18 +340,21 @@ class LoginTokenTest(AuthTestCase):
     def test_successful_login_invalidates_token(self):
         self.site.users.create_item('foo@example.org')
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
-        response = self.get('/auth/api/login-token/?token=' + token)
+        response = self.get('/auth/api/login/?token=' + token)
         self.assertEqual(302, response.status_code)
-        response = self.get('/auth/api/login-token/?token=' + token)
+        response = self.get('/auth/api/login/?token=' + token)
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token invalid or expired.', response.content)
 
 class SessionCacheTest(AuthTestCase):
     def test_user_cached_in_session(self):
         user = self.site.users.create_item('foo@example.com')
-        response = self.post('/auth/api/login/',
-                             {'assertion' : 'foo@example.com'})
-        self.assertEqual(204, response.status_code)
+
+        token = generate_login_token(self.site, TEST_SITE, 'foo@example.com')
+        params = urllib.urlencode(dict(token=token, next='/foo'))
+        response = self.get('/auth/api/login/?' + params)
+        self.assertEqual(302, response.status_code)
+
         s = self.client.session
         user_id = s['user_id']
         self.assertIsNotNone(user_id)
