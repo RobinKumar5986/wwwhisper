@@ -23,7 +23,7 @@ import urllib
 
 logger = logging.getLogger(__name__)
 
-def get_user(request):
+def _get_user(request):
     """Retrieves a user object associated with a given request.
 
     The user id of a logged in user is stored in the session key-value store.
@@ -31,6 +31,15 @@ def get_user(request):
     user_id = request.session.get('user_id', None)
     if user_id is not None:
         return request.site.users.get_unique(lambda user: user.id == user_id)
+    return None
+
+def _html_or_none(request, template, context={}):
+    """Renders html response string from a given template.
+
+    Returns None if request does not accept html response type.
+    """
+    if (http.accepts_html(request.META.get('HTTP_ACCEPT'))):
+        return render_to_string(template, context)
     return None
 
 class Auth(View):
@@ -121,7 +130,7 @@ class Auth(View):
             logger.debug('%s: incorrect path.' % (debug_msg))
             return http.HttpResponseBadRequest(path_validation_error)
 
-        user = get_user(request)
+        user = _get_user(request)
         location = request.site.locations.find_location(decoded_path)
         if user is not None:
 
@@ -134,8 +143,8 @@ class Auth(View):
             else:
                 logger.debug('%s: access denied.' % (debug_msg))
                 response = http.HttpResponseNotAuthorized(
-                    self._html_or_none(request, 'not_authorized.html',
-                                       {'email' : user.email}))
+                    _html_or_none(request, 'not_authorized.html',
+                                  {'email' : user.email}))
             response['User'] = user.email
             return response
 
@@ -146,16 +155,7 @@ class Auth(View):
             return http.HttpResponseOK('Access granted.')
         logger.debug('%s: user not authenticated.' % (debug_msg))
         return http.HttpResponseNotAuthenticated(
-            self._html_or_none(request, 'login.html', request.site.skin()))
-
-    def _html_or_none(self, request, template, context={}):
-        """Renders html response string from a given template.
-
-        Returns None if request does not accept html response type.
-        """
-        if (http.accepts_html(request.META.get('HTTP_ACCEPT'))):
-            return render_to_string(template, context)
-        return None
+            _html_or_none(request, 'login.html', request.site.skin()))
 
     @staticmethod
     def _extract_encoded_path_argument(request):
@@ -205,6 +205,8 @@ class Login(View):
         On success redirects to path passed in the 'next' url
         argument.
         """
+        # TODO(jw): should this first check if the user is already
+        # logged in and redirect to '/' if this is the case?
         token = request.GET.get('token')
         if token == None:
             return http.HttpResponseBadRequest('Token missing.')
@@ -229,11 +231,11 @@ class Login(View):
                 redirect_to = '/'
 
             return http.HttpResponseRedirect(request.site_url + redirect_to)
-        else:
-            # Return not authorized because request was well formed (400
-            # Unkown user.
-            # doesn't seem appropriate).
-            return http.HttpResponseNotAuthorized()
+
+        # Return not authorized because request was well formed (400
+        # doesn't seem appropriate).
+        return http.HttpResponseNotAuthorized(
+            _html_or_none(request, 'nothing_accessible.html'))
 
 
 class SendToken(http.RestView):
@@ -286,7 +288,7 @@ class WhoAmI(http.RestView):
 
     def get(self, request):
         """Returns an email or an authentication required error."""
-        user = get_user(request)
+        user = _get_user(request)
         if user is not None:
             return http.HttpResponseOKJson({'email': user.email})
         return http.HttpResponseNotAuthenticated()

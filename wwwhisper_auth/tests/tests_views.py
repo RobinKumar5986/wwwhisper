@@ -314,8 +314,11 @@ class LoginTest(AuthTestCase):
 
     def test_login_fails_if_unknown_user(self):
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
-        response = self.get('/auth/api/login/?token=' + token)
+        response = self.get('/auth/api/login/?token=' + token,
+                            HTTP_ACCEPT='text/plain, text/html')
         self.assertEqual(403, response.status_code)
+        self.assertRegexpMatches(response['Content-Type'], 'text/html')
+        self.assertRegexpMatches(response.content, '<body')
 
     def test_login_succeeds_if_unknown_user_but_site_has_open_locations(self):
         location = self.site.locations.create_item('/foo/')

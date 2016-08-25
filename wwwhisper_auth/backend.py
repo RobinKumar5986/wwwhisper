@@ -36,22 +36,19 @@ class VerifiedEmailBackend(ModelBackend):
             raise AuthenticationError('Token invalid or expired.')
 
         user = site.users.find_item_by_email(verified_email)
-        if user is not None:
-            return user
-        try:
-            # The site has open locations that require login, every
-            # user needs to be allowed.
-            #
-            # TODO: user objects created in such way should probably
-            # be marked and automatically deleted on logout or after
-            # some time of inactivity.
-            if site.locations.has_open_location_with_login():
-                return site.users.create_item(verified_email)
-            else:
-                return None
-        except ValidationError as ex:
-            # Should not happen, because email in the signed token is
-            # validated before the token is generated.
-            raise AuthenticationError(', '.join(ex.messages))
-        except LimitExceeded as ex:
-            raise AuthenticationError(str(ex))
+        # The site has open locations that require login, every
+        # user needs to be allowed.
+        #
+        # TODO: user objects created in such way should probably
+        # be marked and automatically deleted on logout or after
+        # some time of inactivity.
+        if user is None and site.locations.has_open_location_with_login():
+            try:
+                user = site.users.create_item(verified_email)
+            except ValidationError as ex:
+                # Should not happen, because email in the signed token is
+                # validated before the token is generated.
+                raise AuthenticationError(', '.join(ex.messages))
+            except LimitExceeded as ex:
+                raise AuthenticationError(str(ex))
+        return user

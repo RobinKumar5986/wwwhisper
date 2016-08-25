@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2015 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2016 Jan Wrobel <jan@mixedbit.org>
 
 """Data model for the site access control rules.
 
