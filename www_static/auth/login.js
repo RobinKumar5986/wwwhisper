@@ -27,23 +27,6 @@
               });
   }
 
-  /**
-   * Goes to the logout page if the user is already authenticated.
-   */
-  function gotoLogoutIfAuthenticated() {
-    // Whoami succeeds only for authenticated users.
-    stub.ajax('GET', '/wwwhisper/auth/api/whoami/', null,
-              function() {
-                window.location = '/wwwhisper/auth/logout';
-              },
-              function() {
-                // Logget out (errorStatus 401) or some other error.
-                // If error was caused by disabled cookies (CSRF token
-                // missing), Persona dialog will inform the user how
-                // to enable cookies.
-              });
-  }
-
   $('#login-required').removeClass('hide');
   $('#login-form').removeClass('hide');
 
@@ -55,7 +38,5 @@
     }
     return false;
   });
-
-  gotoLogoutIfAuthenticated();
 
 }());
