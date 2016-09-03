@@ -114,6 +114,7 @@ TEMPLATE_LOADERS = (
 )
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+STATIC_ROOT = os.path.join(PROJECT_DIR, 'static') # needed by collectstatic
 TEMPLATE_DIRS = (
     os.path.join(PROJECT_DIR, 'templates'),
 )
