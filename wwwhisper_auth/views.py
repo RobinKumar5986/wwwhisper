@@ -286,6 +286,7 @@ class Logout(http.RestView):
 class WhoAmI(http.RestView):
     """Allows to obtain an email of a currently logged in user."""
 
+    @http.never_ever_cache
     def get(self, request):
         """Returns an email or an authentication required error."""
         user = _get_user(request)
