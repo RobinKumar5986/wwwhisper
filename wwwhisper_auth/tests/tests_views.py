@@ -299,8 +299,8 @@ class SendTokenTest(AuthTestCase):
                              {'email': 'alice@example.org', 'path': '/'})
         self.assertEqual(500, response.status_code)
         self.assertEqual(
-            'Failed to sent email with the login token. ' +
-            'Check the entered email address and try again.',
+            'Email delivery problem. ' +
+            'Check the entered address or try again in a few minutes.',
             response.content)
 
     @override_settings(
@@ -310,8 +310,8 @@ class SendTokenTest(AuthTestCase):
                              {'email': 'alice@example.org', 'path': '/'})
         self.assertEqual(500, response.status_code)
         self.assertEqual(
-            'Failed to sent email with the login token. ' +
-            'Check the entered email address and try again.',
+            'Email delivery problem. ' +
+            'Check the entered address or try again in a few minutes.',
             response.content)
 
 class LoginTest(AuthTestCase):

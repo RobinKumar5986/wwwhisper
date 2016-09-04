@@ -278,8 +278,8 @@ class SendToken(http.RestView):
         if not success:
             # This probaly can be also due to invalid email address,
             # in these cases 400 would be better.
-            msg = 'Failed to sent email with the login token. ' \
-                'Check the entered email address and try again.'
+            msg = 'Email delivery problem. ' \
+                'Check the entered address or try again in a few minutes.'
             return http.HttpResponseInternalError(msg)
         return http.HttpResponseNoContent()
 
