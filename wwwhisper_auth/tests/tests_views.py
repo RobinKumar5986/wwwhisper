@@ -4,8 +4,10 @@
 
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.core.mail.backends.base import BaseEmailBackend
 from django.contrib.auth.backends import ModelBackend
 from django.core import mail
+from django.test import override_settings
 
 from wwwhisper_auth.login_token import generate_login_token
 from wwwhisper_auth.tests.utils import HttpTestCase
@@ -15,6 +17,14 @@ import wwwhisper_auth.urls
 
 import json
 import urllib
+
+class FailingEmailBackend(BaseEmailBackend):
+    def send_messages(self, messages):
+        return 0
+
+class RaisingEmailBackend(BaseEmailBackend):
+    def send_messages(self, messages):
+        raise Exception('Send failed');
 
 class AuthTestCase(HttpTestCase):
     def setUp(self):
@@ -281,6 +291,28 @@ class SendTokenTest(AuthTestCase):
         regexp = (TEST_SITE + '/auth/api/login/\?token=.{60,}&' + path +
                   '\n')
         self.assertRegexpMatches(msg.body, regexp)
+
+    @override_settings(
+        EMAIL_BACKEND='wwwhisper_auth.tests.tests_views.FailingEmailBackend')
+    def test_send_token_fails(self):
+        response = self.post('/auth/api/send-token/',
+                             {'email': 'alice@example.org', 'path': '/'})
+        self.assertEqual(500, response.status_code)
+        self.assertEqual(
+            'Failed to sent email with the login token. ' +
+            'Check the entered email address and try again.',
+            response.content)
+
+    @override_settings(
+        EMAIL_BACKEND='wwwhisper_auth.tests.tests_views.RaisingEmailBackend')
+    def test_send_token_fails2(self):
+        response = self.post('/auth/api/send-token/',
+                             {'email': 'alice@example.org', 'path': '/'})
+        self.assertEqual(500, response.status_code)
+        self.assertEqual(
+            'Failed to sent email with the login token. ' +
+            'Check the entered email address and try again.',
+            response.content)
 
 class LoginTest(AuthTestCase):
     def setUp(self):

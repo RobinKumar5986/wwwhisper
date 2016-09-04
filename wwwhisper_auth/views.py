@@ -269,7 +269,18 @@ class SendToken(http.RestView):
             '{0}\n'.format(url) +
             '\n' +
             'Ignore this email if you have not requested such verification.')
-        send_mail(subject, body, from_email, [email], fail_silently=False)
+        success = False
+        try:
+            success = (send_mail(subject, body, from_email, [email],
+                                 fail_silently=False) > 0)
+        except Exception as ex:
+            logger.warning(ex)
+        if not success:
+            # This probaly can be also due to invalid email address,
+            # in these cases 400 would be better.
+            msg = 'Failed to sent email with the login token. ' \
+                'Check the entered email address and try again.'
+            return http.HttpResponseInternalError(msg)
         return http.HttpResponseNoContent()
 
 
