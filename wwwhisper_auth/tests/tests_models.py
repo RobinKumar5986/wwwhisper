@@ -280,6 +280,11 @@ class UsersCollectionTest(ModelTestCase):
                                 self.users.create_item,
                                 'foo10@bar.com')
 
+    def test_login_user(self):
+        user = self.users.create_item(TEST_USER_EMAIL)
+        with self.assert_site_modified(self.site):
+            user.login_successful()
+
 class LocationsCollectionTest(ModelTestCase):
     def test_create_location(self):
         with self.assert_site_modified(self.site):

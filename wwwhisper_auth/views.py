@@ -219,6 +219,7 @@ class Login(View):
             return http.HttpResponseBadRequest(str(ex))
         if user is not None:
             auth.login(request, user)
+            user.login_successful()
 
             # Store all user data needed by Auth view in session, this
             # way, user table does not need to be queried during the

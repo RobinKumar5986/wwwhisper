@@ -234,6 +234,13 @@ class User(AbstractBaseUser):
     def get_absolute_url(self):
         return ('wwwhisper_user', (), {'uuid' : self.uuid})
 
+    @modify_site
+    def login_successful(self):
+        """Must be called after successful login."""
+        # Successful login updates User.last_login, cache refresh
+        # needs to be forced for the login token to be invalidated.
+        return
+
 class Location(ValidatedModel):
     """A location for which access control rules are defined.
 
