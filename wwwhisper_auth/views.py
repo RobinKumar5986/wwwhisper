@@ -262,13 +262,18 @@ class SendToken(http.RestView):
 
         params = urllib.urlencode(dict(next=path, token=token))
         url = '{0}{1}?{2}'.format(request.site_url, reverse('login'), params)
-        subject = '[{0}] email verification'.format(request.site_url)
-        from_email = settings.TOKEN_EMAIL_FROM
+        subject = '{0} access token'.format(request.site_url)
         body = (
-            'Follow the link to verify your email address\n' +
-            '{0}\n'.format(url) +
-            '\n' +
-            'Ignore this email if you have not requested such verification.')
+            'Hello,\n\n'
+            'You have requested access to {0}.\n'.format(request.site_url) +
+            'Open this link to verify your email address:\n\n'
+            '{0}\n\n'.format(url) +
+            'If you have not requested such access, please ignore this email.\n'
+            'The link is valid for the next 30 minutes and can be used once.\n'
+            '\nThank you,\n'
+            'Site admin\n'
+        )
+        from_email = settings.TOKEN_EMAIL_FROM
         success = False
         try:
             success = (send_mail(subject, body, from_email, [email],

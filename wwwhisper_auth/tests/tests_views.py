@@ -41,7 +41,8 @@ class AuthTestCase(HttpTestCase):
         if site is None:
             site = self.site
         token = generate_login_token(site, TEST_SITE, email)
-        self.assertTrue(self.client.login(site=site, site_url=TEST_SITE, token=token))
+        self.assertTrue(self.client.login(
+            site=site, site_url=TEST_SITE, token=token))
         # Login needs to set user_id in session.
         user = site.users.find_item_by_email(email)
         self.assertIsNotNone(user)
@@ -259,8 +260,7 @@ class SendTokenTest(AuthTestCase):
         self.assertEqual(204, response.status_code)
         self.assertEqual(1, len(mail.outbox))
         msg = mail.outbox[0]
-        self.assertEqual('[{0}] email verification'.format(TEST_SITE),
-                         msg.subject)
+        self.assertEqual('{0} access token'.format(TEST_SITE), msg.subject)
         self.assertEqual(1, len(msg.to))
         self.assertEqual('verify@wwwhisper.io', msg.from_email)
         self.assertEqual('alice@example.org', msg.to[0])
