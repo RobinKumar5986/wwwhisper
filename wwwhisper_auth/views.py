@@ -271,8 +271,6 @@ class SendToken(http.RestView):
             '{0}\n\n'.format(url) +
             'If you have not requested such access, please ignore this email.\n'
             'The link is valid for the next 30 minutes and can be used once.\n'
-            '\nThank you,\n'
-            'Site admin\n'
         )
         from_email = settings.TOKEN_EMAIL_FROM
         success = False
