@@ -90,8 +90,10 @@ MIDDLEWARE_CLASSES = (
 SESSION_COOKIE_NAME = 'wwwhisper-sessionid'
 CSRF_COOKIE_NAME = 'wwwhisper-csrftoken'
 
-# Make session cookie valid only until a browser closes.
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# Make the session valid for four weeks (discarding sessions after
+# browser close is inconvenient with login tokens).
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_AGE = 2419200
 SESSION_COOKIE_HTTPONLY = True
 
 ROOT_URLCONF = 'wwwhisper_service.urls'
