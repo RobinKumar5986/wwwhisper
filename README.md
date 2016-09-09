@@ -27,7 +27,7 @@ login prompt:
 
 ![Login prompt](https://raw.github.com/wrr/wwwhisper/master/doc/screens/login_required.png)
 
-'Request login token' button sends a link with an email verification
+The 'Request login token' button sends a link with an email verification
 token to the provided email address. The link is valid for 30 minutes
 and for a single successful login.
 
@@ -37,7 +37,7 @@ to visit the URL. If this is the case, the user is taken to the site:
 ![Access granted](https://raw.github.com/wrr/wwwhisper/master/doc/screens/access_granted.png)
 
 HTTP server inserts a small overlay in the lower-right corner of each
-protected HTML document. The overlay contains an email of the current
+protected HTML document. The overlay contains the email of the current
 user and a 'Sign out' button.
 
 If the user visits a location that he or she is not allowed to access,
@@ -58,20 +58,20 @@ any Rack (Rails, Sinatra) and Node.js Connect based application. This
 is the fastest and easiest way to setup wwwhisper access control, it
 requires only 3 lines of config.
 
-NOTE: wwwhisper standalone setup procedure is outdated. The scripts
+__NOTE: wwwhisper standalone setup procedure is outdated. The scripts
 need to be updated to include token email delivery configuration
 (originally wwwhisper used Mozilla Persona and didn't need to send
-emails with tokens to verify email ownership).
+emails with tokens to verify email ownership).__
 
-Following steps demonstrate how to install and configure nginx with
-wwwhisper authentication on Debian-derivative distributions (including
-Ubuntu). The steps should be easy to adjust to work on other POSIX
-systems. [Unprivileged
+(Needs update: Following steps demonstrate how to install and
+configure nginx with wwwhisper authentication on Debian-derivative
+distributions (including Ubuntu). The steps should be easy to adjust
+to work on other POSIX systems. [Unprivileged
 installation](https://github.com/wrr/wwwhisper/blob/master/doc/unprivileged_install.md)
 is good for experiments, development or if you don't have
 administrative privileged on the machine. [System-wide
 installation](https://github.com/wrr/wwwhisper/blob/master/doc/system_wide_install.md)
-is recommended for more serious deployments.
+is recommended for more serious deployments.)
 
 If you are already using nginx, you may use these steps as guidance
 and adjust them to fit your current configuration.
