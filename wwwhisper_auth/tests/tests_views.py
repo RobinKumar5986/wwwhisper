@@ -254,7 +254,8 @@ class CsrfTokenTest(AuthTestCase):
         self.assertTrue(response.cookies[settings.CSRF_COOKIE_NAME]['secure'])
 
 class SendTokenTest(AuthTestCase):
-    def test_email_send(self):
+    def test_email_sent(self):
+        self.site.users.create_item('alice@example.org')
         response = self.post('/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/foo/bar'})
         self.assertEqual(204, response.status_code)
@@ -269,6 +270,20 @@ class SendTokenTest(AuthTestCase):
                   '\n')
         self.assertRegexpMatches(msg.body, regexp)
 
+    def test_email_not_sent_for_unknown_user(self):
+        response = self.post('/auth/api/send-token/',
+                             {'email': 'alice@example.org', 'path': '/foo/bar'})
+        self.assertEqual(204, response.status_code)
+        self.assertEqual(0, len(mail.outbox))
+
+    def test_email_sent_for_unknown_user_if_has_open_location_with_login(self):
+        location = self.site.locations.create_item('/foo/')
+        location.grant_open_access(require_login=True)
+        response = self.post('/auth/api/send-token/',
+                             {'email': 'alice@example.org', 'path': '/foo/bar'})
+        self.assertEqual(204, response.status_code)
+        self.assertEqual(1, len(mail.outbox))
+
     def test_email_address_is_none(self):
         response = self.post('/auth/api/send-token/',
                              {'email': None, 'path': '/'})
@@ -282,6 +297,7 @@ class SendTokenTest(AuthTestCase):
         self.assertEqual('Email has invalid format.', response.content)
 
     def test_tricky_redirection_replaced(self):
+        self.site.users.create_item('alice@example.org')
         response = self.post('/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/foo/../'})
         self.assertEqual(204, response.status_code)
@@ -295,6 +311,7 @@ class SendTokenTest(AuthTestCase):
     @override_settings(
         EMAIL_BACKEND='wwwhisper_auth.tests.tests_views.FailingEmailBackend')
     def test_send_token_fails(self):
+        self.site.users.create_item('alice@example.org')
         response = self.post('/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/'})
         self.assertEqual(500, response.status_code)
@@ -306,6 +323,7 @@ class SendTokenTest(AuthTestCase):
     @override_settings(
         EMAIL_BACKEND='wwwhisper_auth.tests.tests_views.RaisingEmailBackend')
     def test_send_token_fails2(self):
+        self.site.users.create_item('alice@example.org')
         response = self.post('/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/'})
         self.assertEqual(500, response.status_code)

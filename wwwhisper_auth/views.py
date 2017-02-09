@@ -243,7 +243,11 @@ class SendToken(http.RestView):
 
     @http.never_ever_cache
     def post(self, request, email, path):
-        """Emails login url with secret token to verify email ownership.
+        """If the email owner can access the site, sends the login token.
+
+        Token is not sent if the email owner is not allowed to access
+        the site in order to avoid abusing this end point to send a
+        flood of emails to unknown addresses.
 
         Token is signed (but not encrypted) and valid only for the
         current site.
@@ -257,6 +261,16 @@ class SendToken(http.RestView):
             return http.HttpResponseBadRequest('Email has invalid format.')
         if path is None or not url_utils.validate_redirection_target(path):
             path = '/'
+
+        if (request.site.users.find_item_by_email(email) is None and
+            not request.site.locations.has_open_location_with_login()):
+            # The email owner can not access the site. The token is
+            # not sent, but the response is identical to the response
+            # returned when the token is sent. This way it is not
+            # possible to use the login form to query which emails are
+            # allowed access. Such queries can still be possible by
+            # response timing.
+            return http.HttpResponseNoContent();
 
         token = login_token.generate_login_token(
             request.site, site_url=request.site_url, email=email)

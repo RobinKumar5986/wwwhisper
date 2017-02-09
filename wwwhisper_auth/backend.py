@@ -42,6 +42,7 @@ class VerifiedEmailBackend(ModelBackend):
         # TODO: user objects created in such way should probably
         # be marked and automatically deleted on logout or after
         # some time of inactivity.
+        # TODO: drop has_open_location_with_login support.
         if user is None and site.locations.has_open_location_with_login():
             try:
                 user = site.users.create_item(verified_email)
