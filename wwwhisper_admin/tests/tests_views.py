@@ -153,68 +153,38 @@ class LocationTest(AdminViewTestCase):
         self.assertTrue('openAccess' not in location)
 
         open_access_url = location['self'] + 'open-access/'
-        put_response = self.put(open_access_url, {'requireLogin' : False})
+        put_response = self.put(open_access_url)
         parsed_response_body = json.loads(put_response.content)
         self.assertEqual(201, put_response.status_code)
         self.assertEqual(open_access_url, put_response['Location'])
         self.assertEqual(open_access_url, parsed_response_body['self'])
-        self.assertFalse(parsed_response_body['requireLogin'])
 
         # Get location again and make sure openAccess attribute is now true.
         location = json.loads(self.get(location['self']).content)
         self.assertTrue('openAccess' in location)
-        self.assertFalse(location['openAccess']['requireLogin'])
-
-    def test_grant_authenticated_open_access_to_location(self):
-        location = self.add_location()
-        self.assertTrue('openAccess' not in location)
-
-        open_access_url = location['self'] + 'open-access/'
-        put_response = self.put(open_access_url, {'requireLogin' : True})
-        parsed_response_body = json.loads(put_response.content)
-        self.assertEqual(201, put_response.status_code)
-        self.assertEqual(open_access_url, put_response['Location'])
-        self.assertEqual(open_access_url, parsed_response_body['self'])
-        self.assertTrue(parsed_response_body['requireLogin'])
-
-        # Get location again and make sure openAccess attribute is now true.
-        location = json.loads(self.get(location['self']).content)
-        self.assertTrue(location['openAccess']['requireLogin'])
 
     def test_grant_open_access_to_location_if_already_granted(self):
         location = self.add_location()
         open_access_url = location['self'] + 'open-access/'
-        put_response1 = self.put(open_access_url, {'requireLogin' : False})
-        put_response2 = self.put(open_access_url, {'requireLogin' : False})
+        put_response1 = self.put(open_access_url)
+        put_response2 = self.put(open_access_url)
         self.assertEqual(200, put_response2.status_code)
         self.assertFalse(put_response2.has_header('Location'))
         self.assertEqual(put_response1.content, put_response2.content)
 
-    def test_change_require_login_for_open_location(self):
-        location = self.add_location()
-        open_access_url = location['self'] + 'open-access/'
-        put_response1 = self.put(open_access_url, {'requireLogin' : False})
-        put_response2 = self.put(open_access_url, {'requireLogin' : True})
-        self.assertEqual(200, put_response2.status_code)
-        self.assertFalse(put_response2.has_header('Location'))
-        self.assertNotEqual(put_response1.content, put_response2.content)
-        parsed_response_body = json.loads(put_response2.content)
-        self.assertTrue(parsed_response_body['requireLogin'])
-
     def test_check_open_access_to_location(self):
         location = self.add_location()
         open_access_url = location['self'] + 'open-access/'
-        self.put(open_access_url, {'requireLogin' : False})
+        self.put(open_access_url)
         get_response = self.get(open_access_url)
         parsed_response_body = json.loads(get_response.content)
         self.assertEqual(200, get_response.status_code)
         self.assertEqual(open_access_url, parsed_response_body['self'])
-        self.assertFalse(parsed_response_body['requireLogin'])
 
     def test_revoke_open_access_to_location(self):
         location = self.add_location()
         open_access_url = location['self'] + 'open-access/'
-        self.put(open_access_url, {'requireLogin' : False})
+        self.put(open_access_url)
         delete_response = self.delete(open_access_url)
         self.assertEqual(204, delete_response.status_code)
         get_response = self.get(open_access_url)
@@ -223,7 +193,7 @@ class LocationTest(AdminViewTestCase):
     def test_revoke_open_access_to_location_if_already_revoked(self):
         location = self.add_location()
         open_access_url = location['self'] + 'open-access/'
-        self.put(open_access_url, {'requireLogin' : False})
+        self.put(open_access_url)
         self.delete(open_access_url)
         delete_response = self.delete(open_access_url)
         self.assertEqual(404, delete_response.status_code)

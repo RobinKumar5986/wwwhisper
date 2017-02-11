@@ -1,6 +1,6 @@
 /*!
  * wwwhisper - web access control.
- * Copyright (C) 2012-2016 Jan Wrobel
+ * Copyright (C) 2012-2017 Jan Wrobel
  */
 (function() {
   'use strict';
@@ -623,23 +623,11 @@
       allowedUsers: []
     };
     controller.locations.push(location);
-    params = {
-      requireLogin: false
-    };
     mock_stub.expectAjaxCall(
-      'PUT', location.self + 'open-access/', params, params);
+      'PUT', location.self + 'open-access/', null, true);
 
-    controller.grantOpenAccess(location, false);
-    deepEqual(location.openAccess, params);
-
-    params = {
-      requireLogin: true
-    };
-    mock_stub.expectAjaxCall(
-      'PUT', location.self + 'open-access/', params, params);
-    controller.grantOpenAccess(location, true);
-    deepEqual(location.openAccess, params);
-
+    controller.grantOpenAccess(location);
+    deepEqual(location.openAccess, true);
     mock_stub.verify();
   });
 
@@ -659,14 +647,11 @@
     controller.users.push(user);
     controller.locations.push(location);
 
-    params = {
-      requireLogin: false
-    };
     mock_stub.expectAjaxCall(
-      'PUT', location.self + 'open-access/', params, null);
+      'PUT', location.self + 'open-access/', null, null);
 
     ok(!controller.canAccess(user, location));
-    controller.grantOpenAccess(location, false);
+    controller.grantOpenAccess(location);
     ok(controller.canAccess(user, location));
     mock_stub.verify();
   });

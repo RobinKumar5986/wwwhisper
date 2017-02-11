@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2016 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2017 Jan Wrobel <jan@mixedbit.org>
 
 """Data model for the site access control rules.
 
@@ -265,13 +265,14 @@ class Location(ValidatedModel):
       open_access: can be:
         disabled ('n') - only explicitly allowed users can access a location;
         enabled ('y') - everyone can access a location, no login is required;
-        enabled with authentication ('a') - everyone can access a location
-          but login is required.
+        (the attribute is a char not a bool for historical
+         reasons. 'a' mode used to be also supported that allowed
+         everyone access but required authentication).
+
     """
     OPEN_ACCESS_CHOICES = (
         ('n', 'no open access'),
         ('y', 'open access'),
-        ('a', 'open access, login required'),
         )
     site = models.ForeignKey(Site, related_name='+')
     path = models.TextField(db_index=True)
@@ -296,23 +297,16 @@ class Location(ValidatedModel):
         return ('wwwhisper_location', (), {'uuid' : self.uuid})
 
     @modify_site
-    def grant_open_access(self, require_login):
-        """Allows open access to the location."""
-        if require_login:
-            self.open_access = 'a'
-        else:
-            self.open_access = 'y'
+    def grant_open_access(self):
+        """Allows to access the location without authentication."""
+        self.open_access = 'y'
         self.save()
 
     def open_access_granted(self):
-        return self.open_access in ('y', 'a')
-
-    def open_access_requires_login(self):
-        return self.open_access == 'a'
+        return self.open_access == 'y'
 
     @modify_site
     def revoke_open_access(self):
-        """Disables open access to the location."""
         self.open_access = 'n'
         self.save()
 
@@ -407,9 +401,7 @@ class Location(ValidatedModel):
                 ],
             }
         if self.open_access_granted():
-            result['openAccess'] = {
-                'requireLogin' : self.open_access_requires_login()
-                }
+            result['openAccess'] = True
         return _add_common_attributes(self, site_url, result)
 
 class Permission(ValidatedModel):
@@ -692,12 +684,6 @@ class LocationsCollection(Collection):
                 longest_matched_location = location
         return longest_matched_location
 
-    def has_open_location_with_login(self):
-        for location in self.all():
-            if (location.open_access_granted() and
-                location.open_access_requires_login()):
-                return True
-        return False
     def has_open_location(self):
         for location in self.all():
             if location.open_access_granted():

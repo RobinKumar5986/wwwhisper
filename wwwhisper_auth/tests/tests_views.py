@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2016 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2017 Jan Wrobel <jan@mixedbit.org>
 
 
 from django.contrib.auth.models import User
@@ -96,7 +96,7 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_if_open_location(self):
         location = self.site.locations.create_item('/foo/')
-        location.grant_open_access(require_login=False)
+        location.grant_open_access()
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertFalse(response.has_header('User'))
         self.assertEqual(200, response.status_code)
@@ -105,7 +105,7 @@ class AuthTest(AuthTestCase):
         user = self.site.users.create_item('foo@example.com')
         self.login('foo@example.com')
         location = self.site.locations.create_item('/foo/')
-        location.grant_open_access(require_login=False)
+        location.grant_open_access()
         response = self.get('/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
         self.assertEqual('foo@example.com', response['User'])
@@ -128,7 +128,7 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_decodes_path(self):
         location = self.site.locations.create_item('/f/')
-        location.grant_open_access(require_login=False)
+        location.grant_open_access()
         response = self.get('/auth/api/is-authorized/?path=%2F%66%2F')
         self.assertEqual(200, response.status_code)
 
@@ -137,7 +137,7 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_collapses_slashes(self):
         location = self.site.locations.create_item('/f/')
-        location.grant_open_access(require_login=False)
+        location.grant_open_access()
         response = self.get('/auth/api/is-authorized/?path=///f/')
         self.assertEqual(200, response.status_code)
 
@@ -276,14 +276,6 @@ class SendTokenTest(AuthTestCase):
         self.assertEqual(204, response.status_code)
         self.assertEqual(0, len(mail.outbox))
 
-    def test_email_sent_for_unknown_user_if_has_open_location_with_login(self):
-        location = self.site.locations.create_item('/foo/')
-        location.grant_open_access(require_login=True)
-        response = self.post('/auth/api/send-token/',
-                             {'email': 'alice@example.org', 'path': '/foo/bar'})
-        self.assertEqual(204, response.status_code)
-        self.assertEqual(1, len(mail.outbox))
-
     def test_email_address_is_none(self):
         response = self.post('/auth/api/send-token/',
                              {'email': None, 'path': '/'})
@@ -369,15 +361,6 @@ class LoginTest(AuthTestCase):
         self.assertEqual(403, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/html')
         self.assertRegexpMatches(response.content, '<body')
-
-    def test_login_succeeds_if_unknown_user_but_site_has_open_locations(self):
-        location = self.site.locations.create_item('/foo/')
-        location.grant_open_access(require_login=True)
-        token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
-        params = urllib.urlencode(dict(token=token, next='/foo'))
-        response = self.get('/auth/api/login/?' + params)
-        self.assertEqual(302, response.status_code)
-        self.assertEqual(TEST_SITE + '/foo', response['Location'])
 
     def test_tricky_redirection_replaced(self):
         # 'next' argument is not signed, so can be replaced by the

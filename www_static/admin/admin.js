@@ -1,6 +1,6 @@
 /*!
  * wwwhisper - web access control.
- * Copyright (C) 2012-2016 Jan Wrobel
+ * Copyright (C) 2012-2017 Jan Wrobel
  */
 /*jslint browser: true, white: true, indent: 2 */
 /*global  $ */
@@ -386,14 +386,13 @@
     };
 
     /**
-     * Allows everyone access to a location. If requireLogin is true,
-     * users will be still asked to sign-in.
+     * Allows everyone access to a location.
      */
-    this.grantOpenAccess = function(location, requireLogin) {
+    this.grantOpenAccess = function(location) {
       stub.ajax(
         'PUT',
         location.self + 'open-access/',
-        {requireLogin: requireLogin},
+        null,
         function(result) {
           location.openAccess = result;
           ui.refresh();
@@ -711,9 +710,7 @@
 
     function grantAccess(userId, location) {
       if (userId === '*') {
-        controller.grantOpenAccess(location, false);
-      } else if (userId === '*?') {
-        controller.grantOpenAccess(location, true);
+        controller.grantOpenAccess(location);
       } else if (userId !== '') {
         controller.grantAccess(userId, location);
       }
@@ -795,8 +792,7 @@
           .attr('disabled', true);
 
         view.allowedUser.clone(true)
-          .find('.user-mail').text(
-            location.openAccess.requireLogin ? '*?' : '*')
+          .find('.user-mail').text('*')
           .end()
           .find('.unshare').click(function() {
             controller.revokeOpenAccess(location);

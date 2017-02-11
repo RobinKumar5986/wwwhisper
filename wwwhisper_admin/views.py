@@ -104,33 +104,27 @@ class ItemView(http.RestView):
 class OpenAccessView(http.RestView):
     """Manages resources that define if a location is open.
 
-    An open location can be accessed by everyone either without
-    authentication (requireLogin is false) or with authentication.
+    An open location can be accessed without authentication.
     """
 
     @staticmethod
-    def _attributes_dict(request, location):
+    def _attributes_dict(request):
         """Attributes representing a resource to which a request is related."""
         return {
-            'self' : _full_url(request),
-            'requireLogin': location.open_access_requires_login()
-            }
+            'self' : _full_url(request)
+        }
 
-    def put(self, request, location_uuid, requireLogin):
+    def put(self, request, location_uuid):
         """Creates a resource that enables open access to a given location."""
         location = request.site.locations.find_item(location_uuid)
         if location is None:
             return http.HttpResponseNotFound('Location not found.')
 
         if location.open_access_granted():
-            if (location.open_access_requires_login() != requireLogin):
-                location.grant_open_access(requireLogin);
-            return http.HttpResponseOKJson(
-                self._attributes_dict(request, location))
+            return http.HttpResponseOKJson(self._attributes_dict(request))
 
-        location.grant_open_access(require_login=requireLogin)
-        response =  http.HttpResponseCreated(
-            self._attributes_dict(request, location))
+        location.grant_open_access()
+        response =  http.HttpResponseCreated(self._attributes_dict(request))
         response['Location'] = _full_url(request)
         return response
 
@@ -142,8 +136,7 @@ class OpenAccessView(http.RestView):
         if not location.open_access_granted():
             return http.HttpResponseNotFound(
                 'Open access to location disallowed.')
-        return http.HttpResponseOKJson(
-            self._attributes_dict(request, location))
+        return http.HttpResponseOKJson(self._attributes_dict(request))
 
     def delete(self, request, location_uuid):
         """Deletes a resource.

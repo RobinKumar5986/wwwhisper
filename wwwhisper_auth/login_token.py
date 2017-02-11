@@ -13,6 +13,10 @@ def _datetime_to_timestamp(datetime_arg):
     # when datetime_arg increases.
     return (datetime_arg - datetime.datetime(2015,1,1)).total_seconds()
 
+
+# TODO: tokens can no longer be generated for not existing users,
+# update these functions to avoid duplicated users lookups.
+
 def generate_login_token(site, site_url, email):
     """Returns a signed token to login a user with a given email.
 

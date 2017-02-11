@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2016 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2016-2017 Jan Wrobel <jan@mixedbit.org>
 
 from django.test import TestCase
 
@@ -50,23 +50,3 @@ class VerifiedEmailBackendTest(TestCase):
         auth_user = self.backend.authenticate(
             self.site, TEST_SITE_URL, self.user_token())
         self.assertIsNone(auth_user)
-
-    def test_site_with_open_location_user_created(self):
-        location = self.site.locations.create_item('/foo/')
-        location.grant_open_access(require_login=True)
-        auth_user = self.backend.authenticate(
-            self.site, TEST_SITE_URL, self.user_token())
-        self.assertIsNotNone(auth_user)
-        self.assertEqual(TEST_USER_EMAIL, auth_user.email)
-
-
-    def test_site_with_open_location_user_limit_exceeded(self):
-        self.site.users_limit = 0
-        location = self.site.locations.create_item('/foo/')
-        location.grant_open_access(require_login=True)
-        self.assertRaisesRegexp(AuthenticationError,
-                                'Users limit exceeded',
-                                self.backend.authenticate,
-                                self.site,
-                                TEST_SITE_URL,
-                                self.user_token())

@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2016 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2017 Jan Wrobel <jan@mixedbit.org>
 
 """Views that handle user authentication and authorization."""
 
@@ -148,8 +148,7 @@ class Auth(View):
             response['User'] = user.email
             return response
 
-        if (location is not None and location.open_access_granted() and
-            not location.open_access_requires_login()):
+        if location is not None and location.open_access_granted():
             logger.debug('%s: authentication not required, access granted.'
                          % (debug_msg))
             return http.HttpResponseOK('Access granted.')
@@ -262,8 +261,7 @@ class SendToken(http.RestView):
         if path is None or not url_utils.validate_redirection_target(path):
             path = '/'
 
-        if (request.site.users.find_item_by_email(email) is None and
-            not request.site.locations.has_open_location_with_login()):
+        if request.site.users.find_item_by_email(email) is None:
             # The email owner can not access the site. The token is
             # not sent, but the response is identical to the response
             # returned when the token is sent. This way it is not

@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2016 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2017 Jan Wrobel <jan@mixedbit.org>
 
 """Authentication backend used by wwwhisper_auth."""
 
@@ -20,36 +20,13 @@ class VerifiedEmailBackend(ModelBackend):
 
         Returns:
              Object that represents a user with the verified email
-             encoded in the token. If a user with such email does not
-             exists, but there are open locations that require login,
-             the user object is created. In other cases, None is
-             returned.
+             encoded in the token or None.
         Raises:
             AuthenticationError: token is invalid, expired or
-            generated for a different site. Token is valid, but the
-            user does not exist yet and can't be added because user
-            limit is exceeded (this can happen only if site has open
-            locations that require login).
+            generated for a different site.
         """
         verified_email = login_token.load_login_token(site, site_url, token)
         if verified_email is None:
             raise AuthenticationError('Token invalid or expired.')
 
-        user = site.users.find_item_by_email(verified_email)
-        # The site has open locations that require login, every
-        # user needs to be allowed.
-        #
-        # TODO: user objects created in such way should probably
-        # be marked and automatically deleted on logout or after
-        # some time of inactivity.
-        # TODO: drop has_open_location_with_login support.
-        if user is None and site.locations.has_open_location_with_login():
-            try:
-                user = site.users.create_item(verified_email)
-            except ValidationError as ex:
-                # Should not happen, because email in the signed token is
-                # validated before the token is generated.
-                raise AuthenticationError(', '.join(ex.messages))
-            except LimitExceeded as ex:
-                raise AuthenticationError(str(ex))
-        return user
+        return site.users.find_item_by_email(verified_email)

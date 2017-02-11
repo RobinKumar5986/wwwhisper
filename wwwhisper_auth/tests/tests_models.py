@@ -1,7 +1,7 @@
 # coding=utf-8
 
 # wwwhisper - web access control.
-# Copyright (C) 2012-2015 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2017 Jan Wrobel <jan@mixedbit.org>
 
 from django.forms import ValidationError
 from django.test import TestCase
@@ -544,14 +544,12 @@ class LocationsCollectionTest(ModelTestCase):
         user = self.users.create_item(TEST_USER_EMAIL)
         location = self.locations.create_item(TEST_LOCATION)
         self.assertFalse(location.open_access_granted())
-        self.assertFalse(location.open_access_requires_login())
         self.assertFalse(location.can_access(user))
 
         with self.assert_site_modified(self.site):
-            location.grant_open_access(require_login=False)
+            location.grant_open_access()
         with self.assert_site_not_modified(self.site):
             self.assertTrue(location.open_access_granted())
-            self.assertFalse(location.open_access_requires_login())
             self.assertTrue(location.can_access(user))
 
         with self.assert_site_modified(self.site):
@@ -562,24 +560,7 @@ class LocationsCollectionTest(ModelTestCase):
     def test_user_of_different_site_can_not_access_even_if_open_location(self):
         user = self.users.create_item(TEST_USER_EMAIL)
         location = self.site2.locations.create_item(TEST_LOCATION)
-        location.grant_open_access(require_login=True)
-        self.assertFalse(location.can_access(user))
-
-    def test_grant_authenticated_open_access(self):
-        user = self.users.create_item(TEST_USER_EMAIL)
-        location = self.locations.create_item(TEST_LOCATION)
-        self.assertFalse(location.open_access_granted())
-        self.assertFalse(location.open_access_requires_login())
-        self.assertFalse(location.can_access(user))
-
-        with self.assert_site_modified(self.site):
-            location.grant_open_access(require_login=True)
-        self.assertTrue(location.open_access_granted())
-        self.assertTrue(location.open_access_requires_login())
-        self.assertTrue(location.can_access(user))
-
-        location.revoke_open_access()
-        self.assertFalse(location.open_access_granted())
+        location.grant_open_access()
         self.assertFalse(location.can_access(user))
 
     def test_has_open_location(self):
@@ -587,24 +568,11 @@ class LocationsCollectionTest(ModelTestCase):
         self.locations.create_item('/bar')
         self.assertFalse(self.locations.has_open_location())
         location = self.locations.create_item('/foo')
-        location.grant_open_access(False)
-        self.assertTrue(self.locations.has_open_location())
-        location.grant_open_access(True)
+        location.grant_open_access()
         self.assertTrue(self.locations.has_open_location())
         self.assertFalse(self.site2.locations.has_open_location())
         location.revoke_open_access()
         self.assertFalse(self.locations.has_open_location())
-
-    def test_has_open_location_with_login(self):
-        self.assertFalse(self.locations.has_open_location_with_login())
-        self.locations.create_item('/bar')
-        self.assertFalse(self.locations.has_open_location_with_login())
-        location = self.locations.create_item('/foo')
-        location.grant_open_access(False)
-        self.assertFalse(self.locations.has_open_location_with_login())
-        location.grant_open_access(True)
-        self.assertTrue(self.locations.has_open_location_with_login())
-        self.assertFalse(self.site2.locations.has_open_location_with_login())
 
     def test_get_allowed_users(self):
         location1 = self.locations.create_item('/foo/bar')
