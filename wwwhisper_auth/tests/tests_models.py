@@ -3,6 +3,7 @@
 # wwwhisper - web access control.
 # Copyright (C) 2012-2017 Jan Wrobel <jan@mixedbit.org>
 
+from django.db import transaction
 from django.forms import ValidationError
 from django.test import TestCase
 from contextlib import contextmanager
@@ -171,19 +172,26 @@ class UsersCollectionTest(ModelTestCase):
         self.assertIsNone(self.users.find_item(user.uuid))
 
     def test_create_user_twice(self):
-        self.users.create_item(TEST_USER_EMAIL)
-        self.assertRaisesRegexp(ValidationError,
-                                'User already exists',
-                                self.users.create_item,
-                                TEST_USER_EMAIL)
-
-        # Make sure user lookup is case insensitive.
-        self.users.create_item('uSeR@bar.com')
-        with self.assert_site_not_modified(self.site):
+        with transaction.atomic():
+            self.users.create_item(TEST_USER_EMAIL)
+        # Integrity error raised during duplicate user creation makes
+        # it impossible to run any other query within the same
+        # test. transaction.atomic() blocks fix this issue.
+        with transaction.atomic():
             self.assertRaisesRegexp(ValidationError,
                                     'User already exists',
                                     self.users.create_item,
-                                    'UsEr@bar.com')
+                                    TEST_USER_EMAIL)
+
+        # Make sure user lookup is case insensitive.
+        with transaction.atomic():
+            self.users.create_item('uSeR@bar.com')
+        with transaction.atomic():
+            with self.assert_site_not_modified(self.site):
+                self.assertRaisesRegexp(ValidationError,
+                                        'User already exists',
+                                        self.users.create_item,
+                                       'UsEr@bar.com')
 
     def test_create_user_twice_for_different_sites(self):
         self.users.create_item(TEST_USER_EMAIL)

@@ -24,7 +24,7 @@ Makes sure entered emails and paths are valid.
 from django.contrib.auth.models import AbstractBaseUser
 from django.db import connection
 from django.db import models
-from django.db import transaction
+from django.db import IntegrityError
 from django.forms import ValidationError
 from django.utils import timezone
 
@@ -213,6 +213,7 @@ class SitesCollection(object):
 class User(AbstractBaseUser):
     class Meta:
         app_label = 'wwwhisper_auth'
+        unique_together = ('site', 'email')
 
     # Site to which the user belongs.
     site = models.ForeignKey(Site, related_name='+')
@@ -270,6 +271,9 @@ class Location(ValidatedModel):
          everyone access but required authentication).
 
     """
+    class Meta:
+        unique_together = ('site', 'path')
+
     OPEN_ACCESS_CHOICES = (
         ('n', 'no open access'),
         ('y', 'open access'),
@@ -440,13 +444,14 @@ class Alias(ValidatedModel):
          443 for https) are always stripped.
       uuid: Externally visible UUID of the alias.
     """
+    class Meta:
+        unique_together = ('site', 'url')
 
     site = models.ForeignKey(Site, related_name='+')
     url = models.TextField(db_index=True)
     uuid = models.CharField(max_length=36, db_index=True,
                             editable=False, unique=True)
     force_ssl = models.BooleanField(default=False)
-
 
     @models.permalink
     def get_absolute_url(self):
@@ -533,9 +538,22 @@ class Collection(object):
         return True
 
     def _do_create_item(self, *args, **kwargs):
-        """Only to be called by subclasses."""
-        item = self.model_class.objects.create(
-            site=self.site, uuid=str(uuidgen.uuid4()), **kwargs)
+        """Only to be called by subclasses.
+
+        Raises ValidationError if the item can not be created because
+        it violates UNIQUE constraints of the DB.
+        """
+        try:
+            item = self.model_class.objects.create(
+                site=self.site, uuid=str(uuidgen.uuid4()), **kwargs)
+        except IntegrityError as e:
+            # In most cases UNIQUE constraint violation is detected by
+            # the Django process which results in ValidationError. But
+            # due to transaction isolation level that is used some
+            # violations are not detected by Django in which case
+            # IntegrityError is raised by the DB engine (translated to
+            # ValidationError for consistency).
+            raise ValidationError(e.message)
         item.site = self.site
         return item
 
@@ -565,16 +583,18 @@ class UsersCollection(Collection):
         encoded_email = _encode_email(email)
         if encoded_email is None:
             raise ValidationError('Invalid email format.')
-        if self.find_item_by_email(encoded_email) is not None:
-            raise ValidationError('User already exists.')
         # Django 1.8 correctly sets last_login field to NULL for newly
         # created users. Earlier Django versions set this field to
         # date_joined and had a 'not NULL' constraint on the
         # field. For compatibility with old databases, old behavior is
         # preserved, last_login is initally set to a date when user is
         # created.
-        return self._do_create_item(email=encoded_email,
-                                    last_login=timezone.now())
+        try:
+            return self._do_create_item(email=encoded_email,
+                                        last_login=timezone.now())
+        except ValidationError:
+            raise ValidationError('User already exists.')
+
 
     def find_item_by_email(self, email):
         encoded_email = _encode_email(email)
@@ -646,11 +666,10 @@ class LocationsCollection(Collection):
         except UnicodeError:
             raise ValidationError(
                 'Path should contain only ascii characters.')
-
-        if self.get_unique(lambda item: item.path == path) is not None:
+        try:
+            return self._do_create_item(path=path)
+        except ValidationError:
             raise ValidationError('Location already exists.')
-
-        return self._do_create_item(path=path)
 
 
     def find_location(self, canonical_path):
@@ -709,9 +728,10 @@ class AliasesCollection(Collection):
         if not valid:
             raise ValidationError('Invalid url: ' + error)
         url = url_utils.remove_default_port(url)
-        if self.find_item_by_url(url):
+        try:
+            return self._do_create_item(url=url)
+        except ValidationError:
             raise ValidationError('Alias with this url already exists')
-        return self._do_create_item(url=url)
 
     def find_item_by_url(self, url):
         return self.get_unique(lambda item: item.url == url)
