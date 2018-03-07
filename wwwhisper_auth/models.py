@@ -272,6 +272,7 @@ class Location(ValidatedModel):
 
     """
     class Meta:
+        app_label = 'wwwhisper_auth'
         unique_together = ('site', 'path')
 
     OPEN_ACCESS_CHOICES = (
@@ -445,6 +446,7 @@ class Alias(ValidatedModel):
       uuid: Externally visible UUID of the alias.
     """
     class Meta:
+        app_label = 'wwwhisper_auth'
         unique_together = ('site', 'url')
 
     site = models.ForeignKey(Site, related_name='+')
