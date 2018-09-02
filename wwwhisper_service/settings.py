@@ -110,15 +110,28 @@ INSTALLED_APPS = [
     'wwwhisper_admin'
 ]
 
-TEMPLATE_LOADERS = [
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-]
-
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 STATIC_ROOT = os.path.join(PROJECT_DIR, 'static') # needed by collectstatic
-TEMPLATE_DIRS = [
-    os.path.join(PROJECT_DIR, 'templates')
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(PROJECT_DIR, 'templates')
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.i18n',
+                'django.template.context_processors.media',
+                'django.template.context_processors.static',
+                'django.template.context_processors.tz',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
 ]
 
 AUTH_USER_MODEL = 'wwwhisper_auth.User'
