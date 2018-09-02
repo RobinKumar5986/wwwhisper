@@ -308,7 +308,7 @@ def _csrf_token_valid(request):
     # TODO: rename this header to WWWHISPER_CRSFTOKEN.
     header_token = request.META.get('HTTP_X_CSRFTOKEN', '')
     cookie_token = request.COOKIES.get(settings.CSRF_COOKIE_NAME, '')
-    if (len(header_token) != csrf.CSRF_KEY_LENGTH or
+    if (len(header_token) != csrf.CSRF_TOKEN_LENGTH or
         not constant_time_compare(header_token, cookie_token)):
         return False
     return True

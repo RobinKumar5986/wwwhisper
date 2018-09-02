@@ -133,10 +133,9 @@ class RestViewTest(HttpTestCase):
                                  'CSRF token missing or incorrect')
 
         # Matching CSRF tokens.
-        self.client.cookies[settings.CSRF_COOKIE_NAME] = \
-            'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+        self.client.cookies[settings.CSRF_COOKIE_NAME] = 64*'x'
         response = self.client.get(
-            '/testview/', HTTP_X_CSRFTOKEN='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+            '/testview/', HTTP_X_CSRFTOKEN=64*'x',
             HTTP_SITE_URL=TEST_SITE)
         self.assertEqual(267, response.status_code)
 
