@@ -1,10 +1,10 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2015 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2018 Jan Wrobel <jan@mixedbit.org>
 
 from django.conf import settings
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.http import HttpResponse
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.test.client import Client
 from wwwhisper_auth.http import accepts_html
 from wwwhisper_auth.http import RestView
@@ -25,13 +25,12 @@ class TestView2(RestView):
     def post(self, request, url_arg):
         return HttpResponse(url_arg, status=298)
 
-urlpatterns = patterns(
-    '',
+urlpatterns = [
     url(r'^testview/$', TestView.as_view()),
-    url(r'^testview2/(?P<url_arg>[a-z]+)/$', TestView2.as_view()))
+    url(r'^testview2/(?P<url_arg>[a-z]+)/$', TestView2.as_view())]
 
+@override_settings(ROOT_URLCONF='wwwhisper_auth.tests.tests_http')
 class RestViewTest(HttpTestCase):
-    urls = 'wwwhisper_auth.tests.tests_http'
 
     def test_method_dispatched(self):
         response = self.get('/testview/')
