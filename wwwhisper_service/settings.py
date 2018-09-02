@@ -132,7 +132,7 @@ ABSOLUTE_URL_OVERRIDES = {
 }
 
 handler = 'logging.StreamHandler' if not TESTING \
-    else 'django.utils.log.NullHandler'
+    else 'logging.NullHandler'
 level = 'INFO' if not DEBUG else 'DEBUG'
 LOGGING = {
     'version': 1,
