@@ -71,7 +71,7 @@ USE_X_FORWARDED_HOST = True
 # X-Forwarded-Host. Host header is not used.
 ALLOWED_HOSTS = ['*']
 
-MIDDLEWARE_CLASSES = (
+MIDDLEWARE_CLASSES = [
     #'wwwhisper_service.profile.ProfileMiddleware',
     # Must go before CommonMiddleware, to set a correct url to which
     # CommonMiddleware redirects.
@@ -84,7 +84,7 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-)
+]
 
 # Don't use just sessionid, to avoid collision with apps protected by wwwhisper.
 SESSION_COOKIE_NAME = 'wwwhisper-sessionid'
@@ -101,31 +101,31 @@ ROOT_URLCONF = 'wwwhisper_service.urls'
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'wwwhisper_service.wsgi.application'
 
-INSTALLED_APPS = (
+INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'wwwhisper_auth',
     'wwwhisper_admin'
-)
+]
 
-TEMPLATE_LOADERS = (
+TEMPLATE_LOADERS = [
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-)
+]
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 STATIC_ROOT = os.path.join(PROJECT_DIR, 'static') # needed by collectstatic
-TEMPLATE_DIRS = (
-    os.path.join(PROJECT_DIR, 'templates'),
-)
+TEMPLATE_DIRS = [
+    os.path.join(PROJECT_DIR, 'templates')
+]
 
 AUTH_USER_MODEL = 'wwwhisper_auth.User'
 
-AUTHENTICATION_BACKENDS = (
-    'wwwhisper_auth.backend.VerifiedEmailBackend',
-)
+AUTHENTICATION_BACKENDS = [
+    'wwwhisper_auth.backend.VerifiedEmailBackend'
+]
 
 ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: "/admin/api/users/%s/" % u.username,
