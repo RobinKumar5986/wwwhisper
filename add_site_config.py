@@ -286,8 +286,8 @@ def main():
     manage_path = os.path.join(wwwhisper_path, 'manage.py')
     # Use Python from the virtual environment to run syncdb.
     exit_status = subprocess.call(
-        ['/usr/bin/env', 'python', manage_path, 'syncdb',
-         '--pythonpath=' + django_config_path])
+        ['/usr/bin/env', 'python', manage_path, 'migrate',
+         '--run-syncdb', '--pythonpath=' + django_config_path])
     if exit_status != 0:
         err_quit('Failed to initialize wwwhisper database.');
 

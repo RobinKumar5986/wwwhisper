@@ -47,7 +47,7 @@ def _grant_admins_access_to_all_locations(site):
         for location in site.locations.all():
             location.grant_access(user.uuid)
 
-def grant_initial_permission(app, created_models, *args, **kwargs):
+def grant_initial_permission(sender, *args, **kwargs):
     """Configures initial permissions for wwwhisper protected site.
 
     Allows users with emails listed on WWWHISPER_INITIAL_ADMINS to
@@ -59,8 +59,7 @@ def grant_initial_permission(app, created_models, *args, **kwargs):
     users that can perform administrative operations.
     """
     from wwwhisper_auth import models as auth_models
-    if (auth_models.User in created_models and
-        kwargs.get('interactive', True)):
+    if kwargs.get('interactive', True):
         site = _create_site()
         _create_initial_locations(site)
         _create_initial_admins(site)
@@ -73,11 +72,8 @@ class Config(AppConfig):
 
     def ready(self):
         if SITE_URL:
-            from django.contrib.auth import models as contrib_auth_models
             # Invoke grant_initial_permission function defined in this module
-            # when admin user is created.
-            signals.post_syncdb.connect(
+            # when database is created
+            signals.post_migrate.connect(
                 grant_initial_permission,
-                sender=contrib_auth_models,
-                dispatch_uid="django.contrib.auth.management.create_superuser"
-            )
+                sender=self)
