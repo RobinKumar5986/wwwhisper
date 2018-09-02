@@ -1,14 +1,13 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2015 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2018 Jan Wrobel <jan@mixedbit.org>
 
 """Urls exposed by the wwwhisper_admin application."""
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from views import CollectionView, ItemView, SkinView
 from views import OpenAccessView, AllowedUsersView
 
-urlpatterns = patterns(
-    'wwwhisper_admin.views',
+urlpatterns = [
     url(r'^users/$',
         CollectionView.as_view(collection_name='users')),
     url(r'^users/(?P<uuid>[0-9a-z-]+)/$',
@@ -30,5 +29,5 @@ urlpatterns = patterns(
     url(r'^aliases/(?P<uuid>[0-9a-z-]+)/$',
         ItemView.as_view(collection_name='aliases'),
         name='wwwhisper_alias'),
-    url(r'^skin/$', SkinView.as_view()),
-    )
+    url(r'^skin/$', SkinView.as_view())
+]

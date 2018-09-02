@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2016 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2018 Jan Wrobel <jan@mixedbit.org>
 
 """Urls exposed by the wwwhisper_auth application.
 
@@ -8,16 +8,15 @@ the outside world, other views need to be externally accessible.
 """
 
 from django.conf import settings
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from wwwhisper_auth.views import Auth, CsrfToken, Login, Logout, WhoAmI
 from wwwhisper_auth.views import SendToken
 
-urlpatterns = patterns(
-    'wwwhisper_auth.views',
+urlpatterns = [
     url(r'^csrftoken/$', CsrfToken.as_view()),
     url(r'^send-token/$', SendToken.as_view()),
     url(r'^login/$', Login.as_view(), name='login'),
     url(r'^logout/$', Logout.as_view()),
     url(r'^whoami/$', WhoAmI.as_view()),
-    url(r'^is-authorized/$', Auth.as_view(), name='auth-request'),
-    )
+    url(r'^is-authorized/$', Auth.as_view(), name='auth-request')
+]
