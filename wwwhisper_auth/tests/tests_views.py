@@ -1,5 +1,5 @@
 # wwwhisper - web access control.
-# Copyright (C) 2012-2017 Jan Wrobel <jan@mixedbit.org>
+# Copyright (C) 2012-2018 Jan Wrobel <jan@mixedbit.org>
 
 
 from django.contrib.auth.models import User
@@ -12,8 +12,6 @@ from django.test import override_settings
 from wwwhisper_auth.login_token import generate_login_token
 from wwwhisper_auth.tests.utils import HttpTestCase
 from wwwhisper_auth.tests.utils import TEST_SITE
-
-import wwwhisper_auth.urls
 
 import json
 import urllib
@@ -54,12 +52,12 @@ class AuthTestCase(HttpTestCase):
 
 class AuthTest(AuthTestCase):
     def test_is_authorized_requires_path_parameter(self):
-        response = self.get('/auth/api/is-authorized/?pat=/foo')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?pat=/foo')
         self.assertEqual(400, response.status_code)
 
     def test_is_authorized_if_not_authenticated(self):
         location = self.site.locations.create_item('/foo/')
-        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
         self.assertTrue(response.has_header('WWW-Authenticate'))
         self.assertFalse(response.has_header('User'))
@@ -70,7 +68,7 @@ class AuthTest(AuthTestCase):
     def test_is_authorized_if_not_authorized(self):
         self.site.users.create_item('foo@example.com')
         self.login('foo@example.com')
-        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/')
         # For an authenticated user 'User' header should be always returned.
         self.assertEqual(403, response.status_code)
         self.assertEqual('foo@example.com', response['User'])
@@ -82,7 +80,7 @@ class AuthTest(AuthTestCase):
         location = self.site.locations.create_item('/foo/')
         location.grant_access(user.uuid)
         self.login('foo@example.com')
-        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
         self.assertEqual('foo@example.com', response['User'])
 
@@ -91,13 +89,13 @@ class AuthTest(AuthTestCase):
         user = site2.users.create_item('foo@example.com')
         location = self.site.locations.create_item('/foo/')
         self.login('foo@example.com', site2)
-        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(401, response.status_code)
 
     def test_is_authorized_if_open_location(self):
         location = self.site.locations.create_item('/foo/')
         location.grant_open_access()
-        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/')
         self.assertFalse(response.has_header('User'))
         self.assertEqual(200, response.status_code)
 
@@ -106,7 +104,7 @@ class AuthTest(AuthTestCase):
         self.login('foo@example.com')
         location = self.site.locations.create_item('/foo/')
         location.grant_open_access()
-        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/')
         self.assertEqual(200, response.status_code)
         self.assertEqual('foo@example.com', response['User'])
 
@@ -116,12 +114,13 @@ class AuthTest(AuthTestCase):
         location.grant_access(user.uuid)
         self.login('foo@example.com')
 
-        response = self.get('/auth/api/is-authorized/?path=/bar/../foo/')
+        response = self.get(
+            '/wwwhisper/auth/api/is-authorized/?path=/bar/../foo/')
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'Path should be absolute and normalized')
 
-        response = self.get('/auth/api/is-authorized/?path=.')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=.')
         self.assertEqual(400, response.status_code)
         self.assertRegexpMatches(response.content,
                                  'Path should be absolute and normalized')
@@ -129,16 +128,16 @@ class AuthTest(AuthTestCase):
     def test_is_authorized_decodes_path(self):
         location = self.site.locations.create_item('/f/')
         location.grant_open_access()
-        response = self.get('/auth/api/is-authorized/?path=%2F%66%2F')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=%2F%66%2F')
         self.assertEqual(200, response.status_code)
 
-        response = self.get('/auth/api/is-authorized/?path=%2F%66')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=%2F%66')
         self.assertEqual(401, response.status_code)
 
     def test_is_authorized_collapses_slashes(self):
         location = self.site.locations.create_item('/f/')
         location.grant_open_access()
-        response = self.get('/auth/api/is-authorized/?path=///f/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=///f/')
         self.assertEqual(200, response.status_code)
 
     def test_is_authorized_does_not_allow_requests_with_user_header(self):
@@ -146,12 +145,12 @@ class AuthTest(AuthTestCase):
         location = self.site.locations.create_item('/foo/')
         location.grant_access(user.uuid)
         self.login('foo@example.com')
-        response = self.get('/auth/api/is-authorized/?path=/foo/',
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/',
                             HTTP_USER='bar@example.com')
         self.assertEqual(400, response.status_code)
 
     def test_caching_disabled_for_auth_request_results(self):
-        response = self.get('/auth/api/is-authorized/?path=/foo/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/')
         self.assertTrue(response.has_header('Cache-Control'))
         control = response['Cache-Control']
         # index throws ValueError if not found.
@@ -164,13 +163,13 @@ class AuthTest(AuthTestCase):
 
     def test_is_authorized_if_not_authenticated_html_response(self):
         location = self.site.locations.create_item('/foo/')
-        response = self.get('/auth/api/is-authorized/?path=/foo/',
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/',
                             HTTP_ACCEPT='text/plain, text/html')
         self.assertEqual(401, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/html')
         self.assertRegexpMatches(response.content, '<body')
 
-        response = self.get('/auth/api/is-authorized/?path=/foo/',
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/',
                             HTTP_ACCEPT='text/plain')
         self.assertEqual(401, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/plain')
@@ -178,7 +177,7 @@ class AuthTest(AuthTestCase):
     def test_is_authorized_if_not_authenticated_custom_html_response(self):
         self.site.update_skin(
             title='Foo', header='Bar', message='Baz', branding=False)
-        response = self.get('/auth/api/is-authorized/?path=/foo/',
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/',
                             HTTP_ACCEPT='*/*')
         self.assertEqual(401, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/html')
@@ -189,13 +188,13 @@ class AuthTest(AuthTestCase):
     def test_is_authorized_if_not_authorized_html_response(self):
         self.site.users.create_item('foo@example.com')
         self.login('foo@example.com')
-        response = self.get('/auth/api/is-authorized/?path=/foo/',
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/',
                             HTTP_ACCEPT='*/*')
         self.assertEqual(403, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/html')
         self.assertRegexpMatches(response.content, '<body')
 
-        response = self.get('/auth/api/is-authorized/?path=/foo/',
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/foo/',
                             HTTP_ACCEPT='text/plain, audio/*')
         self.assertEqual(403, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/plain')
@@ -205,14 +204,14 @@ class LogoutTest(AuthTestCase):
         user = self.site.users.create_item('foo@example.com')
         self.login('foo@example.com')
 
-        response = self.get('/auth/api/is-authorized/?path=/bar/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/bar/')
         # Not authorized
         self.assertEqual(403, response.status_code)
 
-        response = self.post('/auth/api/logout/', {})
+        response = self.post('/wwwhisper/auth/api/logout/', {})
         self.assertEqual(204, response.status_code)
 
-        response = self.get('/auth/api/is-authorized/?path=/bar/')
+        response = self.get('/wwwhisper/auth/api/is-authorized/?path=/bar/')
         # Not authenticated
         self.assertEqual(401, response.status_code)
 
@@ -222,11 +221,11 @@ class WhoAmITest(AuthTestCase):
         self.site.users.create_item('foo@example.com')
 
         # Not authorized.
-        response = self.get('/auth/api/whoami/')
+        response = self.get('/wwwhisper/auth/api/whoami/')
         self.assertEqual(401, response.status_code)
 
         self.login('foo@example.com')
-        response = self.get('/auth/api/whoami/')
+        response = self.get('/wwwhisper/auth/api/whoami/')
         self.assertEqual(200, response.status_code)
         parsed_response_body = json.loads(response.content)
         self.assertEqual('foo@example.com', parsed_response_body['email'])
@@ -237,26 +236,26 @@ class WhoAmITest(AuthTestCase):
         self.login('foo@example.com', site2)
         # Not authorized.
         # Request is run for TEST_SITE, but user belongs to site2_id.
-        response = self.get('/auth/api/whoami/')
+        response = self.get('/wwwhisper/auth/api/whoami/')
         self.assertEqual(401, response.status_code)
 
 class CsrfTokenTest(AuthTestCase):
 
     def test_token_returned_in_cookie(self):
-        response = self.get('/auth/api/csrftoken/')
+        response = self.get('/wwwhisper/auth/api/csrftoken/')
         self.assertEqual(204, response.status_code)
         self.assertTrue(
             len(response.cookies[settings.CSRF_COOKIE_NAME].coded_value) > 20)
 
     # Ensures that ProtectCookiesMiddleware is applied.
     def test_csrf_cookie_http_only(self):
-        response = self.get('/auth/api/csrftoken/')
+        response = self.get('/wwwhisper/auth/api/csrftoken/')
         self.assertTrue(response.cookies[settings.CSRF_COOKIE_NAME]['secure'])
 
 class SendTokenTest(AuthTestCase):
     def test_email_sent(self):
         self.site.users.create_item('alice@example.org')
-        response = self.post('/auth/api/send-token/',
+        response = self.post('/wwwhisper/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/foo/bar'})
         self.assertEqual(204, response.status_code)
         self.assertEqual(1, len(mail.outbox))
@@ -266,45 +265,45 @@ class SendTokenTest(AuthTestCase):
         self.assertEqual('verify@wwwhisper.io', msg.from_email)
         self.assertEqual('alice@example.org', msg.to[0])
         path = urllib.urlencode({'next': '/foo/bar'})
-        regexp = (TEST_SITE + '/auth/api/login/\?token=.{60,}&' + path +
-                  '\n')
+        regexp = (TEST_SITE + '/wwwhisper/auth/api/login/\?token=.{60,}&' +
+                  path + '\n')
         self.assertRegexpMatches(msg.body, regexp)
 
     def test_email_not_sent_for_unknown_user(self):
-        response = self.post('/auth/api/send-token/',
+        response = self.post('/wwwhisper/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/foo/bar'})
         self.assertEqual(204, response.status_code)
         self.assertEqual(0, len(mail.outbox))
 
     def test_email_address_is_none(self):
-        response = self.post('/auth/api/send-token/',
+        response = self.post('/wwwhisper/auth/api/send-token/',
                              {'email': None, 'path': '/'})
         self.assertEqual(400, response.status_code)
         self.assertEqual('Email not set.', response.content)
 
     def test_email_has_invalid_format(self):
-        response = self.post('/auth/api/send-token/',
+        response = self.post('/wwwhisper/auth/api/send-token/',
                              {'email': 'alice', 'path': '/'})
         self.assertEqual(400, response.status_code)
         self.assertEqual('Email has invalid format.', response.content)
 
     def test_tricky_redirection_replaced(self):
         self.site.users.create_item('alice@example.org')
-        response = self.post('/auth/api/send-token/',
+        response = self.post('/wwwhisper/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/foo/../'})
         self.assertEqual(204, response.status_code)
         msg = mail.outbox[0]
         # Login ignores '/foo/../' and redirects to '/'.
         path = urllib.urlencode({'next': '/'})
-        regexp = (TEST_SITE + '/auth/api/login/\?token=.{60,}&' + path +
-                  '\n')
+        regexp = (TEST_SITE + '/wwwhisper/auth/api/login/\?token=.{60,}&' +
+                  path + '\n')
         self.assertRegexpMatches(msg.body, regexp)
 
     @override_settings(
         EMAIL_BACKEND='wwwhisper_auth.tests.tests_views.FailingEmailBackend')
     def test_send_token_fails(self):
         self.site.users.create_item('alice@example.org')
-        response = self.post('/auth/api/send-token/',
+        response = self.post('/wwwhisper/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/'})
         self.assertEqual(500, response.status_code)
         self.assertEqual(
@@ -316,7 +315,7 @@ class SendTokenTest(AuthTestCase):
         EMAIL_BACKEND='wwwhisper_auth.tests.tests_views.RaisingEmailBackend')
     def test_send_token_fails2(self):
         self.site.users.create_item('alice@example.org')
-        response = self.post('/auth/api/send-token/',
+        response = self.post('/wwwhisper/auth/api/send-token/',
                              {'email': 'alice@example.org', 'path': '/'})
         self.assertEqual(500, response.status_code)
         self.assertEqual(
@@ -329,12 +328,12 @@ class LoginTest(AuthTestCase):
         super(AuthTestCase, self).setUp()
 
     def test_login_fails_if_token_missing(self):
-        response = self.get('/auth/api/login/')
+        response = self.get('/wwwhisper/auth/api/login/')
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token missing.', response.content)
 
     def test_login_fails_if_token_invalid(self):
-        response = self.get('/auth/api/login/?token=xyz')
+        response = self.get('/wwwhisper/auth/api/login/?token=xyz')
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token invalid or expired.', response.content)
 
@@ -342,7 +341,7 @@ class LoginTest(AuthTestCase):
         self.site.users.create_item('foo@example.org')
         token = generate_login_token(
             self.site, 'https://foo.com', 'foo@example.org')
-        response = self.get('/auth/api/login/?token=' + token)
+        response = self.get('/wwwhisper/auth/api/login/?token=' + token)
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token invalid or expired.', response.content)
 
@@ -350,13 +349,13 @@ class LoginTest(AuthTestCase):
         self.site.users.create_item('foo@example.org')
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         params = urllib.urlencode(dict(token=token, next='/foo'))
-        response = self.get('/auth/api/login/?' + params)
+        response = self.get('/wwwhisper/auth/api/login/?' + params)
         self.assertEqual(302, response.status_code)
         self.assertEqual(TEST_SITE + '/foo', response['Location'])
 
     def test_login_fails_if_unknown_user(self):
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
-        response = self.get('/auth/api/login/?token=' + token,
+        response = self.get('/wwwhisper/auth/api/login/?token=' + token,
                             HTTP_ACCEPT='text/plain, text/html')
         self.assertEqual(403, response.status_code)
         self.assertRegexpMatches(response['Content-Type'], 'text/html')
@@ -368,7 +367,7 @@ class LoginTest(AuthTestCase):
         self.site.users.create_item('foo@example.org')
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
         params = urllib.urlencode(dict(token=token, next='www.example.com'))
-        response = self.get('/auth/api/login/?' + params)
+        response = self.get('/wwwhisper/auth/api/login/?' + params)
         self.assertEqual(302, response.status_code)
         # Ignore 'next' argument from the login URL
         self.assertEqual(TEST_SITE + '/', response['Location'])
@@ -376,9 +375,9 @@ class LoginTest(AuthTestCase):
     def test_successful_login_invalidates_token(self):
         self.site.users.create_item('foo@example.org')
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.org')
-        response = self.get('/auth/api/login/?token=' + token)
+        response = self.get('/wwwhisper/auth/api/login/?token=' + token)
         self.assertEqual(302, response.status_code)
-        response = self.get('/auth/api/login/?token=' + token)
+        response = self.get('/wwwhisper/auth/api/login/?token=' + token)
         self.assertEqual(400, response.status_code)
         self.assertEqual('Token invalid or expired.', response.content)
 
@@ -388,7 +387,7 @@ class SessionCacheTest(AuthTestCase):
 
         token = generate_login_token(self.site, TEST_SITE, 'foo@example.com')
         params = urllib.urlencode(dict(token=token, next='/foo'))
-        response = self.get('/auth/api/login/?' + params)
+        response = self.get('/wwwhisper/auth/api/login/?' + params)
         self.assertEqual(302, response.status_code)
 
         s = self.client.session

@@ -8,5 +8,3 @@ DATABASES = {
         'NAME': '/tmp/wwwhisper_test_db',
     }
 }
-
-WWWHISPER_PATH_PREFIX = ''

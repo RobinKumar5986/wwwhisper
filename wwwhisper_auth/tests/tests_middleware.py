@@ -123,8 +123,9 @@ class SiteUrlMiddlewareTest(TestCase):
                          response['Location'])
 
     def test_https_redirects_for_auth_request(self):
-        request = self.get('http://foo.example.com',
-                           '/auth/api/is-authorized/?path=/foo/bar/baz')
+        request = self.get(
+            'http://foo.example.com',
+            '/wwwhisper/auth/api/is-authorized/?path=/foo/bar/baz')
         response = self.middleware.process_request(request)
         self.assertIsNotNone(response)
         self.assertEqual(302, response.status_code)
@@ -132,8 +133,9 @@ class SiteUrlMiddlewareTest(TestCase):
                          response['Location'])
 
     def test_https_redirects_for_auth_request2(self):
-        request = self.get('http://foo.example.com',
-                           '/auth/api/is-authorized/?path=/foo/bar/baz?x=y&z=1')
+        request = self.get(
+            'http://foo.example.com',
+            '/wwwhisper/auth/api/is-authorized/?path=/foo/bar/baz?x=y&z=1')
         response = self.middleware.process_request(request)
         self.assertIsNotNone(response)
         self.assertEqual(302, response.status_code)
