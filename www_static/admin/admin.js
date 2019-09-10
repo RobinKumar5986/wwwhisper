@@ -711,8 +711,13 @@
     function grantAccess(userId, location) {
       if (userId === '*') {
         controller.grantOpenAccess(location);
-      } else if (userId !== '') {
-        controller.grantAccess(userId, location);
+      } else {
+        // Allow to enter multiple emails separated by ';'.
+        utils.each(userId.split(';'), function(email) {
+          if (email !== '') {
+            controller.grantAccess(email, location);
+          }
+        });
       }
     }
 
