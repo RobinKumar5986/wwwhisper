@@ -154,10 +154,6 @@ li,
   border-left: 30px solid transparent;
   border-right: 30px solid transparent;
   border-bottom: 30px solid transparent;
-
-  -webkit-border-bottom-right-radius: 50px;
-  -moz-border-radius-bottom-right: 50px;
-  border-bottom-right-radius: 50px;
 }
 
 .wwwhisper-logo {
