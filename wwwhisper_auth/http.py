@@ -184,14 +184,6 @@ def disallow_cross_site_request(decorated_method):
     """Drops a request if it has any indicators of a cross site request."""
     @wraps(decorated_method)
     def wrapper(self, request, *args, **kwargs):
-        # Cross-Origin Resource Sharing allows cross origin Ajax GET
-        # requests, each such request must have the 'Origin' header
-        # different than the site url. Drop such requests.
-        origin = request.META.get('HTTP_ORIGIN', None)
-        if origin is not None and origin != request.site_url:
-                return HttpResponseBadRequest(
-                    'Cross origin requests not allowed.')
-
         # Validate CSRF token unless test environment disabled CSRF protection.
         if (not getattr(request, '_dont_enforce_csrf_checks', False)
             and not _csrf_token_valid(request)):
